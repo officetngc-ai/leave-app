@@ -52,6 +52,25 @@
     }
     .banner.edit-mode { background: #FEF3C7; color: #92400E; border-color: #FDE68A; font-weight: 700; }
 
+    /* 熱備援節點卡片專屬樣式 */
+    .standby-card {
+      border: 2px solid #E2E8F0; border-radius: 12px; padding: 12px; margin-bottom: 10px;
+      background: #F8FAFC; transition: 0.2s;
+    }
+    .standby-card.active-node {
+      border-color: var(--primary); background: #F0FDF4;
+    }
+    .standby-card.current-browser-node {
+      box-shadow: 0 0 0 2px rgba(21, 101, 192, 0.2);
+    }
+    .standby-url {
+      font-family: monospace; font-size: 11.5px; color: #475569; word-break: break-all;
+      background: #FFF; padding: 5px 8px; border-radius: 6px; border: 1px solid #E2E8F0; margin: 6px 0;
+    }
+    .standby-actions {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px;
+    }
+
     /* 頁面內嵌送出狀態提示框 */
     .status-box {
       padding: 12px 14px; border-radius: 10px; font-size: 13.5px; font-weight: 700;
@@ -93,7 +112,7 @@
     .btn.blue { background: var(--blue); margin-top: 8px; }
     .btn.teal { background: var(--teal); }
     .btn.secondary { background: #64748B; margin-top: 8px; }
-    .btn.sm { width: auto; display: inline-block; padding: 6px 11px; font-size: 12.5px; border-radius: 7px; margin-top: 0; }
+    .btn.sm { width: auto; display: inline-block; padding: 7px 11px; font-size: 12.5px; border-radius: 7px; margin-top: 0; }
     .btn.danger { background: var(--danger); }
     .btn.locked { background: #94A3B8; cursor: not-allowed; }
     .btn:disabled { background: #94A3B8; cursor: not-allowed; }
@@ -113,10 +132,10 @@
     .badge.on { background: #DCFCE7; color: #166534; }
     .badge.admin-role { background: #FEF3C7; color: #92400E; }
 
-    /* 5 欄式後台管理子導航列 */
-    .admin-subtabs { display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; margin-bottom: 12px; }
+    /* 6 欄式後台管理子導航列（新增 🌐 備援切換） */
+    .admin-subtabs { display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px; margin-bottom: 12px; }
     .admin-subbtn {
-      padding: 10px 2px; font-size: 12px; font-weight: 700; border-radius: 9px;
+      padding: 10px 2px; font-size: 11.5px; font-weight: 700; border-radius: 9px;
       border: 1px solid var(--border); background: #FFF; color: var(--text); cursor: pointer; text-align: center;
       white-space: nowrap;
     }
@@ -334,24 +353,48 @@
       <div class="admin-header-card">
         <div>
           <div style="font-size:16px; font-weight:800;">🛠️ 後台資料庫管理系統</div>
-          <div style="font-size:12px; color:#CBD5E1; margin-top:3px;">直接新增、修改、查閱 Google Sheet 帳號權限與假單資料庫</div>
+          <div style="font-size:12px; color:#CBD5E1; margin-top:3px;">直接新增、修改、查閱 Google Sheet 資料庫與一鍵切換熱備援</div>
         </div>
         <button class="btn sm" style="background:#3B82F6;" onclick="reloadAdminDatabase()">🔄 重新整理</button>
       </div>
 
       <div id="adminLoadingBanner" class="banner hidden">⏳ 正在從後端 Google Sheet 資料庫同步最新數據...</div>
 
-      <!-- 5 大資料庫管理子分頁 -->
+      <!-- 6 大資料庫管理子分頁（第一顆即為 🌐 備援切換，點進系統管理一眼可見！） -->
       <div class="admin-subtabs">
-        <button class="admin-subbtn active" id="admBtn_admins" onclick="switchAdminPanel('admins')">🔐 帳號權限</button>
+        <button class="admin-subbtn active" id="admBtn_standby" onclick="switchAdminPanel('standby')">🌐 備援切換</button>
+        <button class="admin-subbtn" id="admBtn_admins" onclick="switchAdminPanel('admins')">🔐 帳號權限</button>
         <button class="admin-subbtn" id="admBtn_quota" onclick="switchAdminPanel('quota')">👥 特休庫</button>
         <button class="admin-subbtn" id="admBtn_recs" onclick="switchAdminPanel('recs')">📋 假單庫</button>
         <button class="admin-subbtn" id="admBtn_sched" onclick="switchAdminPanel('sched')">⚙️ 班表庫</button>
         <button class="admin-subbtn" id="admBtn_types" onclick="switchAdminPanel('types')">🏷️ 假別庫</button>
       </div>
 
+      <!-- ==================== 管理模組 S：3 大熱備援節點一鍵切換中心 (Hot Standby Switcher) ==================== -->
+      <div id="admPanel_standby" class="card">
+        <div class="section-title">
+          <span>🌐 前端伺服器熱備援中心（一鍵點擊轉換）</span>
+        </div>
+        <div class="banner" id="standbyCurrentSummaryBanner">
+          📍 <strong>目前開啟視窗節點：</strong><span id="lblCurrentBrowserNode">偵測中...</span><br>
+          📡 <strong>系統預設派發節點：</strong><span id="lblActiveDefaultNode">讀取中...</span>
+        </div>
+
+        <div class="form-group" style="background:#F8FAFC; padding:10px 12px; border-radius:10px; border:1px solid var(--border); margin-bottom:14px;">
+          <label style="margin:0; display:flex; align-items:center; justify-content:space-between; cursor:pointer;">
+            <span>🔄 <strong>智慧自動導流保護</strong>（當點到舊按鈕時自動轉址至預設節點）</span>
+            <input type="checkbox" id="chkStandbyAutoRedirect" checked onchange="onToggleStandbyAutoRedirect(this.checked)" style="width:20px; height:20px;">
+          </label>
+        </div>
+
+        <div id="standbyStatusMsgBox" class="status-box hidden"></div>
+
+        <!-- 3 大熱備援節點動態渲染容器 -->
+        <div id="admStandbyNodesListBox"></div>
+      </div>
+
       <!-- 管理模組 0：一般成員與管理員帳號權限設定資料庫 (adminUsers) -->
-      <div id="admPanel_admins" class="card">
+      <div id="admPanel_admins" class="card hidden">
         <div class="section-title">
           <span>🔐 成員與管理員帳號權限設定</span>
         </div>
@@ -535,17 +578,51 @@
 
   <script>
     // ============================================================
-    // 🌐 雙棲環境核心連線設定（同時相容 GitHub Pages 主系統與 GAS LeaveForm.html 備援）
-    // 版本: v18.0.0 (零刪減完整嚴謹版)
+    // 🌐 三棲熱備援環境核心連線設定（同時相容 GitHub Pages / Bloon.io / GAS LeaveForm.html）
+    // 版本: v19.0.0 (內建 3 節點一鍵點擊轉換備援功能)
     // ============================================================
     const GAS_WEB_APP_URL  = "https://script.google.com/macros/s/AKfycbyuW_4_sWHWUq0lc4QOe1amHl7ipGXr0wGNoVQFJl7leq6JYGWVR7CUoPOZkPMqprnX/exec";
     const DEFAULT_LIFF_ID  = "2012028062-vnoiLP9t";
-    const CACHE_KEY_INIT   = "leave_sys_init_cache_v18";
+    const CACHE_KEY_INIT   = "leave_sys_init_cache_v19";
+
+    // 前端內建 3 大熱備援節點表（即使後端尚未回傳也可 0.01 秒立即顯示並切換！）
+    const DEFAULT_STANDBY_NODES = [
+      {
+        key:   "GITHUB",
+        name:  "GitHub Pages 極速主節點",
+        badge: "🚀 節點 1 (GitHub CDN)",
+        url:   "https://officetngc-ai.github.io/leave-app/",
+        desc:  "透過 GitHub Fastly 全球 CDN 載入，支援 LIFF 頂層抽屜與自動收起視窗"
+      },
+      {
+        key:   "BLOON",
+        name:  "Bloon.io 極速靜態備援",
+        badge: "🛡️ 節點 2 (Bloon.io)",
+        url:   "https://direct.bloon.io/share/YyjMvvP7/index.html",
+        desc:  "獨立外部靜態託管空間，當 GitHub 異常或維護時提供 0.2 秒高速備援"
+      },
+      {
+        key:   "GAS",
+        name:  "GAS 雲端原生備援",
+        badge: "☁️ 節點 3 (Google 原生)",
+        url:   "https://script.google.com/macros/s/AKfycbyuW_4_sWHWUq0lc4QOe1amHl7ipGXr0wGNoVQFJl7leq6JYGWVR7CUoPOZkPMqprnX/exec",
+        desc:  "由 Google Apps Script 直接渲染內建 LeaveForm.html，不依賴任何外部空間"
+      }
+    ];
 
     /**
-     * ✅ 修復缺失 5：跨網域無 CORS 預檢之 google.script.run 相容引擎（含逾時保護、HTTP 狀態檢查與 JSON 錯誤捕捉）
-     * 當運行於 GitHub Pages 時，自動將所有 google.script.run 呼叫轉為對 GAS_WEB_APP_URL 的 text/plain POST 請求；
-     * 當運行於 GAS 內建 LeaveForm.html 備援環境時，則直接使用原生的 google.script.run！
+     * 偵測目前瀏覽器實際所在的伺服器節點 ('GITHUB' | 'BLOON' | 'GAS')
+     */
+    function detectCurrentBrowserNodeKey() {
+      const host = (window.location.hostname || "").toLowerCase();
+      if (host.includes("github.io")) return "GITHUB";
+      if (host.includes("bloon.io"))  return "BLOON";
+      if (host.includes("google.com") || host.includes("googleusercontent.com")) return "GAS";
+      return "GITHUB";
+    }
+
+    /**
+     * 跨網域無 CORS 預檢之 google.script.run 相容引擎（含逾時保護、HTTP 狀態檢查與 JSON 錯誤捕捉）
      */
     function createExternalGasRunner(successCb, failureCb) {
       const callBackend = (methodName, args) => {
@@ -600,7 +677,7 @@
         "adminSaveAdminUser", "adminDeleteAdminUser", "adminSaveEmployeeQuota",
         "adminDeleteEmployeeQuota", "adminTriggerAutoAnnualLeave", "adminSaveScheduleSheet",
         "adminDeleteSpecialDate", "adminAddOrUpdateLeaveType", "adminCancelLeaveByRow",
-        "adminClearCacheAndReload"
+        "adminClearCacheAndReload", "adminSwitchFrontendNode"
       ];
 
       apiMethods.forEach(m => {
@@ -610,7 +687,7 @@
       return runner;
     }
 
-    // 判斷當前是否運行於外部 GitHub Pages 環境；若是則自動掛載外部 API 橋接器
+    // 若不在 GAS iframe 內（如部署於 GitHub Pages 或 Bloon.io），自動掛載外部 API 橋接器
     const IS_EXTERNAL_HOST = (typeof window.google === "undefined" || !window.google.script || !window.google.script.run);
     if (IS_EXTERNAL_HOST) {
       window.google = {
@@ -620,9 +697,6 @@
       };
     }
 
-    /**
-     * 取得本機端當前日期字串（供 0.01 秒預先填入日期欄位）
-     */
     function getLocalTodayStrings() {
       const now  = new Date();
       const yyyy = now.getFullYear();
@@ -635,8 +709,7 @@
     }
 
     /**
-     * ✅ 安全關閉彈出視窗並留在原聊天室/原群組
-     * 嚴格禁止呼叫 line://nv/chat，徹底解決「跳出群組對話框停在好友清單」的問題！
+     * 安全關閉彈出視窗並留在原聊天室/原群組（嚴格禁止呼叫 line://nv/chat，防止跳出到好友清單）
      */
     function safeCloseLiffWindow() {
       try {
@@ -653,6 +726,7 @@
       gid: "",
       tab: "form",
       editRow: "",
+      noRedirect: false,
       liffId: DEFAULT_LIFF_ID,
       botBasicId: "",
       periodMode: "全天",
@@ -660,8 +734,12 @@
       leaveTypesFull: [],
       scheduleOverview: null,
       dashboard: null,
+      standbyStatus: {
+        activeKey:    "GITHUB",
+        autoRedirect: true,
+        nodesList:    DEFAULT_STANDBY_NODES
+      },
       adminData: null,
-      // 後端 11 道完整驗證與重複請假攔截閘門狀態
       verifiedText: "",
       verifyStatus: "idle", // 'idle' | 'verifying' | 'valid' | 'invalid'
       verifyErrorMsg: "",
@@ -686,9 +764,6 @@
       box.classList.remove('hidden');
     }
 
-    /**
-     * 解析網址參數（同時支援一般 Query 參數與 LINE LIFF 轉址封裝之 liff.state 參數）
-     */
     function parseClientUrlParams() {
       try {
         const search = window.location.search || '';
@@ -697,6 +772,7 @@
         if (up.get('uid')) STATE.uid = up.get('uid');
         if (up.get('gid')) STATE.gid = up.get('gid');
         if (up.get('editRow')) STATE.editRow = up.get('editRow');
+        if (up.get('noRedirect') === '1') STATE.noRedirect = true;
 
         const liffState = up.get('liff.state');
         if (liffState) {
@@ -707,16 +783,11 @@
           if (sp.get('uid')) STATE.uid = sp.get('uid');
           if (sp.get('gid')) STATE.gid = sp.get('gid');
           if (sp.get('editRow')) STATE.editRow = sp.get('editRow');
+          if (sp.get('noRedirect') === '1') STATE.noRedirect = true;
         }
       } catch (_) {}
     }
 
-    /**
-     * ✅ 極速初始化流程：
-     * 1. 0.01 秒立即填入本機今日日期與預設姓名，並過濾「系統管理員」佔位字串
-     * 2. 載入 localStorage 本機快取瞬間渲染（Stale-While-Revalidate）
-     * 3. 優先初始化 LIFF SDK 取得群組 groupId 與個人 userId，再與 GAS 後端同步最新資料
-     */
     window.onload = function() {
       parseClientUrlParams();
       let savedName = localStorage.getItem('leave_sys_user_name') || '';
@@ -736,8 +807,9 @@
         document.getElementById('inpQueryName').value = savedName;
       }
       initTextTemplate(savedName, todayLocal.slash);
+      renderStandbyNodesCard(STATE.standbyStatus);
 
-      // 2. 讀取本機快取秒速渲染（若有快取）
+      // 2. 讀取本機快取秒速渲染
       try {
         const cachedRaw = localStorage.getItem(CACHE_KEY_INIT);
         if (cachedRaw) {
@@ -820,6 +892,27 @@
       if (Array.isArray(res.leaveTypesFull)) STATE.leaveTypesFull = res.leaveTypesFull;
       if (res.scheduleOverview) STATE.scheduleOverview = res.scheduleOverview;
 
+      if (res.standbyStatus) {
+        STATE.standbyStatus = res.standbyStatus;
+        renderStandbyNodesCard(res.standbyStatus);
+
+        // ✅ 智慧自動導流：若使用者點到舊按鈕進入非預設節點，且開啟了自動導流保護（非管理員後台操作時），自動無縫切換至目標備援節點
+        if (!isFromLocalCache &&
+            res.standbyStatus.autoRedirect &&
+            !STATE.noRedirect &&
+            STATE.tab !== 'admin') {
+          const currentBrowserKey = detectCurrentBrowserNodeKey();
+          const targetActiveKey   = res.standbyStatus.activeKey;
+          if (targetActiveKey && currentBrowserKey !== targetActiveKey) {
+            const targetNode = (res.standbyStatus.nodesList || DEFAULT_STANDBY_NODES).find(n => n.key === targetActiveKey);
+            if (targetNode && targetNode.url) {
+              jumpToStandbyNodeUrl(targetNode.url, true);
+              return;
+            }
+          }
+        }
+      }
+
       if (Array.isArray(res.leaveTypes) && res.leaveTypes.length > 0) {
         renderLeaveTypeOptions(res.leaveTypes);
       }
@@ -834,7 +927,6 @@
         document.getElementById('inpEndDate').value   = res.todayStr;
       }
 
-      // 過濾預設佔位名稱「系統管理員」，避免將「請假人」誤填為系統管理員
       const serverName   = (res.currentName && res.currentName !== '系統管理員') ? res.currentName : '';
       const resolvedName = serverName || savedName || '';
       if (resolvedName) {
@@ -883,9 +975,128 @@
       }
     }
 
+    // ==================== 🌐 3 大熱備援節點渲染與一鍵切換控制 ====================
+    function renderStandbyNodesCard(standbyObj) {
+      const box = document.getElementById('admStandbyNodesListBox');
+      if (!box) return;
+
+      const st                = standbyObj || STATE.standbyStatus || {};
+      const activeKey         = st.activeKey || 'GITHUB';
+      const autoRedirect      = st.autoRedirect !== undefined ? !!st.autoRedirect : true;
+      const nodesList         = (Array.isArray(st.nodesList) && st.nodesList.length > 0) ? st.nodesList : DEFAULT_STANDBY_NODES;
+      const currentBrowserKey = detectCurrentBrowserNodeKey();
+
+      const chk = document.getElementById('chkStandbyAutoRedirect');
+      if (chk) chk.checked = autoRedirect;
+
+      const browserNodeObj = nodesList.find(n => n.key === currentBrowserKey) || nodesList[0];
+      const activeNodeObj  = nodesList.find(n => n.key === activeKey)         || nodesList[0];
+
+      const lblBrowser = document.getElementById('lblCurrentBrowserNode');
+      const lblActive  = document.getElementById('lblActiveDefaultNode');
+      if (lblBrowser) lblBrowser.innerHTML = `<span class="badge on">${browserNodeObj.badge}</span> (${window.location.hostname || '本機'})`;
+      if (lblActive)  lblActive.innerHTML  = `<span class="badge admin-role">${activeNodeObj.badge}</span>`;
+
+      box.innerHTML = nodesList.map(n => {
+        const isSystemDefault = (n.key === activeKey);
+        const isCurrentWindow = (n.key === currentBrowserKey);
+
+        return `
+          <div class="standby-card ${isSystemDefault ? 'active-node' : ''} ${isCurrentWindow ? 'current-browser-node' : ''}">
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px;">
+              <div style="font-weight:800; font-size:14.5px; color:#0F172A;">
+                ${n.badge}｜${n.name}
+              </div>
+              <div style="display:flex; gap:4px;">
+                ${isSystemDefault ? '<span class="badge on">📡 系統預設派發中</span>' : '<span class="badge">⚡ 備援待命</span>'}
+                ${isCurrentWindow ? '<span class="badge admin-role">📍 目前所在視窗</span>' : ''}
+              </div>
+            </div>
+            <div class="standby-url">${n.url}</div>
+            <div style="font-size:12px; color:var(--muted); line-height:1.4;">${n.desc || ''}</div>
+            <div class="standby-actions">
+              <button class="btn sm ${isSystemDefault ? 'secondary' : 'teal'}"
+                onclick="switchSystemStandbyNode('${n.key}')"
+                ${isSystemDefault ? 'disabled' : ''}>
+                ${isSystemDefault ? '✅ 目前已設為預設' : '⚡ 一鍵設為系統預設'}
+              </button>
+              <button class="btn sm blue" onclick="jumpToStandbyNodeUrl('${n.url}', false)">
+                🔗 立即跳轉此節點開啟
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
     /**
-     * 初始化文字快填範本，且當取得真實員工姓名時自動替換預設的「王小明」或「系統管理員」並立即觸發後端驗證
+     * 一鍵將指定節點設為全系統預設派發節點（並自動刷新 LINE 聊天室底部浮動按鈕）
      */
+    function switchSystemStandbyNode(nodeKey) {
+      const autoRedirect = document.getElementById('chkStandbyAutoRedirect')
+        ? document.getElementById('chkStandbyAutoRedirect').checked
+        : true;
+
+      showStatusBanner('standbyStatusMsgBox', 'info', `⏳ 正在將系統預設前端切換為【${nodeKey}】並更新 LINE 浮動按鈕...`);
+
+      google.script.run
+        .withSuccessHandler(res => {
+          if (!res || !res.success) {
+            showStatusBanner('standbyStatusMsgBox', 'err', (res && res.message) || '❌ 切換失敗');
+            return;
+          }
+          try { localStorage.removeItem(CACHE_KEY_INIT); } catch (_) {}
+          if (res.standbyStatus) {
+            STATE.standbyStatus = res.standbyStatus;
+            renderStandbyNodesCard(res.standbyStatus);
+          }
+          if (res.adminData) {
+            STATE.adminData = res.adminData;
+            renderAdminConsole(res.adminData);
+          }
+          showStatusBanner('standbyStatusMsgBox', 'ok', res.message);
+        })
+        .withFailureHandler(err => {
+          showStatusBanner('standbyStatusMsgBox', 'err', '❌ 呼叫後端失敗：' + err.message);
+        })
+        .adminSwitchFrontendNode(STATE.uid, {
+          nodeKey,
+          autoRedirect,
+          groupId: STATE.gid
+        });
+    }
+
+    function onToggleStandbyAutoRedirect(checked) {
+      const activeKey = (STATE.standbyStatus && STATE.standbyStatus.activeKey) || 'GITHUB';
+      switchSystemStandbyNode(activeKey);
+    }
+
+    /**
+     * 立即將當前畫面跳轉至指定的熱備援節點網址（完整保留 uid, gid, tab, editRow）
+     */
+    function jumpToStandbyNodeUrl(baseUrl, isAutoRedirect) {
+      if (!baseUrl) return;
+      const sep    = baseUrl.includes('?') ? '&' : '?';
+      const params = [
+        `uid=${encodeURIComponent(STATE.uid || '')}`,
+        `gid=${encodeURIComponent(STATE.gid || '')}`,
+        `tab=${encodeURIComponent(STATE.tab || 'form')}`
+      ];
+      if (STATE.editRow) {
+        params.push(`editRow=${encodeURIComponent(STATE.editRow)}`);
+      }
+      if (!isAutoRedirect) {
+        params.push('noRedirect=1');
+      }
+      const targetUrl = `${baseUrl}${sep}${params.join('&')}`;
+      try {
+        window.top.location.replace(targetUrl);
+      } catch (_) {
+        window.location.href = targetUrl;
+      }
+    }
+
+    // ==================== 文字範本快填與 11 道驗證控制 ====================
     function initTextTemplate(name, dateSlashStr) {
       const txt = document.getElementById('txtRawLeave');
       if (!txt) return;
@@ -915,9 +1126,6 @@
       }
     }
 
-    /**
-     * 鎖定貼回按鈕（將 href 設為 "javascript:void(0)"），防止未通過後端驗證前誤觸送出
-     */
     function lockPasteButtonForVerification(labelMsg) {
       const btn = document.getElementById('btnPasteToLine');
       if (!btn) return;
@@ -927,11 +1135,6 @@
       if (labelMsg) btn.innerText = labelMsg;
     }
 
-    /**
-     * ✅ 修復缺失 1：當前端與後端 11 道驗證（含無重複請假）100% 通過時解鎖綠色主按鈕：
-     * - 若在「LINE 群組 (STATE.gid)」：設定為點 1 下直接送出假單至原群組並留在原群組（絕不使用 line://nv/chat 防止跳回好友清單！）
-     * - 若在「1對1 私訊 (!STATE.gid)」手機版：掛載原生 line://oaMessage/@id/?text（點 1 下直接將 7 行假單文字塞入 1對1 聊天輸入框！）
-     */
     function unlockPasteButtonWithVerifiedText(rawText) {
       const btn = document.getElementById('btnPasteToLine');
       if (!btn) return;
@@ -944,7 +1147,6 @@
       } else if (isMobileClient() && STATE.botBasicId && rawText) {
         btn.innerText = '📲 驗證通過！點此將文字貼回 LINE 輸入框';
         const rawBasicId   = STATE.botBasicId.trim();
-        // 關鍵：@ 絕對不能被 encodeURIComponent 轉成 %40
         const cleanBasicId = rawBasicId.startsWith('@') ? rawBasicId : ('@' + rawBasicId);
         btn.href   = 'line://oaMessage/' + cleanBasicId + '/?' + encodeURIComponent(rawText);
         btn.target = '_top';
@@ -955,11 +1157,6 @@
       }
     }
 
-    /**
-     * 當使用者在多行文字框修改任何文字時：
-     * 1. 立即清除舊的驗證通過狀態並鎖定按鈕
-     * 2. 先做前端 11 道同步檢查，通過後於停筆 350ms 自動呼叫後端檢查重複請假與特休額度
-     */
     function onRawTextInput() {
       const txt     = document.getElementById('txtRawLeave');
       const rawText = txt ? txt.value.trim() : '';
@@ -986,9 +1183,6 @@
       }, 350);
     }
 
-    /**
-     * 核心後端驗證函式：呼叫後端 validateLeaveTextFromWeb (內部執行 4 大關卡驗證，且不發送任何洗版按鈕)
-     */
     function runBackendTextValidation(rawText, autoJumpOnSuccess) {
       const clientCheck = validateLeaveTextClientSide(rawText);
       if (!clientCheck.valid) {
@@ -1054,17 +1248,10 @@
         });
     }
 
-    /**
-     * ✅ 修復缺失 1 & 4：執行驗證通過後的送出或貼回動作
-     * 1. 若在「1對1 私訊 (!STATE.gid)」手機版且有 botBasicId：直接透過 line://oaMessage 將文字塞入 1對1 輸入框
-     * 2. 若在「LINE 群組 (STATE.gid)」且支援 liff.sendMessages：直接以本人 LINE 帳號將 7 行假單文字發送至原群組，鎖定防連點並呼叫 safeCloseLiffWindow() 留在原群組
-     * 3. 若 liff.sendMessages 未授權或失敗：0.1 秒無縫轉交 submitTextForm() 由後端直接寫入假單並推播至原群組，保證 100% 提送成功且留在原群組！
-     */
     function executeVerifiedPasteAction(rawText) {
       copyToClipboardSafe(rawText);
       const btn = document.getElementById('btnPasteToLine');
 
-      // 分流 A：1 對 1 私訊手機版 —— 優先透過 line://oaMessage 直接把文字塞進 1對1 聊天輸入框
       if (isMobileClient() && !STATE.gid && STATE.botBasicId) {
         unlockPasteButtonWithVerifiedText(rawText);
         showStatusBanner(
@@ -1078,7 +1265,6 @@
         return;
       }
 
-      // 分流 B：LINE 群組（或無 botBasicId 時）在 LIFF 環境內 —— 嘗試以本人 LINE 帳號直接發送文字至原群組
       if (typeof liff !== 'undefined' && liff.isInClient()) {
         if (isSubmitting) return;
         isSubmitting = true;
@@ -1097,20 +1283,15 @@
             setTimeout(() => { safeCloseLiffWindow(); }, 300);
           })
           .catch(() => {
-            // 若 LIFF 未開啟 chat_message.write 權限，無縫自動轉交後端直接建檔並推播至原群組，保證 100% 提送成功！
             isSubmitting = false;
             submitTextForm();
           });
         return;
       }
 
-      // 分流 C：外部瀏覽器或電腦版 —— 直接呼叫後端建檔並推播至原聊天室
       submitTextForm();
     }
 
-    /**
-     * ✅ 副按鈕 A：僅複製驗證通過的文字並關閉抽屜視窗（留在原群組讓使用者手動貼入輸入框）
-     */
     function copyTextAndCloseDrawer() {
       const rawText = document.getElementById('txtRawLeave').value.trim();
       const syncCheck = validateLeaveTextClientSide(rawText);
@@ -1131,15 +1312,9 @@
       setTimeout(() => { safeCloseLiffWindow(); }, 350);
     }
 
-    /**
-     * ✅ 修復缺失 1：點擊綠色主按鈕處理器
-     * - 當在 1對1 私訊 (!STATE.gid) 且已驗證通過時，直接 return true 放行原生 <a target="_top" href="line://oaMessage/..."> 將文字貼入輸入框！
-     * - 當在 LINE 群組 (STATE.gid) 且已驗證通過時，執行 executeVerifiedPasteAction 直接送出假單至原群組並留在原群組！
-     */
     function handlePasteToLineClick(event) {
       const rawText = document.getElementById('txtRawLeave').value.trim();
 
-      // 1. 先執行前端 11 道同步驗證
       const syncCheck = validateLeaveTextClientSide(rawText);
       if (!syncCheck.valid) {
         event.preventDefault();
@@ -1151,7 +1326,6 @@
         return false;
       }
 
-      // 2. 若後端已判定為錯誤或重複請假 -> 強制攔截，絕不放行！
       if (STATE.verifyStatus === 'invalid' && STATE.verifyErrorMsg) {
         event.preventDefault();
         lockPasteButtonForVerification('⛔ 假單驗證未通過（請先修正上方錯誤）');
@@ -1159,36 +1333,26 @@
         return false;
       }
 
-      // 3. 若前端與後端 Google Sheet 皆已 100% 驗證通過
       if (STATE.verifyStatus === 'valid' && STATE.verifiedText === rawText) {
         copyToClipboardSafe(rawText);
 
-        // 若在「1對1 私訊 (!STATE.gid)」手機版且有 botBasicId：直接放行原生 <a target="_top" href="line://oaMessage/..."> 0 秒塞入輸入框！
         if (isMobileClient() && !STATE.gid && STATE.botBasicId) {
           unlockPasteButtonWithVerifiedText(rawText);
           showStatusBanner('textFormResultBox', 'ok', `✅ 驗證通過（${STATE.verifySummary}）！正在將文字自動貼回您的 LINE 聊天輸入框...`);
           return true;
         }
 
-        // 若在「LINE 群組 (STATE.gid)」或電腦版：攔截連結，直接送出假單至原群組並留在原群組（絕不跳去好友清單或 1對1 私訊！）
         event.preventDefault();
         executeVerifiedPasteAction(rawText);
         return false;
       }
 
-      // 4. 若後端尚在核對中 -> 攔截本次點擊，等待後端確認無重複請假後自動執行（不需點第 2 次）
       event.preventDefault();
       if (rawTextDebounceTimer) clearTimeout(rawTextDebounceTimer);
       runBackendTextValidation(rawText, true);
       return false;
     }
 
-    /**
-     * 前端同步 11 道格式與邏輯驗證（完整無刪減版）
-     * 包含：1.非空檢查 2.七大必填欄位檢查 3.欄位內容非空檢查 4.西元/民國日期解析 5.起迄日期邏輯
-     *       6.每週固定休假日檢查 7.特定國定假日與補班日檢查 8.動態星期工時與午休扣除計算
-     *       9.動態假別與同義詞別名檢查（含特休假強制收斂為特休） 10.個人特休餘額檢查
-     */
     function validateLeaveTextClientSide(rawText) {
       if (!rawText || !rawText.trim()) {
         return { valid: false, errorMessage: '⚠️ 請假單內容為空，請輸入請假單內容' };
@@ -1225,7 +1389,6 @@
         return { valid: false, errorMessage: `⚠️ 請假單填寫不完整（以下欄位未填內容）：\n• ${empty.join('\n• ')}` };
       }
 
-      // 驗證日期格式與邏輯（支援西元、民國、跨日區間）
       const dateRaw = parsed['請假日期'].replace(/[（(][一二三四五六日][)）]/g, '').trim();
       const parts   = dateRaw.split(/[～~\-–—]/).map(s => s.trim()).filter(Boolean);
       const parseOneDate = (s, refY, refM) => {
@@ -1253,7 +1416,6 @@
         return { valid: false, errorMessage: '⚠️ 請假日期區間錯誤：結束日期不能早於開始日期' };
       }
 
-      // 驗證工作日（結合每週班表與特定國定假日/補班日設定）
       let workDayCount = 0;
       const spDates = (STATE.scheduleOverview && STATE.scheduleOverview.specialDates) || [];
       const spMap   = {};
@@ -1282,7 +1444,6 @@
         return { valid: false, errorMessage: `⚠️ 請假日期「${parsed['請假日期']}」為休假日（如週日或店休假日），無有效工作日！` };
       }
 
-      // 讀取起始日對應之動態班表工時與午休設定
       const startDow = sDate.getDay();
       const dayCfg   = (STATE.scheduleOverview && Array.isArray(STATE.scheduleOverview.days) && STATE.scheduleOverview.days[startDow])
         ? STATE.scheduleOverview.days[startDow]
@@ -1305,7 +1466,6 @@
           if (rawDiff <= 0 || rawDiff > 600) {
             return { valid: false, errorMessage: `⚠️ 請假時間區間無效：「${parsed['請假時數']}」` };
           }
-          // 動態讀取當日午休時間並自動扣除重疊分鐘數
           const parseMin = (hhmm, defMin) => {
             if (!hhmm) return defMin;
             const p = String(hhmm).split(':');
@@ -1327,7 +1487,6 @@
             const valNum = parseFloat(nm[1]);
             const fullH  = Number(dayCfg.fullDayHours || 8);
             if (nm[3] === '天') {
-              // 若填寫 > 1天（如跨3日填「3天」）視為總請假天數，避免平方倍增
               hoursPerDay = (valNum > 1 && workDayCount > 1) ? ((valNum * fullH) / workDayCount) : (valNum * fullH);
             } else {
               hoursPerDay = valNum;
@@ -1338,7 +1497,6 @@
         }
       }
 
-      // 驗證假別是否存在於後端資料庫（含將「特休假」強制收斂為「特休」）
       const tRaw = parsed['假別'].trim();
       const validTypes = STATE.leaveTypes && STATE.leaveTypes.length > 0
         ? STATE.leaveTypes
@@ -1363,7 +1521,6 @@
         return { valid: false, errorMessage: `⚠️ 假別不存在：「${tRaw}」\n目前可用假別：${validTypes.join('、')}` };
       }
 
-      // 驗證前端已載入之個人特休額度
       if (matchedType === '特休' && STATE.dashboard && STATE.dashboard.hasQuota && STATE.dashboard.name === parsed['請假人']) {
         const reqTotal = Math.round(hoursPerDay * workDayCount * 10) / 10;
         if (reqTotal > STATE.dashboard.remainingHours) {
@@ -1417,6 +1574,7 @@
         const admBtn = document.getElementById('tabBtn_admin');
         admBtn.classList.remove('hidden');
         try { admBtn.scrollIntoView({ behavior: 'smooth', inline: 'center' }); } catch (_) {}
+        renderStandbyNodesCard(STATE.standbyStatus);
         if (!STATE.adminData) {
           reloadAdminDatabase();
         }
@@ -1438,6 +1596,9 @@
           if (banner) banner.classList.add('hidden');
           if (adm && adm.success) {
             STATE.adminData = adm;
+            if (adm.standbyStatus) {
+              STATE.standbyStatus = adm.standbyStatus;
+            }
             renderAdminConsole(adm);
           }
         })
@@ -1827,7 +1988,6 @@
               `🎉 請假單已成功送出至原聊天室！\n🔖 記錄編號：#${res.rowNumber}\n📋 摘要：${res.summaryText}\n\n（正在自動關閉視窗返回原群組...）`
             );
 
-            // ✅ 只呼叫 safeCloseLiffWindow()，絕不呼叫 line://nv/chat，100% 停留在原群組聊天室！
             setTimeout(() => { safeCloseLiffWindow(); }, 600);
           })
           .withFailureHandler(err => {
@@ -1859,7 +2019,7 @@
 
     // ==================== 管理員後台資料庫管理系統 (Admin Console) ====================
     function switchAdminPanel(panel) {
-      ['admins', 'quota', 'recs', 'sched', 'types'].forEach(p => {
+      ['standby', 'admins', 'quota', 'recs', 'sched', 'types'].forEach(p => {
         const btn = document.getElementById('admBtn_' + p);
         const sec = document.getElementById('admPanel_' + p);
         if (btn) btn.classList.toggle('active', p === panel);
@@ -1869,6 +2029,11 @@
 
     function renderAdminConsole(adm) {
       if (!adm || !adm.success) return;
+
+      if (adm.standbyStatus) {
+        STATE.standbyStatus = adm.standbyStatus;
+      }
+      renderStandbyNodesCard(STATE.standbyStatus);
 
       const admList = adm.adminUsersList || [];
       const qList   = adm.quotaList || [];
