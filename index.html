@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>全職請假與後台管理系統</title>
-  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js" defer></script>
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
   <style>
     :root {
       --primary: #06C755;
@@ -90,7 +90,7 @@
       background: var(--primary); border: none; border-radius: 11px; cursor: pointer;
       transition: 0.2s; text-align: center; display: block; text-decoration: none;
     }
-    .btn.blue { background: var(--blue); }
+    .btn.blue { background: var(--blue); margin-top: 8px; }
     .btn.teal { background: var(--teal); }
     .btn.secondary { background: #64748B; margin-top: 8px; }
     .btn.sm { width: auto; display: inline-block; padding: 6px 11px; font-size: 12.5px; border-radius: 7px; margin-top: 0; }
@@ -240,7 +240,7 @@
           <label>查詢員工姓名</label>
           <input type="text" id="inpQueryName" list="employeeList" placeholder="請選擇您的姓名" onchange="loadPersonalDashboard(this.value)">
         </div>
-        <button class="btn blue" id="btnSendDm" onclick="sendDmReport()" style="margin-bottom:14px;">📩 私訊傳送特休與紀錄至個人LINE</button>
+        <button class="btn blue" id="btnSendDm" onclick="sendDmReport()" style="margin-bottom:14px; margin-top:0;">📩 私訊傳送特休與紀錄至個人LINE</button>
         <div id="dashboardContent"></div>
       </div>
     </div>
@@ -250,7 +250,7 @@
       <div class="card">
         <h3 class="section-title">✍️ 文字版範本修改（100% 事前驗證防呆）</h3>
         <div class="banner">
-          💡 請在下方修改您的請假內容。系統會先<strong>自動執行前端與後端 11 道完整驗證（包含攔截重複請假與檢查特休額度）</strong>，確認無誤後點擊下方綠色按鈕即可返回原聊天室貼上（或直接以本人帳號送出）！
+          💡 請在下方修改您的請假內容。系統會先<strong>自動執行前端與後端 11 道完整驗證（包含攔截重複請假與檢查特休額度）</strong>，驗證通過後點擊下方綠色按鈕即可<strong>直接送出假單並自動返回原聊天室</strong>！
         </div>
 
         <div class="form-group">
@@ -261,14 +261,19 @@
         <!-- 頁面內嵌即時狀態提示框（直接顯示重複請假或格式錯誤，攔截問題假單） -->
         <div id="textFormResultBox" class="status-box hidden"></div>
 
-        <!-- ✅ 嚴格驗證閘門：未通過後端完整驗證前 href 強制為 "#"；通過後群組返回原群組(line://nv/chat)、1對1直接貼入輸入框 -->
-        <a id="btnPasteToLine" href="#" target="_top" class="btn locked" onclick="return handlePasteToLineClick(event)">
+        <!-- ✅ 按鈕 1（主按鈕）：嚴格驗證閘門，通過後點 1 下直接送出假單（1對1 支援直接貼回輸入框），絕不使用 line://nv/chat 防止跳回好友清單 -->
+        <a id="btnPasteToLine" href="javascript:void(0)" class="btn locked" onclick="return handlePasteToLineClick(event)">
           🔍 正在驗證假單格式與是否重複請假...
         </a>
 
-        <!-- 副按鈕：直接於原聊天室/原群組留言並送出假單 -->
+        <!-- ✅ 按鈕 2（副按鈕 A）：僅複製驗證通過之文字並直接關閉抽屜視窗（留在原群組讓使用者手動貼入輸入框） -->
+        <button class="btn blue" id="btnCopyAndClose" onclick="copyTextAndCloseDrawer()">
+          📋 僅複製驗證通過文字並返回原聊天室手動貼上
+        </button>
+
+        <!-- ✅ 按鈕 3（副按鈕 B）：完整保留直接由後端機器人於原群組留言並建檔送出假單 -->
         <button class="btn secondary" id="btnSubmitText" onclick="submitTextForm()">
-          🚀 直接留言並送出假單
+          🚀 直接由系統留言並送出假單
         </button>
       </div>
     </div>
@@ -311,7 +316,10 @@
           <p><strong>1️⃣ 日曆選單快速請假（推薦）：</strong><br>
           於「📝 填寫請假」分頁選擇日期、時段與假別，系統會自動扣除午休並試算總時數，核准欄位預設為「已報請主管核准」，按送出即完成請假。</p>
           <p><strong>2️⃣ 文字範本快填：</strong><br>
-          點擊下方「✍️ 文字範本快填」浮動按鈕，修改文字後系統會先與後端資料庫核對格式與是否重複請假，確認無誤後點擊綠色按鈕即可複製並返回原聊天室貼上（或點「🚀 直接留言並送出假單」一鍵完成）。</p>
+          點擊下方「✍️ 文字範本快填」浮動按鈕，修改文字後系統會先與後端資料庫核對格式與是否重複請假，確認無誤後：<br>
+          • 點擊<strong>綠色按鈕</strong>：直接送出假單並返回原群組（1對1 支援自動貼入輸入框）。<br>
+          • 點擊<strong>藍色按鈕</strong>：僅複製驗證通過的文字並收起視窗，讓您在原群組輸入框手動貼上發送。<br>
+          • 點擊<strong>灰色按鈕</strong>：由系統直接在原聊天室發出留言與假單卡片。</p>
           <p><strong>3️⃣ 修改或取消已送出的假單：</strong><br>
           • <strong>修改假單：</strong>直接點擊聊天室假單卡片上的 <strong>「✏️ 修改假單」</strong> 按鈕，即可載入原假單內容進行修改。<br>
           • <strong>取消假單：</strong>點擊假單卡片上的 <strong>「🗑️ 取消假單」</strong> 按鈕（或在 24 小時內於 LINE 收回訊息），系統會自動取消並返還特休。</p>
@@ -513,7 +521,7 @@
             <input type="text" id="admNewTypeAliases" placeholder="例如：家照假,照顧假">
           </div>
         </div>
-        <button class="btn blue" onclick="saveAdminLeaveType()" style="margin-bottom:14px;">➕ 新增 / 更新假別</button>
+        <button class="btn blue" onclick="saveAdminLeaveType()" style="margin-bottom:14px; margin-top:0;">➕ 新增 / 更新假別</button>
 
         <h4 style="margin:0 0 8px 0; font-size:14px;">📌 假別資料庫清單（點擊可切換啟用/停用）</h4>
         <div id="admLeaveTypeListBox" style="margin-bottom:18px;"></div>
@@ -527,25 +535,43 @@
 
   <script>
     // ============================================================
-    // 🌐 GitHub Pages 外部極速版核心連線設定（已預填您 1_Config_Core.gs 的設定）
+    // 🌐 雙棲環境核心連線設定（同時相容 GitHub Pages 主系統與 GAS LeaveForm.html 備援）
+    // 版本: v18.0.0 (零刪減完整嚴謹版)
     // ============================================================
     const GAS_WEB_APP_URL  = "https://script.google.com/macros/s/AKfycbyuW_4_sWHWUq0lc4QOe1amHl7ipGXr0wGNoVQFJl7leq6JYGWVR7CUoPOZkPMqprnX/exec";
     const DEFAULT_LIFF_ID  = "2012028062-vnoiLP9t";
-    const CACHE_KEY_INIT   = "leave_sys_init_cache_v16";
+    const CACHE_KEY_INIT   = "leave_sys_init_cache_v18";
 
     /**
-     * ✅ 跨網域無 CORS 預檢之 google.script.run 相容引擎
-     * 當運行於 GitHub Pages 時，自動將所有 google.script.run 呼叫轉為對 GAS_WEB_APP_URL 的 text/plain POST 請求
+     * ✅ 修復缺失 5：跨網域無 CORS 預檢之 google.script.run 相容引擎（含逾時保護、HTTP 狀態檢查與 JSON 錯誤捕捉）
+     * 當運行於 GitHub Pages 時，自動將所有 google.script.run 呼叫轉為對 GAS_WEB_APP_URL 的 text/plain POST 請求；
+     * 當運行於 GAS 內建 LeaveForm.html 備援環境時，則直接使用原生的 google.script.run！
      */
     function createExternalGasRunner(successCb, failureCb) {
       const callBackend = (methodName, args) => {
+        const controller = typeof AbortController !== "undefined" ? new AbortController() : null;
+        const timeoutId  = controller ? setTimeout(() => controller.abort(), 25000) : null;
+
         fetch(GAS_WEB_APP_URL, {
           method:  "POST",
           headers: { "Content-Type": "text/plain;charset=utf-8" },
-          body:    JSON.stringify({ apiAction: methodName, args: args })
+          body:    JSON.stringify({ apiAction: methodName, args: args }),
+          signal:  controller ? controller.signal : undefined
         })
-          .then(res => res.json())
-          .then(payload => {
+          .then(res => {
+            if (timeoutId) clearTimeout(timeoutId);
+            if (!res.ok) {
+              throw new Error(`後端伺服器回應異常 (HTTP ${res.status})`);
+            }
+            return res.text();
+          })
+          .then(rawText => {
+            let payload = null;
+            try {
+              payload = JSON.parse(rawText);
+            } catch (parseErr) {
+              throw new Error("無法解析後端回應，請確認 GAS 部署權限設為「所有人」且已更新至最新版本");
+            }
             if (payload && payload.ok) {
               if (typeof successCb === "function") successCb(payload.result);
             } else {
@@ -554,7 +580,11 @@
             }
           })
           .catch(err => {
-            if (typeof failureCb === "function") failureCb(err);
+            if (timeoutId) clearTimeout(timeoutId);
+            const friendlyErr = err.name === "AbortError"
+              ? new Error("連線後端逾時（超過 25 秒），請檢查網路連線並重試")
+              : err;
+            if (typeof failureCb === "function") failureCb(friendlyErr);
           });
       };
 
@@ -580,8 +610,9 @@
       return runner;
     }
 
-    // 若不在 GAS iframe 內（如部署於 GitHub Pages），自動掛載相容橋接器
-    if (typeof window.google === "undefined" || !window.google.script || !window.google.script.run) {
+    // 判斷當前是否運行於外部 GitHub Pages 環境；若是則自動掛載外部 API 橋接器
+    const IS_EXTERNAL_HOST = (typeof window.google === "undefined" || !window.google.script || !window.google.script.run);
+    if (IS_EXTERNAL_HOST) {
       window.google = {
         script: {
           run: createExternalGasRunner()
@@ -589,6 +620,9 @@
       };
     }
 
+    /**
+     * 取得本機端當前日期字串（供 0.01 秒預先填入日期欄位）
+     */
     function getLocalTodayStrings() {
       const now  = new Date();
       const yyyy = now.getFullYear();
@@ -598,6 +632,20 @@
         iso:   `${yyyy}-${mm}-${dd}`,
         slash: `${yyyy}/${mm}/${dd}`
       };
+    }
+
+    /**
+     * ✅ 安全關閉彈出視窗並留在原聊天室/原群組
+     * 嚴格禁止呼叫 line://nv/chat，徹底解決「跳出群組對話框停在好友清單」的問題！
+     */
+    function safeCloseLiffWindow() {
+      try {
+        if (typeof liff !== 'undefined' && liff.isInClient()) {
+          liff.closeWindow();
+          return;
+        }
+      } catch (_) {}
+      try { window.close(); } catch (_) {}
     }
 
     let STATE = {
@@ -638,6 +686,9 @@
       box.classList.remove('hidden');
     }
 
+    /**
+     * 解析網址參數（同時支援一般 Query 參數與 LINE LIFF 轉址封裝之 liff.state 參數）
+     */
     function parseClientUrlParams() {
       try {
         const search = window.location.search || '';
@@ -649,7 +700,9 @@
 
         const liffState = up.get('liff.state');
         if (liffState) {
-          const sp = new URLSearchParams(liffState.replace(/^[?\/]+/, ''));
+          let decoded = liffState;
+          try { decoded = decodeURIComponent(liffState); } catch (_) {}
+          const sp = new URLSearchParams(decoded.replace(/^[?\/]+/, ''));
           if (sp.get('tab')) STATE.tab = sp.get('tab');
           if (sp.get('uid')) STATE.uid = sp.get('uid');
           if (sp.get('gid')) STATE.gid = sp.get('gid');
@@ -659,14 +712,18 @@
     }
 
     /**
-     * ✅ 極速初始化：
-     * 1. 0.01 秒立即填入本機今日日期與預設姓名，並載入 localStorage 快取（Stale-While-Revalidate）
-     * 2. 背景非同步向 GAS 同步最新假別、特休餘額與修改假單資料
-     * 3. 頂層視窗初始化 LIFF SDK，支援群組與 1對1 原生互動
+     * ✅ 極速初始化流程：
+     * 1. 0.01 秒立即填入本機今日日期與預設姓名，並過濾「系統管理員」佔位字串
+     * 2. 載入 localStorage 本機快取瞬間渲染（Stale-While-Revalidate）
+     * 3. 優先初始化 LIFF SDK 取得群組 groupId 與個人 userId，再與 GAS 後端同步最新資料
      */
     window.onload = function() {
       parseClientUrlParams();
-      const savedName = localStorage.getItem('leave_sys_user_name') || '';
+      let savedName = localStorage.getItem('leave_sys_user_name') || '';
+      if (savedName === '系統管理員') {
+        savedName = '';
+        localStorage.removeItem('leave_sys_user_name');
+      }
       const todayLocal = getLocalTodayStrings();
 
       // 1. 0.01 秒預填日期與姓名，畫面零等待立即可用
@@ -693,44 +750,39 @@
 
       if (STATE.tab) switchTab(STATE.tab);
 
-      // 3. 背景向 GAS 取得最新初始化資料
-      fetchFreshInitData(savedName);
+      // 3. 初始化 LIFF SDK 並向後端同步最新資料
+      if (STATE.liffId && typeof liff !== 'undefined') {
+        let fetched = false;
+        const fallbackTimer = setTimeout(() => {
+          if (!fetched) {
+            fetched = true;
+            fetchFreshInitData(savedName);
+          }
+        }, 650);
 
-      // 4. 初始化 LIFF SDK（在 GitHub Pages 頂層視窗可完整取得 context）
-      if (STATE.liffId) {
-        const initLiffWhenReady = () => {
-          if (typeof liff === 'undefined') return;
-          liff.init({ liffId: STATE.liffId }).then(() => {
-            parseClientUrlParams();
-            if (STATE.tab) switchTab(STATE.tab);
-            if (liff.isLoggedIn()) {
-              const ctx = liff.getContext();
-              if (ctx) {
-                let needRefetch = false;
-                if (ctx.userId && ctx.userId !== STATE.uid) {
-                  STATE.uid = ctx.userId;
-                  needRefetch = true;
-                }
-                const ctxGid = ctx.groupId || ctx.roomId || '';
-                if (ctxGid && ctxGid !== STATE.gid) {
-                  STATE.gid = ctxGid;
-                  if (STATE.verifyStatus === 'valid' && STATE.verifiedText) {
-                    unlockPasteButtonWithVerifiedText(STATE.verifiedText);
-                  }
-                }
-                if (needRefetch) {
-                  fetchFreshInitData(savedName);
-                }
-              }
+        liff.init({ liffId: STATE.liffId }).then(() => {
+          clearTimeout(fallbackTimer);
+          parseClientUrlParams();
+          if (liff.isLoggedIn()) {
+            const ctx = liff.getContext();
+            if (ctx) {
+              if (ctx.userId) STATE.uid = ctx.userId;
+              const ctxGid = ctx.groupId || ctx.roomId || '';
+              if (ctxGid) STATE.gid = ctxGid;
             }
-          }).catch(() => {});
-        };
-
-        if (typeof liff !== 'undefined') {
-          initLiffWhenReady();
-        } else {
-          window.addEventListener('load', initLiffWhenReady);
-        }
+          }
+          if (STATE.tab) switchTab(STATE.tab);
+          fetched = true;
+          fetchFreshInitData(savedName);
+        }).catch(() => {
+          clearTimeout(fallbackTimer);
+          if (!fetched) {
+            fetched = true;
+            fetchFreshInitData(savedName);
+          }
+        });
+      } else {
+        fetchFreshInitData(savedName);
       }
     };
 
@@ -773,7 +825,8 @@
       }
 
       if (Array.isArray(res.employees)) {
-        document.getElementById('employeeList').innerHTML = res.employees.map(n => `<option value="${n}">`).join('');
+        const cleanEmpList = res.employees.filter(n => n && n !== '系統管理員');
+        document.getElementById('employeeList').innerHTML = cleanEmpList.map(n => `<option value="${n}">`).join('');
       }
 
       if (res.todayStr && !STATE.editRow) {
@@ -781,7 +834,9 @@
         document.getElementById('inpEndDate').value   = res.todayStr;
       }
 
-      const resolvedName = res.currentName || savedName || '';
+      // 過濾預設佔位名稱「系統管理員」，避免將「請假人」誤填為系統管理員
+      const serverName   = (res.currentName && res.currentName !== '系統管理員') ? res.currentName : '';
+      const resolvedName = serverName || savedName || '';
       if (resolvedName) {
         document.getElementById('inpName').value      = resolvedName;
         document.getElementById('inpQueryName').value = resolvedName;
@@ -795,11 +850,11 @@
         triggerPreview();
       }
 
-      if (res.personalDashboard) {
+      if (res.personalDashboard && res.personalDashboard.name !== '系統管理員') {
         STATE.dashboard = res.personalDashboard;
         renderDashboard(res.personalDashboard);
         updateQuotaHint();
-      } else if (!isFromLocalCache && !res.currentName && savedName && !STATE._fetchedBySavedName) {
+      } else if (!isFromLocalCache && !serverName && savedName && !STATE._fetchedBySavedName) {
         STATE._fetchedBySavedName = true;
         fetchFreshInitData(savedName);
       }
@@ -829,15 +884,17 @@
     }
 
     /**
-     * 初始化文字快填範本，且當取得真實員工姓名時自動替換預設的「王小明」並立即觸發後端驗證
+     * 初始化文字快填範本，且當取得真實員工姓名時自動替換預設的「王小明」或「系統管理員」並立即觸發後端驗證
      */
     function initTextTemplate(name, dateSlashStr) {
       const txt = document.getElementById('txtRawLeave');
       if (!txt) return;
 
+      const cleanInitName = (name && name !== '系統管理員') ? name : '王小明';
+
       if (!txt.value) {
         txt.value = [
-          `請假人：${name || '王小明'}`,
+          `請假人：${cleanInitName}`,
           `請假日期：${dateSlashStr}`,
           `請假時數：全天`,
           `假別：特休`,
@@ -849,8 +906,8 @@
         if (STATE.tab === 'textform') {
           runBackendTextValidation(txt.value.trim(), false);
         }
-      } else if (name && txt.value.includes('請假人：王小明')) {
-        txt.value = txt.value.replace('請假人：王小明', `請假人：${name}`);
+      } else if (cleanInitName !== '王小明' && (txt.value.includes('請假人：王小明') || txt.value.includes('請假人：系統管理員'))) {
+        txt.value = txt.value.replace(/^請假人\s*[：:].*$/m, `請假人：${cleanInitName}`);
         lockPasteButtonForVerification('🔍 正在驗證假單格式與是否重複請假...');
         if (STATE.tab === 'textform') {
           runBackendTextValidation(txt.value.trim(), false);
@@ -859,48 +916,48 @@
     }
 
     /**
-     * 鎖定貼回按鈕（將 href 設為 "#"），防止未通過後端驗證前誤觸跳轉至 LINE
+     * 鎖定貼回按鈕（將 href 設為 "javascript:void(0)"），防止未通過後端驗證前誤觸送出
      */
     function lockPasteButtonForVerification(labelMsg) {
       const btn = document.getElementById('btnPasteToLine');
       if (!btn) return;
-      btn.href = '#';
+      btn.href = 'javascript:void(0)';
+      btn.removeAttribute('target');
       btn.classList.add('locked');
       if (labelMsg) btn.innerText = labelMsg;
     }
 
     /**
-     * ✅ 當前端與後端 11 道驗證（含無重複請假）100% 通過時才解鎖按鈕：
-     * - 若在「LINE 群組 (STATE.gid)」：掛載原生 line://nv/chat（點擊後自動複製文字並直接跳回「原群組」輸入框，絕不跳去 1對1 私訊！）
-     * - 若在「1對1 私訊 (!STATE.gid)」：掛載原生 line://oaMessage/@id/?text（點擊後直接自動填入 1對1 輸入框）
+     * ✅ 修復缺失 1：當前端與後端 11 道驗證（含無重複請假）100% 通過時解鎖綠色主按鈕：
+     * - 若在「LINE 群組 (STATE.gid)」：設定為點 1 下直接送出假單至原群組並留在原群組（絕不使用 line://nv/chat 防止跳回好友清單！）
+     * - 若在「1對1 私訊 (!STATE.gid)」手機版：掛載原生 line://oaMessage/@id/?text（點 1 下直接將 7 行假單文字塞入 1對1 聊天輸入框！）
      */
     function unlockPasteButtonWithVerifiedText(rawText) {
       const btn = document.getElementById('btnPasteToLine');
       if (!btn) return;
       btn.classList.remove('locked');
 
-      if (isMobileClient()) {
-        if (STATE.gid) {
-          btn.innerText = '📲 驗證通過！點此複製並自動返回原群組貼上';
-          btn.href = 'line://nv/chat';
-        } else if (STATE.botBasicId && rawText) {
-          btn.innerText = '📲 驗證通過！點此將文字貼回 LINE 輸入框';
-          const rawBasicId   = STATE.botBasicId.trim();
-          const cleanBasicId = rawBasicId.startsWith('@') ? rawBasicId : ('@' + rawBasicId);
-          btn.href = 'line://oaMessage/' + cleanBasicId + '/?' + encodeURIComponent(rawText);
-        } else {
-          btn.innerText = '📲 驗證通過！點此複製請假單文字';
-          btn.href = '#';
-        }
+      if (STATE.gid) {
+        btn.innerText = '✅ 驗證通過！點此直接送出假單至原群組';
+        btn.href = 'javascript:void(0)';
+        btn.removeAttribute('target');
+      } else if (isMobileClient() && STATE.botBasicId && rawText) {
+        btn.innerText = '📲 驗證通過！點此將文字貼回 LINE 輸入框';
+        const rawBasicId   = STATE.botBasicId.trim();
+        // 關鍵：@ 絕對不能被 encodeURIComponent 轉成 %40
+        const cleanBasicId = rawBasicId.startsWith('@') ? rawBasicId : ('@' + rawBasicId);
+        btn.href   = 'line://oaMessage/' + cleanBasicId + '/?' + encodeURIComponent(rawText);
+        btn.target = '_top';
       } else {
-        btn.innerText = '📲 驗證通過！點此複製請假單文字';
-        btn.href = '#';
+        btn.innerText = '✅ 驗證通過！點此直接送出假單';
+        btn.href = 'javascript:void(0)';
+        btn.removeAttribute('target');
       }
     }
 
     /**
      * 當使用者在多行文字框修改任何文字時：
-     * 1. 立即清除舊的驗證通過狀態並鎖定按鈕 href="#"
+     * 1. 立即清除舊的驗證通過狀態並鎖定按鈕
      * 2. 先做前端 11 道同步檢查，通過後於停筆 350ms 自動呼叫後端檢查重複請假與特休額度
      */
     function onRawTextInput() {
@@ -974,7 +1031,7 @@
               'textFormResultBox',
               'ok',
               STATE.gid
-                ? `✅ 資料庫驗證通過！（${STATE.verifySummary}）\n請點擊下方綠色按鈕自動複製並返回原群組貼上（或點灰色按鈕直接送出）。`
+                ? `✅ 資料庫驗證通過！（${STATE.verifySummary}）\n請點擊下方綠色按鈕直接送出假單至原群組（或點藍色按鈕複製後手動貼上）。`
                 : `✅ 資料庫驗證通過！（${STATE.verifySummary}）\n確認無重複請假且格式正確，請點擊下方綠色按鈕直接將文字貼回 LINE 輸入框。`
             );
             return;
@@ -998,51 +1055,86 @@
     }
 
     /**
-     * 當使用者在驗證完成前就點擊按鈕，待後端驗證通過後自動執行的動作
+     * ✅ 修復缺失 1 & 4：執行驗證通過後的送出或貼回動作
+     * 1. 若在「1對1 私訊 (!STATE.gid)」手機版且有 botBasicId：直接透過 line://oaMessage 將文字塞入 1對1 輸入框
+     * 2. 若在「LINE 群組 (STATE.gid)」且支援 liff.sendMessages：直接以本人 LINE 帳號將 7 行假單文字發送至原群組，鎖定防連點並呼叫 safeCloseLiffWindow() 留在原群組
+     * 3. 若 liff.sendMessages 未授權或失敗：0.1 秒無縫轉交 submitTextForm() 由後端直接寫入假單並推播至原群組，保證 100% 提送成功且留在原群組！
      */
     function executeVerifiedPasteAction(rawText) {
       copyToClipboardSafe(rawText);
       const btn = document.getElementById('btnPasteToLine');
 
-      if (isMobileClient()) {
-        if (STATE.gid) {
-          unlockPasteButtonWithVerifiedText(rawText);
-          showStatusBanner(
-            'textFormResultBox',
-            'ok',
-            `✅ 【驗證 100% 通過】${STATE.verifySummary}\n📋 假單文字已自動複製！正在返回原群組（在群組輸入框點一下貼上即可發送）...`
-          );
-          try { if (typeof liff !== 'undefined' && liff.isInClient()) liff.closeWindow(); } catch (_) {}
-          try { window.top.location.href = 'line://nv/chat'; } catch (_) {}
-          return;
+      // 分流 A：1 對 1 私訊手機版 —— 優先透過 line://oaMessage 直接把文字塞進 1對1 聊天輸入框
+      if (isMobileClient() && !STATE.gid && STATE.botBasicId) {
+        unlockPasteButtonWithVerifiedText(rawText);
+        showStatusBanner(
+          'textFormResultBox',
+          'ok',
+          `✅ 【驗證 100% 通過】${STATE.verifySummary}\n正在將文字貼回您的 LINE 聊天輸入框...`
+        );
+        if (btn && btn.href && btn.href.startsWith('line://')) {
+          try { window.top.location.href = btn.href; } catch (_) {}
         }
-
-        if (STATE.botBasicId) {
-          unlockPasteButtonWithVerifiedText(rawText);
-          showStatusBanner(
-            'textFormResultBox',
-            'ok',
-            `✅ 【驗證 100% 通過】${STATE.verifySummary}\n正在將文字貼回您的 LINE 聊天輸入框...`
-          );
-          if (btn && btn.href && btn.href.startsWith('line://')) {
-            try { window.top.location.href = btn.href; } catch (_) {}
-          }
-          return;
-        }
+        return;
       }
 
-      // 電腦版（Windows / Mac）
-      showStatusBanner(
-        'textFormResultBox',
-        'ok',
-        `✅ 【資料庫驗證 100% 通過】${STATE.verifySummary}\n\n` +
-        `📋 請假文字已自動複製到剪貼簿！\n` +
-        `👉 請直接切回 LINE 聊天輸入框按【Ctrl + V】（Mac 按 Cmd + V）貼上，並按 Enter 發送！`
-      );
+      // 分流 B：LINE 群組（或無 botBasicId 時）在 LIFF 環境內 —— 嘗試以本人 LINE 帳號直接發送文字至原群組
+      if (typeof liff !== 'undefined' && liff.isInClient()) {
+        if (isSubmitting) return;
+        isSubmitting = true;
+        lockPasteButtonForVerification('🚀 正在送出假單至原群組...');
+        showStatusBanner('textFormResultBox', 'info', '🚀 正在將驗證通過的假單直接送出至原群組聊天室...');
+
+        liff.sendMessages([{ type: 'text', text: rawText }])
+          .then(() => {
+            isSubmitting = false;
+            try { localStorage.removeItem(CACHE_KEY_INIT); } catch (_) {}
+            STATE.verifiedText   = '';
+            STATE.verifyStatus   = 'invalid';
+            STATE.verifyErrorMsg = '⚠️ 此筆假單剛剛已成功送出，請勿重複發送！';
+            lockPasteButtonForVerification('🎉 假單已成功送出！');
+            showStatusBanner('textFormResultBox', 'ok', `🎉 假單已成功以您的帳號送出！（${STATE.verifySummary}）正在返回原群組...`);
+            setTimeout(() => { safeCloseLiffWindow(); }, 300);
+          })
+          .catch(() => {
+            // 若 LIFF 未開啟 chat_message.write 權限，無縫自動轉交後端直接建檔並推播至原群組，保證 100% 提送成功！
+            isSubmitting = false;
+            submitTextForm();
+          });
+        return;
+      }
+
+      // 分流 C：外部瀏覽器或電腦版 —— 直接呼叫後端建檔並推播至原聊天室
+      submitTextForm();
     }
 
     /**
-     * 點擊「📲 驗證通過！」綠色按鈕處理器
+     * ✅ 副按鈕 A：僅複製驗證通過的文字並關閉抽屜視窗（留在原群組讓使用者手動貼入輸入框）
+     */
+    function copyTextAndCloseDrawer() {
+      const rawText = document.getElementById('txtRawLeave').value.trim();
+      const syncCheck = validateLeaveTextClientSide(rawText);
+      if (!syncCheck.valid) {
+        showStatusBanner('textFormResultBox', 'err', syncCheck.errorMessage);
+        return;
+      }
+      if (STATE.verifyStatus === 'invalid' && STATE.verifyErrorMsg) {
+        showStatusBanner('textFormResultBox', 'err', STATE.verifyErrorMsg);
+        return;
+      }
+      copyToClipboardSafe(rawText);
+      showStatusBanner(
+        'textFormResultBox',
+        'ok',
+        `📋 驗證通過的假單文字已複製到剪貼簿！\n正在關閉視窗返回原群組（直接在輸入框長按貼上即可發送）...`
+      );
+      setTimeout(() => { safeCloseLiffWindow(); }, 350);
+    }
+
+    /**
+     * ✅ 修復缺失 1：點擊綠色主按鈕處理器
+     * - 當在 1對1 私訊 (!STATE.gid) 且已驗證通過時，直接 return true 放行原生 <a target="_top" href="line://oaMessage/..."> 將文字貼入輸入框！
+     * - 當在 LINE 群組 (STATE.gid) 且已驗證通過時，執行 executeVerifiedPasteAction 直接送出假單至原群組並留在原群組！
      */
     function handlePasteToLineClick(event) {
       const rawText = document.getElementById('txtRawLeave').value.trim();
@@ -1071,25 +1163,14 @@
       if (STATE.verifyStatus === 'valid' && STATE.verifiedText === rawText) {
         copyToClipboardSafe(rawText);
 
-        // 手機版（無論群組或 1對1）：直接放行原生 <a target="_top">！
-        // - 群組 (STATE.gid) 觸發 href="line://nv/chat" 直接關閉視窗回到「原群組」讓使用者貼上（絕不跳回 1對1 私訊）
-        // - 1對1 (!STATE.gid) 觸發 href="line://oaMessage/@id/?text" 直接塞入 1對1 輸入框
-        if (isMobileClient() && (STATE.gid || STATE.botBasicId)) {
+        // 若在「1對1 私訊 (!STATE.gid)」手機版且有 botBasicId：直接放行原生 <a target="_top" href="line://oaMessage/..."> 0 秒塞入輸入框！
+        if (isMobileClient() && !STATE.gid && STATE.botBasicId) {
           unlockPasteButtonWithVerifiedText(rawText);
-          showStatusBanner(
-            'textFormResultBox',
-            'ok',
-            STATE.gid
-              ? `✅ 驗證通過（${STATE.verifySummary}）！文字已複製，正在自動返回原群組...`
-              : `✅ 驗證通過（${STATE.verifySummary}）！正在將文字自動貼回您的 LINE 聊天輸入框...`
-          );
-          if (STATE.gid && typeof liff !== 'undefined' && liff.isInClient()) {
-            setTimeout(() => { try { liff.closeWindow(); } catch (_) {} }, 150);
-          }
+          showStatusBanner('textFormResultBox', 'ok', `✅ 驗證通過（${STATE.verifySummary}）！正在將文字自動貼回您的 LINE 聊天輸入框...`);
           return true;
         }
 
-        // 電腦版
+        // 若在「LINE 群組 (STATE.gid)」或電腦版：攔截連結，直接送出假單至原群組並留在原群組（絕不跳去好友清單或 1對1 私訊！）
         event.preventDefault();
         executeVerifiedPasteAction(rawText);
         return false;
@@ -1103,7 +1184,10 @@
     }
 
     /**
-     * 前端同步 11 道格式與邏輯驗證
+     * 前端同步 11 道格式與邏輯驗證（完整無刪減版）
+     * 包含：1.非空檢查 2.七大必填欄位檢查 3.欄位內容非空檢查 4.西元/民國日期解析 5.起迄日期邏輯
+     *       6.每週固定休假日檢查 7.特定國定假日與補班日檢查 8.動態星期工時與午休扣除計算
+     *       9.動態假別與同義詞別名檢查（含特休假強制收斂為特休） 10.個人特休餘額檢查
      */
     function validateLeaveTextClientSide(rawText) {
       if (!rawText || !rawText.trim()) {
@@ -1141,6 +1225,7 @@
         return { valid: false, errorMessage: `⚠️ 請假單填寫不完整（以下欄位未填內容）：\n• ${empty.join('\n• ')}` };
       }
 
+      // 驗證日期格式與邏輯（支援西元、民國、跨日區間）
       const dateRaw = parsed['請假日期'].replace(/[（(][一二三四五六日][)）]/g, '').trim();
       const parts   = dateRaw.split(/[～~\-–—]/).map(s => s.trim()).filter(Boolean);
       const parseOneDate = (s, refY, refM) => {
@@ -1168,6 +1253,7 @@
         return { valid: false, errorMessage: '⚠️ 請假日期區間錯誤：結束日期不能早於開始日期' };
       }
 
+      // 驗證工作日（結合每週班表與特定國定假日/補班日設定）
       let workDayCount = 0;
       const spDates = (STATE.scheduleOverview && STATE.scheduleOverview.specialDates) || [];
       const spMap   = {};
@@ -1196,6 +1282,7 @@
         return { valid: false, errorMessage: `⚠️ 請假日期「${parsed['請假日期']}」為休假日（如週日或店休假日），無有效工作日！` };
       }
 
+      // 讀取起始日對應之動態班表工時與午休設定
       const startDow = sDate.getDay();
       const dayCfg   = (STATE.scheduleOverview && Array.isArray(STATE.scheduleOverview.days) && STATE.scheduleOverview.days[startDow])
         ? STATE.scheduleOverview.days[startDow]
@@ -1218,6 +1305,7 @@
           if (rawDiff <= 0 || rawDiff > 600) {
             return { valid: false, errorMessage: `⚠️ 請假時間區間無效：「${parsed['請假時數']}」` };
           }
+          // 動態讀取當日午休時間並自動扣除重疊分鐘數
           const parseMin = (hhmm, defMin) => {
             if (!hhmm) return defMin;
             const p = String(hhmm).split(':');
@@ -1239,6 +1327,7 @@
             const valNum = parseFloat(nm[1]);
             const fullH  = Number(dayCfg.fullDayHours || 8);
             if (nm[3] === '天') {
+              // 若填寫 > 1天（如跨3日填「3天」）視為總請假天數，避免平方倍增
               hoursPerDay = (valNum > 1 && workDayCount > 1) ? ((valNum * fullH) / workDayCount) : (valNum * fullH);
             } else {
               hoursPerDay = valNum;
@@ -1249,6 +1338,7 @@
         }
       }
 
+      // 驗證假別是否存在於後端資料庫（含將「特休假」強制收斂為「特休」）
       const tRaw = parsed['假別'].trim();
       const validTypes = STATE.leaveTypes && STATE.leaveTypes.length > 0
         ? STATE.leaveTypes
@@ -1273,6 +1363,7 @@
         return { valid: false, errorMessage: `⚠️ 假別不存在：「${tRaw}」\n目前可用假別：${validTypes.join('、')}` };
       }
 
+      // 驗證前端已載入之個人特休額度
       if (matchedType === '特休' && STATE.dashboard && STATE.dashboard.hasQuota && STATE.dashboard.name === parsed['請假人']) {
         const reqTotal = Math.round(hoursPerDay * workDayCount * 10) / 10;
         if (reqTotal > STATE.dashboard.remainingHours) {
@@ -1397,7 +1488,7 @@
 
     function onNameChange() {
       const name = document.getElementById('inpName').value.trim();
-      if (name) {
+      if (name && name !== '系統管理員') {
         localStorage.setItem('leave_sys_user_name', name);
         document.getElementById('inpQueryName').value = name;
         loadPersonalDashboard(name);
@@ -1628,7 +1719,7 @@
       btn.innerText = '🔒 安全寫入資料庫中...';
       showStatusBanner('formResultBox', 'info', '⏳ 正在驗證並送出假單，請稍候...');
 
-      if (!STATE.editRow) {
+      if (!STATE.editRow && name !== '系統管理員') {
         localStorage.setItem('leave_sys_user_name', name);
       }
       const timeBucket = Math.floor(Date.now() / 15000);
@@ -1644,15 +1735,14 @@
               showStatusBanner('formResultBox', 'err', res ? res.errorMessage : '❌ 處理失敗，請稍後再試');
               return;
             }
+            try { localStorage.removeItem(CACHE_KEY_INIT); } catch (_) {}
             if (res.dashboard) {
               STATE.dashboard = res.dashboard;
               renderDashboard(res.dashboard);
             }
             showStatusBanner('formResultBox', 'ok', `🎉 ${res.isUpdated ? '假單修改成功' : '請假申請成功'}！（編號 #${res.rowNumber}）\n${res.summaryText}`);
             exitEditMode();
-            if (STATE.liffId && typeof liff !== 'undefined' && liff.isInClient()) {
-              setTimeout(() => liff.closeWindow(), 1200);
-            }
+            setTimeout(() => { safeCloseLiffWindow(); }, 800);
           })
           .withFailureHandler(err => {
             isSubmitting = false;
@@ -1678,7 +1768,7 @@
       }
     }
 
-    // ==================== 彈出視窗「🚀 直接留言並送出假單」====================
+    // ==================== 彈出視窗「🚀 直接由系統留言並送出假單」====================
     function submitTextForm() {
       if (isSubmitting) return;
       const rawText = document.getElementById('txtRawLeave').value.trim();
@@ -1690,23 +1780,37 @@
       }
 
       isSubmitting = true;
-      const btn = document.getElementById('btnSubmitText');
-      btn.disabled = true;
-      btn.innerText = '🚀 正在留言並送出假單...';
-      showStatusBanner('textFormResultBox', 'info', '⏳ 正在驗證請假單格式並推播至當前 LINE 聊天室，請稍候...');
+      const btnSubmit = document.getElementById('btnSubmitText');
+      const btnPaste  = document.getElementById('btnPasteToLine');
+      if (btnSubmit) {
+        btnSubmit.disabled = true;
+        btnSubmit.innerText = '🚀 正在留言並送出假單...';
+      }
+      if (btnPaste) {
+        btnPaste.classList.add('locked');
+        btnPaste.innerText = '🚀 正在送出假單至原聊天室...';
+      }
+      showStatusBanner('textFormResultBox', 'info', '⏳ 正在將請假單寫入資料庫並發送至原 LINE 聊天室，請稍候...');
 
       try {
         google.script.run
           .withSuccessHandler(res => {
             isSubmitting = false;
-            btn.disabled = false;
-            btn.innerText = '🚀 直接留言並送出假單';
+            if (btnSubmit) {
+              btnSubmit.disabled = false;
+              btnSubmit.innerText = '🚀 直接由系統留言並送出假單';
+            }
 
             if (!res || !res.success) {
+              if (btnPaste) {
+                btnPaste.classList.remove('locked');
+                btnPaste.innerText = '✅ 驗證通過！點此直接送出假單';
+              }
               showStatusBanner('textFormResultBox', 'err', res ? res.errorMessage : '❌ 格式驗證失敗，請檢查欄位');
               return;
             }
 
+            try { localStorage.removeItem(CACHE_KEY_INIT); } catch (_) {}
             if (res.dashboard) {
               STATE.dashboard = res.dashboard;
               renderDashboard(res.dashboard);
@@ -1714,26 +1818,28 @@
 
             STATE.verifiedText   = '';
             STATE.verifyStatus   = 'invalid';
-            STATE.verifyErrorMsg = `⚠️ 此筆假單（#${res.rowNumber}）剛剛已直接建檔送出，請勿重複貼回發送！`;
-            lockPasteButtonForVerification('⛔ 此筆假單已建檔送出');
+            STATE.verifyErrorMsg = `⚠️ 此筆假單（#${res.rowNumber}）剛剛已成功建檔送出，請勿重複發送！`;
+            lockPasteButtonForVerification('🎉 假單已成功送出！');
 
             showStatusBanner(
               'textFormResultBox',
               'ok',
-              `🎉 請假單已直接留言並送出至 LINE 聊天室！\n🔖 記錄編號：#${res.rowNumber}\n📋 摘要：${res.summaryText}\n\n（正在自動返回聊天室...）`
+              `🎉 請假單已成功送出至原聊天室！\n🔖 記錄編號：#${res.rowNumber}\n📋 摘要：${res.summaryText}\n\n（正在自動關閉視窗返回原群組...）`
             );
 
-            setTimeout(() => {
-              try { if (typeof liff !== 'undefined' && liff.isInClient()) liff.closeWindow(); } catch (_) {}
-              if (isMobileClient() && STATE.gid) {
-                try { window.top.location.href = 'line://nv/chat'; } catch (_) {}
-              }
-            }, 900);
+            // ✅ 只呼叫 safeCloseLiffWindow()，絕不呼叫 line://nv/chat，100% 停留在原群組聊天室！
+            setTimeout(() => { safeCloseLiffWindow(); }, 600);
           })
           .withFailureHandler(err => {
             isSubmitting = false;
-            btn.disabled = false;
-            btn.innerText = '🚀 直接留言並送出假單';
+            if (btnSubmit) {
+              btnSubmit.disabled = false;
+              btnSubmit.innerText = '🚀 直接由系統留言並送出假單';
+            }
+            if (btnPaste) {
+              btnPaste.classList.remove('locked');
+              btnPaste.innerText = '✅ 驗證通過！點此直接送出假單';
+            }
             showStatusBanner('textFormResultBox', 'err', '❌ 系統執行錯誤：' + err.message);
           })
           .submitRawTextLeaveFromWeb({
@@ -1743,8 +1849,10 @@
           });
       } catch (syncErr) {
         isSubmitting = false;
-        btn.disabled = false;
-        btn.innerText = '🚀 直接留言並送出假單';
+        if (btnSubmit) {
+          btnSubmit.disabled = false;
+          btnSubmit.innerText = '🚀 直接由系統留言並送出假單';
+        }
         showStatusBanner('textFormResultBox', 'err', '❌ 無法連接後端函式：' + syncErr.message);
       }
     }
@@ -2047,6 +2155,7 @@
       };
       if (!payload.name) { alert('⚠️ 請輸入員工姓名'); return; }
       google.script.run.withSuccessHandler(res => {
+        try { localStorage.removeItem(CACHE_KEY_INIT); } catch (_) {}
         alert(res ? res.message : '已處理');
         if (res && res.adminData) {
           STATE.adminData = res.adminData;
@@ -2058,6 +2167,7 @@
     function deleteAdminQuota(rowNumber, empName) {
       if (!confirm(`確定要從特休資料庫刪除「${empName}」嗎？`)) return;
       google.script.run.withSuccessHandler(res => {
+        try { localStorage.removeItem(CACHE_KEY_INIT); } catch (_) {}
         alert(res ? res.message : '已刪除');
         if (res && res.adminData) {
           STATE.adminData = res.adminData;
@@ -2069,6 +2179,7 @@
     function triggerAutoAnnualLeave() {
       if (!confirm('確定要依到職日與年資自動重算全體員工本年度特休額度嗎？（已設定手動鎖定 Y 的員工不會被覆蓋）')) return;
       google.script.run.withSuccessHandler(res => {
+        try { localStorage.removeItem(CACHE_KEY_INIT); } catch (_) {}
         alert(res ? res.message : '已重算');
         if (res && res.adminData) {
           STATE.adminData = res.adminData;
@@ -2092,6 +2203,7 @@
         name: document.getElementById('admSpName').value.trim()
       };
       google.script.run.withSuccessHandler(res => {
+        try { localStorage.removeItem(CACHE_KEY_INIT); } catch (_) {}
         alert(res ? res.message : '已更新');
         document.getElementById('admSpDate').value = '';
         document.getElementById('admSpName').value = '';
@@ -2106,6 +2218,7 @@
     function deleteAdminSpecialDate(dateStr) {
       if (!confirm(`確定要移除特定日期「${dateStr}」設定嗎？`)) return;
       google.script.run.withSuccessHandler(res => {
+        try { localStorage.removeItem(CACHE_KEY_INIT); } catch (_) {}
         alert(res ? res.message : '已移除');
         if (res && res.scheduleOverview) renderScheduleOverview(res.scheduleOverview);
         if (res && res.adminData) {
@@ -2120,6 +2233,7 @@
       const aliases = document.getElementById('admNewTypeAliases').value.trim();
       if (!name) { alert('⚠️ 請輸入假別名稱'); return; }
       google.script.run.withSuccessHandler(res => {
+        try { localStorage.removeItem(CACHE_KEY_INIT); } catch (_) {}
         alert(res ? res.message : '已儲存');
         if (res && Array.isArray(res.leaveTypes)) {
           renderLeaveTypeOptions(res.leaveTypes);
@@ -2137,6 +2251,7 @@
       if (!STATE.adminData || !STATE.adminData.leaveTypes || !STATE.adminData.leaveTypes[idx]) return;
       const lt = STATE.adminData.leaveTypes[idx];
       google.script.run.withSuccessHandler(res => {
+        try { localStorage.removeItem(CACHE_KEY_INIT); } catch (_) {}
         if (res && Array.isArray(res.leaveTypes)) {
           renderLeaveTypeOptions(res.leaveTypes);
         }
@@ -2154,6 +2269,7 @@
     function adminCancelRow(rowNumber) {
       if (!confirm(`確定要強制取消假單 #${rowNumber} 嗎？`)) return;
       google.script.run.withSuccessHandler(res => {
+        try { localStorage.removeItem(CACHE_KEY_INIT); } catch (_) {}
         alert(res ? res.message : '已取消');
         if (res && res.adminData) {
           STATE.adminData = res.adminData;
