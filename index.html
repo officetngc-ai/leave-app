@@ -1,0 +1,2177 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>全職請假與後台管理系統</title>
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js" defer></script>
+  <style>
+    :root {
+      --primary: #06C755;
+      --blue: #1565C0;
+      --teal: #00695C;
+      --dark: #0F172A;
+      --bg: #F1F5F9;
+      --card: #FFFFFF;
+      --text: #1E293B;
+      --muted: #64748B;
+      --border: #CBD5E1;
+      --danger: #DC2626;
+    }
+    * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans TC", sans-serif; }
+    body { margin: 0; padding: 0; background: var(--bg); color: var(--text); padding-bottom: 50px; }
+
+    /* 頂部可橫向滑動的多功能導航列 */
+    .tabs {
+      display: flex; overflow-x: auto; background: var(--card); position: sticky; top: 0; z-index: 100;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.06); white-space: nowrap; -webkit-overflow-scrolling: touch;
+    }
+    .tabs::-webkit-scrollbar { display: none; }
+    .tab-btn {
+      flex: 1 0 auto; text-align: center; padding: 13px 14px; font-size: 14px; font-weight: 700;
+      color: var(--muted); border: none; background: none; border-bottom: 3px solid transparent;
+      cursor: pointer; transition: 0.2s;
+    }
+    .tab-btn.active { color: var(--blue); border-bottom-color: var(--blue); background: #F8FAFC; }
+    .tab-btn.admin-tab.active { color: #FFF; background: var(--dark); border-bottom-color: var(--primary); }
+
+    .container { max-width: 580px; margin: 12px auto; padding: 0 12px; }
+    .card {
+      background: var(--card); border-radius: 14px; padding: 16px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.05); margin-bottom: 14px;
+    }
+    .admin-header-card {
+      background: linear-gradient(135deg, #0F172A 0%, #1E3A8A 100%);
+      color: #FFF; border-radius: 14px; padding: 16px; margin-bottom: 12px;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .section-title { font-size: 16px; font-weight: 800; color: var(--blue); margin: 0 0 12px 0; display: flex; align-items: center; justify-content: space-between; }
+    .banner {
+      background: #EFF6FF; color: #1E40AF; border: 1px solid #BFDBFE;
+      padding: 10px 12px; border-radius: 10px; font-size: 13px; margin-bottom: 12px; line-height: 1.5;
+    }
+    .banner.edit-mode { background: #FEF3C7; color: #92400E; border-color: #FDE68A; font-weight: 700; }
+
+    /* 頁面內嵌送出狀態提示框 */
+    .status-box {
+      padding: 12px 14px; border-radius: 10px; font-size: 13.5px; font-weight: 700;
+      margin-bottom: 12px; line-height: 1.6; white-space: pre-wrap;
+    }
+    .status-box.ok { background: #DCFCE7; color: #166534; border: 1px solid #86EFAC; }
+    .status-box.err { background: #FEE2E2; color: #991B1B; border: 1px solid #FCA5A5; }
+    .status-box.info { background: #E0F2FE; color: #075985; border: 1px solid #7DD3FC; }
+
+    .form-group { margin-bottom: 13px; }
+    label { display: block; font-size: 13px; font-weight: 700; color: #334155; margin-bottom: 5px; }
+    label span.req { color: var(--danger); margin-left: 2px; }
+    input[type="text"], input[type="number"], input[type="date"], input[type="time"], select, textarea {
+      width: 100%; padding: 11px 12px; font-size: 15px; border: 1px solid var(--border);
+      border-radius: 10px; background: #FFF; color: var(--text); outline: none;
+      -webkit-appearance: menulist; appearance: auto;
+    }
+    textarea { font-family: monospace, "Noto Sans TC", sans-serif; line-height: 1.6; resize: vertical; }
+    input:focus, select:focus, textarea:focus { border-color: var(--blue); box-shadow: 0 0 0 2px rgba(21,101,192,0.12); }
+    .row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+
+    .period-pills { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+    .pill {
+      padding: 9px 4px; text-align: center; font-size: 13px; font-weight: 700;
+      border: 1px solid var(--border); border-radius: 8px; background: #F8FAFC; cursor: pointer;
+    }
+    .pill.active { background: var(--blue); color: #FFF; border-color: var(--blue); }
+
+    .preview-box { padding: 10px 12px; border-radius: 10px; font-size: 13.5px; font-weight: 700; margin-bottom: 12px; display: none; }
+    .preview-box.ok { display: block; background: #ECFDF5; color: #065F46; border: 1px solid #A7F3D0; }
+    .preview-box.err { display: block; background: #FEF2F2; color: #991B1B; border: 1px solid #FECACA; }
+
+    .btn {
+      width: 100%; padding: 13px; font-size: 15.5px; font-weight: 700; color: #FFF;
+      background: var(--primary); border: none; border-radius: 11px; cursor: pointer;
+      transition: 0.2s; text-align: center; display: block; text-decoration: none;
+    }
+    .btn.blue { background: var(--blue); }
+    .btn.teal { background: var(--teal); }
+    .btn.secondary { background: #64748B; margin-top: 8px; }
+    .btn.sm { width: auto; display: inline-block; padding: 6px 11px; font-size: 12.5px; border-radius: 7px; margin-top: 0; }
+    .btn.danger { background: var(--danger); }
+    .btn.locked { background: #94A3B8; cursor: not-allowed; }
+    .btn:disabled { background: #94A3B8; cursor: not-allowed; }
+
+    .quota-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; text-align: center; margin: 12px 0; }
+    .quota-item { background: #F8FAFC; padding: 11px 6px; border-radius: 10px; border: 1px solid var(--border); }
+    .quota-num { font-size: 19px; font-weight: 800; color: var(--blue); }
+    .quota-sub { font-size: 11.5px; color: var(--muted); margin-top: 2px; }
+
+    .record-item {
+      padding: 10px 0; border-bottom: 1px solid #E2E8F0; display: flex;
+      justify-content: space-between; align-items: center; font-size: 13.5px; gap: 8px;
+    }
+    .record-item:last-child { border-bottom: none; }
+    .badge { display: inline-block; padding: 3px 8px; border-radius: 6px; font-size: 12px; font-weight: 700; background: #E0F2FE; color: #0369A1; }
+    .badge.off { background: #FEE2E2; color: #991B1B; }
+    .badge.on { background: #DCFCE7; color: #166534; }
+    .badge.admin-role { background: #FEF3C7; color: #92400E; }
+
+    /* 5 欄式後台管理子導航列 */
+    .admin-subtabs { display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; margin-bottom: 12px; }
+    .admin-subbtn {
+      padding: 10px 2px; font-size: 12px; font-weight: 700; border-radius: 9px;
+      border: 1px solid var(--border); background: #FFF; color: var(--text); cursor: pointer; text-align: center;
+      white-space: nowrap;
+    }
+    .admin-subbtn.active { background: var(--blue); color: #FFF; border-color: var(--blue); }
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+
+  <!-- 頂部多功能切換導航列（今日請假、班表設定、系統管理預設皆為 hidden，僅管理員解鎖顯示） -->
+  <div class="tabs" id="topTabsBar">
+    <button class="tab-btn active" id="tabBtn_form" onclick="switchTab('form')">📝 填寫請假</button>
+    <button class="tab-btn" id="tabBtn_my" onclick="switchTab('my')">🔒 查特休/紀錄</button>
+    <button class="tab-btn hidden" id="tabBtn_textform" onclick="switchTab('textform')">✍️ 文字快填</button>
+    <button class="tab-btn" id="tabBtn_help" onclick="switchTab('help')">📖 說明</button>
+    <!-- 🛡️ 以下三個分頁僅限管理員可見（一般使用者完全隱藏） -->
+    <button class="tab-btn hidden" id="tabBtn_today" onclick="switchTab('today')">📋 今日請假</button>
+    <button class="tab-btn hidden" id="tabBtn_schedule" onclick="switchTab('schedule')">⚙️ 班表設定</button>
+    <button class="tab-btn admin-tab hidden" id="tabBtn_admin" onclick="switchTab('admin')">🛠️ 系統管理</button>
+  </div>
+
+  <div class="container">
+    <!-- ==================== 1. 日曆選單請假 / 修改假單 (tab=form) ==================== -->
+    <div id="sec_form" class="tab-sec">
+      <div class="card">
+        <div id="editModeBanner" class="banner edit-mode hidden"></div>
+
+        <div class="form-group">
+          <label>請假人員 <span class="req">*</span></label>
+          <input type="text" id="inpName" list="employeeList" placeholder="請點選或輸入您的姓名" onchange="onNameChange()">
+          <datalist id="employeeList"></datalist>
+        </div>
+
+        <div class="row-2">
+          <div class="form-group">
+            <label>開始日期 <span class="req">*</span></label>
+            <input type="date" id="inpStartDate" onchange="onStartDateChange()">
+          </div>
+          <div class="form-group">
+            <label>結束日期 <span class="req">*</span></label>
+            <input type="date" id="inpEndDate" onchange="triggerPreview()">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>請假時段 <span class="req">*</span></label>
+          <div class="period-pills">
+            <div class="pill active" data-mode="全天" onclick="selectPeriod('全天', this)">全天</div>
+            <div class="pill" data-mode="上午" onclick="selectPeriod('上午', this)">上午</div>
+            <div class="pill" data-mode="下午" onclick="selectPeriod('下午', this)">下午</div>
+            <div class="pill" data-mode="半天" onclick="selectPeriod('半天', this)">半天</div>
+            <div class="pill" data-mode="custom" onclick="selectPeriod('custom', this)">自訂時間</div>
+          </div>
+        </div>
+
+        <div class="row-2 hidden" id="customTimeBox">
+          <div class="form-group">
+            <label>開始時間 <span class="req">*</span></label>
+            <input type="time" id="inpStartTime" value="09:00" onchange="triggerPreview()">
+          </div>
+          <div class="form-group">
+            <label>結束時間 <span class="req">*</span></label>
+            <input type="time" id="inpEndTime" value="12:00" onchange="triggerPreview()">
+          </div>
+        </div>
+
+        <div id="previewBox" class="preview-box"></div>
+
+        <div class="row-2">
+          <div class="form-group">
+            <label>假別 <span class="req">*</span></label>
+            <!-- 預設內建標準假別，0.1 秒瞬間顯示，隨後自動與 Google Sheet patterns 分頁同步 -->
+            <select id="selLeaveType" onchange="updateQuotaHint()">
+              <option value="特休">特休</option>
+              <option value="事假">事假</option>
+              <option value="病假">病假</option>
+              <option value="公假">公假</option>
+              <option value="補休">補休</option>
+              <option value="婚假">婚假</option>
+              <option value="喪假">喪假</option>
+              <option value="產假">產假</option>
+              <option value="陪產假">陪產假</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>職務代理人 <span class="req">*</span></label>
+            <input type="text" id="inpDeputy" list="employeeList" placeholder="選擇或輸入代理人">
+          </div>
+        </div>
+
+        <div id="quotaHintBox" class="banner hidden"></div>
+
+        <div class="form-group">
+          <label>請假事由 <span class="req">*</span></label>
+          <input type="text" id="inpReason" placeholder="例如：家因、看診、年假">
+        </div>
+
+        <div class="form-group">
+          <label>主管核准狀態 <span class="req">*</span></label>
+          <select id="selApproval">
+            <option value="已報請主管核准" selected>已報請主管核准（預設）</option>
+            <option value="已當面報請主管核准">已當面報請主管核准</option>
+            <option value="已LINE報請主管核准">已LINE報請主管核准</option>
+          </select>
+        </div>
+
+        <div id="formResultBox" class="status-box hidden"></div>
+
+        <button class="btn" id="btnSubmit" onclick="submitForm()">✅ 送出請假申請</button>
+        <button class="btn secondary hidden" id="btnCancelEdit" onclick="exitEditMode()">↩️ 放棄修改，切換為新請假單</button>
+      </div>
+    </div>
+
+    <!-- ==================== 2. 私密查特休 & 私訊傳送 (tab=my) ==================== -->
+    <div id="sec_my" class="tab-sec hidden">
+      <div class="banner">
+        🔒 <strong>群組零曝光保護：</strong>此頁僅顯示於您的個人畫面，群組其他人完全看不到。您也可點擊下方按鈕將紀錄私訊給自己！
+      </div>
+      <div class="card">
+        <div class="form-group">
+          <label>查詢員工姓名</label>
+          <input type="text" id="inpQueryName" list="employeeList" placeholder="請選擇您的姓名" onchange="loadPersonalDashboard(this.value)">
+        </div>
+        <button class="btn blue" id="btnSendDm" onclick="sendDmReport()" style="margin-bottom:14px;">📩 私訊傳送特休與紀錄至個人LINE</button>
+        <div id="dashboardContent"></div>
+      </div>
+    </div>
+
+    <!-- ==================== 3. 獨立彈出式「文字範本快填」視窗 (tab=textform) ==================== -->
+    <div id="sec_textform" class="tab-sec hidden">
+      <div class="card">
+        <h3 class="section-title">✍️ 文字版範本修改（100% 事前驗證防呆）</h3>
+        <div class="banner">
+          💡 請在下方修改您的請假內容。系統會先<strong>自動執行前端與後端 11 道完整驗證（包含攔截重複請假與檢查特休額度）</strong>，確認無誤後點擊下方綠色按鈕即可返回原聊天室貼上（或直接以本人帳號送出）！
+        </div>
+
+        <div class="form-group">
+          <label>請假單文字內容（可直接修改） <span class="req">*</span></label>
+          <textarea id="txtRawLeave" rows="8" oninput="onRawTextInput()"></textarea>
+        </div>
+
+        <!-- 頁面內嵌即時狀態提示框（直接顯示重複請假或格式錯誤，攔截問題假單） -->
+        <div id="textFormResultBox" class="status-box hidden"></div>
+
+        <!-- ✅ 嚴格驗證閘門：未通過後端完整驗證前 href 強制為 "#"；通過後群組返回原群組(line://nv/chat)、1對1直接貼入輸入框 -->
+        <a id="btnPasteToLine" href="#" target="_top" class="btn locked" onclick="return handlePasteToLineClick(event)">
+          🔍 正在驗證假單格式與是否重複請假...
+        </a>
+
+        <!-- 副按鈕：直接於原聊天室/原群組留言並送出假單 -->
+        <button class="btn secondary" id="btnSubmitText" onclick="submitTextForm()">
+          🚀 直接留言並送出假單
+        </button>
+      </div>
+    </div>
+
+    <!-- ==================== 4. 彈出式今日請假與本週名單 (tab=today) ==================== -->
+    <div id="sec_today" class="tab-sec hidden">
+      <div class="card">
+        <div class="section-title">
+          <span>📋 今日請假名單</span>
+          <span id="lblTodayDate" style="font-size:13px; color:var(--muted);"></span>
+        </div>
+        <div id="todayListBox"></div>
+      </div>
+      <div class="card">
+        <div class="section-title">
+          <span>📅 本週請假名單</span>
+          <span id="lblWeekRange" style="font-size:12px; color:var(--muted);"></span>
+        </div>
+        <div id="weekListBox"></div>
+      </div>
+    </div>
+
+    <!-- ==================== 5. 彈出式班表與休假日設定檢視 (tab=schedule) ==================== -->
+    <div id="sec_schedule" class="tab-sec hidden">
+      <div class="card">
+        <h3 class="section-title">⚙️ 每週工時與開放請假設定</h3>
+        <div id="scheduleDaysBox"></div>
+      </div>
+      <div class="card">
+        <h3 class="section-title">📅 已啟用特定假日 / 補班日</h3>
+        <div id="scheduleSpecialBox"></div>
+      </div>
+    </div>
+
+    <!-- ==================== 6. 彈出式系統使用說明 (tab=help) ==================== -->
+    <div id="sec_help" class="tab-sec hidden">
+      <div class="card">
+        <h3 class="section-title">📖 請假系統完整使用說明</h3>
+        <div style="font-size:14px; line-height:1.7; color:#334155;">
+          <p><strong>1️⃣ 日曆選單快速請假（推薦）：</strong><br>
+          於「📝 填寫請假」分頁選擇日期、時段與假別，系統會自動扣除午休並試算總時數，核准欄位預設為「已報請主管核准」，按送出即完成請假。</p>
+          <p><strong>2️⃣ 文字範本快填：</strong><br>
+          點擊下方「✍️ 文字範本快填」浮動按鈕，修改文字後系統會先與後端資料庫核對格式與是否重複請假，確認無誤後點擊綠色按鈕即可複製並返回原聊天室貼上（或點「🚀 直接留言並送出假單」一鍵完成）。</p>
+          <p><strong>3️⃣ 修改或取消已送出的假單：</strong><br>
+          • <strong>修改假單：</strong>直接點擊聊天室假單卡片上的 <strong>「✏️ 修改假單」</strong> 按鈕，即可載入原假單內容進行修改。<br>
+          • <strong>取消假單：</strong>點擊假單卡片上的 <strong>「🗑️ 取消假單」</strong> 按鈕（或在 24 小時內於 LINE 收回訊息），系統會自動取消並返還特休。</p>
+          <p><strong>4️⃣ 私密查詢個人特休與紀錄：</strong><br>
+          切換至「🔒 查特休/紀錄」分頁，即可在不驚動群組任何人的情況下查看自己的特休餘額與本年度請假明細，或點擊「📩 私訊傳送」由機器人 1對1 發送給您。</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== 7. 管理員專屬後台資料庫管理系統 (tab=admin) ==================== -->
+    <div id="sec_admin" class="tab-sec hidden">
+      <div class="admin-header-card">
+        <div>
+          <div style="font-size:16px; font-weight:800;">🛠️ 後台資料庫管理系統</div>
+          <div style="font-size:12px; color:#CBD5E1; margin-top:3px;">直接新增、修改、查閱 Google Sheet 帳號權限與假單資料庫</div>
+        </div>
+        <button class="btn sm" style="background:#3B82F6;" onclick="reloadAdminDatabase()">🔄 重新整理</button>
+      </div>
+
+      <div id="adminLoadingBanner" class="banner hidden">⏳ 正在從後端 Google Sheet 資料庫同步最新數據...</div>
+
+      <!-- 5 大資料庫管理子分頁 -->
+      <div class="admin-subtabs">
+        <button class="admin-subbtn active" id="admBtn_admins" onclick="switchAdminPanel('admins')">🔐 帳號權限</button>
+        <button class="admin-subbtn" id="admBtn_quota" onclick="switchAdminPanel('quota')">👥 特休庫</button>
+        <button class="admin-subbtn" id="admBtn_recs" onclick="switchAdminPanel('recs')">📋 假單庫</button>
+        <button class="admin-subbtn" id="admBtn_sched" onclick="switchAdminPanel('sched')">⚙️ 班表庫</button>
+        <button class="admin-subbtn" id="admBtn_types" onclick="switchAdminPanel('types')">🏷️ 假別庫</button>
+      </div>
+
+      <!-- 管理模組 0：一般成員與管理員帳號權限設定資料庫 (adminUsers) -->
+      <div id="admPanel_admins" class="card">
+        <div class="section-title">
+          <span>🔐 成員與管理員帳號權限設定</span>
+        </div>
+        <div class="banner">
+          💡 所有設定將直接儲存於 Google Sheet 的 <strong>「adminUsers」</strong> 資料庫分頁：<br>
+          • 設為 <strong>管理員 (ADMIN / SUPER_ADMIN)</strong>：可查看「今日請假」、「班表設定」與「系統管理」。<br>
+          • 設為 <strong>一般成員 (USER)</strong>：僅顯示「請假/查特休」與「文字範本快填」。
+        </div>
+
+        <div class="form-group">
+          <label>快速選取現有員工（或直接於下方輸入姓名）</label>
+          <select id="admSelAdminEmp" onchange="onAdminSelectAdminEmp(this.value)">
+            <option value="">-- ➕ 手動輸入或選擇現有員工 --</option>
+          </select>
+        </div>
+
+        <div class="row-2">
+          <div class="form-group">
+            <label>員工姓名 <span class="req">*</span></label>
+            <input type="text" id="admAdminName" list="employeeList" placeholder="例如：林主管">
+          </div>
+          <div class="form-group">
+            <label>LINE UserID (選填/自動對應)</label>
+            <input type="text" id="admAdminUid" placeholder="留空時由系統依姓名自動綁定">
+          </div>
+        </div>
+
+        <div class="row-2">
+          <div class="form-group">
+            <label>帳號身分權限 <span class="req">*</span></label>
+            <select id="admAdminRole">
+              <option value="ADMIN" selected>🛡️ 管理員 (ADMIN)</option>
+              <option value="SUPER_ADMIN">👑 超級管理員 (SUPER_ADMIN)</option>
+              <option value="USER">👤 一般成員 (USER)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>帳號啟用狀態</label>
+            <select id="admAdminEnabled">
+              <option value="true" selected>✅ 啟用中 (TRUE)</option>
+              <option value="false">⛔ 停用權限 (FALSE)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>職務 / 權限備註說明</label>
+          <input type="text" id="admAdminRemarks" placeholder="例如：店務主管、人事管理員、一般員工">
+        </div>
+
+        <button class="btn teal" onclick="saveAdminUserRecord()">💾 儲存帳號權限至 Google Sheet 資料庫</button>
+
+        <h4 style="margin:18px 0 8px 0; font-size:14px;">📊 帳號權限資料庫清單 (<span id="admAdminCount">0</span> 筆)</h4>
+        <div id="admAdminListBox"></div>
+      </div>
+
+      <!-- 管理模組 1：員工特休資料庫 (annualLeaveQuota) -->
+      <div id="admPanel_quota" class="card hidden">
+        <div class="section-title">
+          <span>👥 新增 / 修改員工特休資料</span>
+          <button class="btn sm teal" onclick="triggerAutoAnnualLeave()">🔄 依到職日重算全體</button>
+        </div>
+        <div class="form-group">
+          <label>選擇現有員工進行修改（或維持空白以新增員工）</label>
+          <select id="admSelEmp" onchange="onAdminSelectEmployee(this.value)">
+            <option value="">-- ➕ 新增員工資料 --</option>
+          </select>
+        </div>
+        <div class="row-2">
+          <div class="form-group">
+            <label>員工姓名 <span class="req">*</span></label>
+            <input type="text" id="admEmpName" placeholder="例如：王小明">
+          </div>
+          <div class="form-group">
+            <label>年資顯示 (填到職日可自動算)</label>
+            <input type="text" id="admSeniority" placeholder="例如：3年6月">
+          </div>
+        </div>
+        <div class="row-3">
+          <div class="form-group">
+            <label>年度額度(天)</label>
+            <input type="number" step="0.5" id="admDays" value="7" onchange="document.getElementById('admHours').value = this.value * 8">
+          </div>
+          <div class="form-group">
+            <label>年度額度(小時)</label>
+            <input type="number" step="0.5" id="admHours" value="56">
+          </div>
+          <div class="form-group">
+            <label>期初已用(小時)</label>
+            <input type="number" step="0.5" id="admInitUsed" value="0">
+          </div>
+        </div>
+        <div class="row-2">
+          <div class="form-group">
+            <label>到職日 (選填)</label>
+            <input type="date" id="admHireDate">
+          </div>
+          <div class="form-group">
+            <label>手動鎖定額度</label>
+            <select id="admManualLock">
+              <option value="">否 (隨年度自動更新)</option>
+              <option value="Y">是 (Y = 鎖定不自動覆蓋)</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>調整原因 / 備註</label>
+          <input type="text" id="admRemarks" placeholder="例如：2026年度特休設定">
+        </div>
+        <button class="btn teal" onclick="saveAdminQuota()">💾 寫入員工特休資料庫</button>
+
+        <h4 style="margin:18px 0 8px 0; font-size:14px;">📊 特休資料庫員工清單 (<span id="admQuotaCount">0</span> 人)</h4>
+        <div id="admQuotaListBox"></div>
+      </div>
+
+      <!-- 管理模組 2：請假記錄資料庫 (請假記錄) -->
+      <div id="admPanel_recs" class="card hidden">
+        <div class="section-title">
+          <span>📋 請假記錄資料庫管理</span>
+          <button class="btn sm" onclick="exitEditMode(); switchTab('form');">➕ 代客新增假單</button>
+        </div>
+        <div class="form-group">
+          <input type="text" id="admSearchRec" placeholder="🔍 輸入姓名、日期或假別即時篩選記錄..." oninput="filterAdminRecords()">
+        </div>
+        <div id="admRecentRecordsBox"></div>
+      </div>
+
+      <!-- 管理模組 3：班表與特定假日資料庫 (工時與休假設定) -->
+      <div id="admPanel_sched" class="card hidden">
+        <h3 class="section-title">⚙️ 修改每週開放請假與工時</h3>
+        <div id="admScheduleFormBox"></div>
+        <hr style="border:none; border-top:1px solid var(--border); margin:14px 0;">
+        <h4 style="margin:0 0 8px 0; font-size:14px;">➕ 新增特定國定假日 / 補班日</h4>
+        <div class="row-2">
+          <div class="form-group">
+            <label>特定日期</label>
+            <input type="date" id="admSpDate">
+          </div>
+          <div class="form-group">
+            <label>調整類型</label>
+            <select id="admSpType">
+              <option value="休假日">休假日 (當天禁止請假)</option>
+              <option value="補班日">補班日 (當天開放請假)</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>假日或調整說明</label>
+          <input type="text" id="admSpName" placeholder="例如：中秋節店休">
+        </div>
+        <button class="btn teal" onclick="saveAdminSchedule()">💾 儲存班表與假日設定至資料庫</button>
+
+        <h4 style="margin:18px 0 8px 0; font-size:14px;">📅 目前已啟用之特定日期清單</h4>
+        <div id="admSpecialDatesManageBox"></div>
+      </div>
+
+      <!-- 管理模組 4：假別資料庫與系統維護 (patterns) -->
+      <div id="admPanel_types" class="card hidden">
+        <h3 class="section-title">🏷️ 新增 / 修改後端假別資料庫</h3>
+        <div class="row-2">
+          <div class="form-group">
+            <label>假別標準名稱</label>
+            <input type="text" id="admNewTypeName" placeholder="例如：家庭照顧假">
+          </div>
+          <div class="form-group">
+            <label>同義別名 (逗號分隔)</label>
+            <input type="text" id="admNewTypeAliases" placeholder="例如：家照假,照顧假">
+          </div>
+        </div>
+        <button class="btn blue" onclick="saveAdminLeaveType()" style="margin-bottom:14px;">➕ 新增 / 更新假別</button>
+
+        <h4 style="margin:0 0 8px 0; font-size:14px;">📌 假別資料庫清單（點擊可切換啟用/停用）</h4>
+        <div id="admLeaveTypeListBox" style="margin-bottom:18px;"></div>
+
+        <hr style="border:none; border-top:1px solid var(--border); margin:16px 0;">
+        <h3 class="section-title">🛠️ 系統快取與資料庫維護</h3>
+        <button class="btn secondary" onclick="clearSystemCacheFromAdmin()">🧹 清除系統快取並重新載入 Sheet 設定</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ============================================================
+    // 🌐 GitHub Pages 外部極速版核心連線設定（已預填您 1_Config_Core.gs 的設定）
+    // ============================================================
+    const GAS_WEB_APP_URL  = "https://script.google.com/macros/s/AKfycbyuW_4_sWHWUq0lc4QOe1amHl7ipGXr0wGNoVQFJl7leq6JYGWVR7CUoPOZkPMqprnX/exec";
+    const DEFAULT_LIFF_ID  = "2012028062-vnoiLP9t";
+    const CACHE_KEY_INIT   = "leave_sys_init_cache_v16";
+
+    /**
+     * ✅ 跨網域無 CORS 預檢之 google.script.run 相容引擎
+     * 當運行於 GitHub Pages 時，自動將所有 google.script.run 呼叫轉為對 GAS_WEB_APP_URL 的 text/plain POST 請求
+     */
+    function createExternalGasRunner(successCb, failureCb) {
+      const callBackend = (methodName, args) => {
+        fetch(GAS_WEB_APP_URL, {
+          method:  "POST",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body:    JSON.stringify({ apiAction: methodName, args: args })
+        })
+          .then(res => res.json())
+          .then(payload => {
+            if (payload && payload.ok) {
+              if (typeof successCb === "function") successCb(payload.result);
+            } else {
+              const err = new Error((payload && payload.error) || "後端 API 處理失敗");
+              if (typeof failureCb === "function") failureCb(err);
+            }
+          })
+          .catch(err => {
+            if (typeof failureCb === "function") failureCb(err);
+          });
+      };
+
+      const runner = {
+        withSuccessHandler(cb) { return createExternalGasRunner(cb, failureCb); },
+        withFailureHandler(cb) { return createExternalGasRunner(successCb, cb); }
+      };
+
+      const apiMethods = [
+        "getWebFormInitData", "validateLeaveTextFromWeb", "getLeaveRecordByRowForWeb",
+        "previewLeaveHoursFromWeb", "getPrivateUserDashboardData", "sendPrivateLeaveReportToUser",
+        "submitLeaveFormFromWeb", "submitRawTextLeaveFromWeb", "adminGetBackendData",
+        "adminSaveAdminUser", "adminDeleteAdminUser", "adminSaveEmployeeQuota",
+        "adminDeleteEmployeeQuota", "adminTriggerAutoAnnualLeave", "adminSaveScheduleSheet",
+        "adminDeleteSpecialDate", "adminAddOrUpdateLeaveType", "adminCancelLeaveByRow",
+        "adminClearCacheAndReload"
+      ];
+
+      apiMethods.forEach(m => {
+        runner[m] = function(...args) { callBackend(m, args); };
+      });
+
+      return runner;
+    }
+
+    // 若不在 GAS iframe 內（如部署於 GitHub Pages），自動掛載相容橋接器
+    if (typeof window.google === "undefined" || !window.google.script || !window.google.script.run) {
+      window.google = {
+        script: {
+          run: createExternalGasRunner()
+        }
+      };
+    }
+
+    function getLocalTodayStrings() {
+      const now  = new Date();
+      const yyyy = now.getFullYear();
+      const mm   = String(now.getMonth() + 1).padStart(2, "0");
+      const dd   = String(now.getDate()).padStart(2, "0");
+      return {
+        iso:   `${yyyy}-${mm}-${dd}`,
+        slash: `${yyyy}/${mm}/${dd}`
+      };
+    }
+
+    let STATE = {
+      uid: "",
+      gid: "",
+      tab: "form",
+      editRow: "",
+      liffId: DEFAULT_LIFF_ID,
+      botBasicId: "",
+      periodMode: "全天",
+      leaveTypes: ["特休", "事假", "病假", "公假", "補休", "婚假", "喪假", "產假", "陪產假"],
+      leaveTypesFull: [],
+      scheduleOverview: null,
+      dashboard: null,
+      adminData: null,
+      // 後端 11 道完整驗證與重複請假攔截閘門狀態
+      verifiedText: "",
+      verifyStatus: "idle", // 'idle' | 'verifying' | 'valid' | 'invalid'
+      verifyErrorMsg: "",
+      verifySummary: "",
+      verifySeq: 0,
+      _fetchedBySavedName: false
+    };
+
+    let isSubmitting = false;
+    let rawTextDebounceTimer = null;
+
+    function isMobileClient() {
+      const ua = navigator.userAgent || '';
+      return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(ua);
+    }
+
+    function showStatusBanner(boxId, type, message) {
+      const box = document.getElementById(boxId);
+      if (!box) return;
+      box.className = 'status-box ' + type;
+      box.innerText = message;
+      box.classList.remove('hidden');
+    }
+
+    function parseClientUrlParams() {
+      try {
+        const search = window.location.search || '';
+        const up = new URLSearchParams(search);
+        if (up.get('tab')) STATE.tab = up.get('tab');
+        if (up.get('uid')) STATE.uid = up.get('uid');
+        if (up.get('gid')) STATE.gid = up.get('gid');
+        if (up.get('editRow')) STATE.editRow = up.get('editRow');
+
+        const liffState = up.get('liff.state');
+        if (liffState) {
+          const sp = new URLSearchParams(liffState.replace(/^[?\/]+/, ''));
+          if (sp.get('tab')) STATE.tab = sp.get('tab');
+          if (sp.get('uid')) STATE.uid = sp.get('uid');
+          if (sp.get('gid')) STATE.gid = sp.get('gid');
+          if (sp.get('editRow')) STATE.editRow = sp.get('editRow');
+        }
+      } catch (_) {}
+    }
+
+    /**
+     * ✅ 極速初始化：
+     * 1. 0.01 秒立即填入本機今日日期與預設姓名，並載入 localStorage 快取（Stale-While-Revalidate）
+     * 2. 背景非同步向 GAS 同步最新假別、特休餘額與修改假單資料
+     * 3. 頂層視窗初始化 LIFF SDK，支援群組與 1對1 原生互動
+     */
+    window.onload = function() {
+      parseClientUrlParams();
+      const savedName = localStorage.getItem('leave_sys_user_name') || '';
+      const todayLocal = getLocalTodayStrings();
+
+      // 1. 0.01 秒預填日期與姓名，畫面零等待立即可用
+      if (!document.getElementById('inpStartDate').value) {
+        document.getElementById('inpStartDate').value = todayLocal.iso;
+        document.getElementById('inpEndDate').value   = todayLocal.iso;
+      }
+      if (savedName) {
+        document.getElementById('inpName').value      = savedName;
+        document.getElementById('inpQueryName').value = savedName;
+      }
+      initTextTemplate(savedName, todayLocal.slash);
+
+      // 2. 讀取本機快取秒速渲染（若有快取）
+      try {
+        const cachedRaw = localStorage.getItem(CACHE_KEY_INIT);
+        if (cachedRaw) {
+          const cachedRes = JSON.parse(cachedRaw);
+          if (cachedRes && cachedRes.success) {
+            applyInitData(cachedRes, savedName, true);
+          }
+        }
+      } catch (_) {}
+
+      if (STATE.tab) switchTab(STATE.tab);
+
+      // 3. 背景向 GAS 取得最新初始化資料
+      fetchFreshInitData(savedName);
+
+      // 4. 初始化 LIFF SDK（在 GitHub Pages 頂層視窗可完整取得 context）
+      if (STATE.liffId) {
+        const initLiffWhenReady = () => {
+          if (typeof liff === 'undefined') return;
+          liff.init({ liffId: STATE.liffId }).then(() => {
+            parseClientUrlParams();
+            if (STATE.tab) switchTab(STATE.tab);
+            if (liff.isLoggedIn()) {
+              const ctx = liff.getContext();
+              if (ctx) {
+                let needRefetch = false;
+                if (ctx.userId && ctx.userId !== STATE.uid) {
+                  STATE.uid = ctx.userId;
+                  needRefetch = true;
+                }
+                const ctxGid = ctx.groupId || ctx.roomId || '';
+                if (ctxGid && ctxGid !== STATE.gid) {
+                  STATE.gid = ctxGid;
+                  if (STATE.verifyStatus === 'valid' && STATE.verifiedText) {
+                    unlockPasteButtonWithVerifiedText(STATE.verifiedText);
+                  }
+                }
+                if (needRefetch) {
+                  fetchFreshInitData(savedName);
+                }
+              }
+            }
+          }).catch(() => {});
+        };
+
+        if (typeof liff !== 'undefined') {
+          initLiffWhenReady();
+        } else {
+          window.addEventListener('load', initLiffWhenReady);
+        }
+      }
+    };
+
+    function fetchFreshInitData(savedName) {
+      google.script.run.withSuccessHandler(res => {
+        if (res && res.success) {
+          try {
+            if (!STATE.editRow) {
+              localStorage.setItem(CACHE_KEY_INIT, JSON.stringify(res));
+            }
+          } catch (_) {}
+          applyInitData(res, savedName, false);
+        }
+      }).getWebFormInitData(STATE.uid, savedName, STATE.editRow, STATE.tab);
+    }
+
+    function renderLeaveTypeOptions(leaveTypes, preferredVal) {
+      if (!Array.isArray(leaveTypes) || leaveTypes.length === 0) return;
+      const selType    = document.getElementById('selLeaveType');
+      const currentVal = preferredVal || selType.value || leaveTypes[0];
+
+      selType.innerHTML = '';
+      leaveTypes.forEach(typeName => {
+        const opt = document.createElement('option');
+        opt.value = typeName;
+        opt.text  = typeName;
+        if (typeName === currentVal) opt.selected = true;
+        selType.appendChild(opt);
+      });
+    }
+
+    function applyInitData(res, savedName, isFromLocalCache) {
+      if (res.botBasicId) STATE.botBasicId = res.botBasicId;
+      if (Array.isArray(res.leaveTypes)) STATE.leaveTypes = res.leaveTypes;
+      if (Array.isArray(res.leaveTypesFull)) STATE.leaveTypesFull = res.leaveTypesFull;
+      if (res.scheduleOverview) STATE.scheduleOverview = res.scheduleOverview;
+
+      if (Array.isArray(res.leaveTypes) && res.leaveTypes.length > 0) {
+        renderLeaveTypeOptions(res.leaveTypes);
+      }
+
+      if (Array.isArray(res.employees)) {
+        document.getElementById('employeeList').innerHTML = res.employees.map(n => `<option value="${n}">`).join('');
+      }
+
+      if (res.todayStr && !STATE.editRow) {
+        document.getElementById('inpStartDate').value = res.todayStr;
+        document.getElementById('inpEndDate').value   = res.todayStr;
+      }
+
+      const resolvedName = res.currentName || savedName || '';
+      if (resolvedName) {
+        document.getElementById('inpName').value      = resolvedName;
+        document.getElementById('inpQueryName').value = resolvedName;
+      }
+
+      initTextTemplate(resolvedName, res.todaySlashStr || getLocalTodayStrings().slash);
+
+      if (!isFromLocalCache && res.editRecord) {
+        enterEditMode(res.editRecord);
+      } else if (!isFromLocalCache) {
+        triggerPreview();
+      }
+
+      if (res.personalDashboard) {
+        STATE.dashboard = res.personalDashboard;
+        renderDashboard(res.personalDashboard);
+        updateQuotaHint();
+      } else if (!isFromLocalCache && !res.currentName && savedName && !STATE._fetchedBySavedName) {
+        STATE._fetchedBySavedName = true;
+        fetchFreshInitData(savedName);
+      }
+
+      if (res.todayOverview) renderTodayOverview(res.todayOverview);
+      if (res.scheduleOverview) renderScheduleOverview(res.scheduleOverview);
+
+      const isUserAdmin = !!res.isAdmin;
+      const btnToday    = document.getElementById('tabBtn_today');
+      const btnSchedule = document.getElementById('tabBtn_schedule');
+      const btnAdmin    = document.getElementById('tabBtn_admin');
+
+      if (btnToday)    btnToday.classList.toggle('hidden', !isUserAdmin);
+      if (btnSchedule) btnSchedule.classList.toggle('hidden', !isUserAdmin);
+      if (btnAdmin)    btnAdmin.classList.toggle('hidden', !isUserAdmin);
+
+      if (isUserAdmin) {
+        if (res.adminData && res.adminData.success) {
+          STATE.adminData = res.adminData;
+          renderAdminConsole(res.adminData);
+        } else if (!isFromLocalCache && STATE.tab === 'admin') {
+          reloadAdminDatabase();
+        }
+      } else if (!isFromLocalCache && ['today', 'schedule', 'admin'].includes(STATE.tab)) {
+        switchTab('form');
+      }
+    }
+
+    /**
+     * 初始化文字快填範本，且當取得真實員工姓名時自動替換預設的「王小明」並立即觸發後端驗證
+     */
+    function initTextTemplate(name, dateSlashStr) {
+      const txt = document.getElementById('txtRawLeave');
+      if (!txt) return;
+
+      if (!txt.value) {
+        txt.value = [
+          `請假人：${name || '王小明'}`,
+          `請假日期：${dateSlashStr}`,
+          `請假時數：全天`,
+          `假別：特休`,
+          `事由：個人事務`,
+          `職務代理：李大華`,
+          `核准：已報請主管核准`
+        ].join('\n');
+        lockPasteButtonForVerification('🔍 正在驗證假單格式與是否重複請假...');
+        if (STATE.tab === 'textform') {
+          runBackendTextValidation(txt.value.trim(), false);
+        }
+      } else if (name && txt.value.includes('請假人：王小明')) {
+        txt.value = txt.value.replace('請假人：王小明', `請假人：${name}`);
+        lockPasteButtonForVerification('🔍 正在驗證假單格式與是否重複請假...');
+        if (STATE.tab === 'textform') {
+          runBackendTextValidation(txt.value.trim(), false);
+        }
+      }
+    }
+
+    /**
+     * 鎖定貼回按鈕（將 href 設為 "#"），防止未通過後端驗證前誤觸跳轉至 LINE
+     */
+    function lockPasteButtonForVerification(labelMsg) {
+      const btn = document.getElementById('btnPasteToLine');
+      if (!btn) return;
+      btn.href = '#';
+      btn.classList.add('locked');
+      if (labelMsg) btn.innerText = labelMsg;
+    }
+
+    /**
+     * ✅ 當前端與後端 11 道驗證（含無重複請假）100% 通過時才解鎖按鈕：
+     * - 若在「LINE 群組 (STATE.gid)」：掛載原生 line://nv/chat（點擊後自動複製文字並直接跳回「原群組」輸入框，絕不跳去 1對1 私訊！）
+     * - 若在「1對1 私訊 (!STATE.gid)」：掛載原生 line://oaMessage/@id/?text（點擊後直接自動填入 1對1 輸入框）
+     */
+    function unlockPasteButtonWithVerifiedText(rawText) {
+      const btn = document.getElementById('btnPasteToLine');
+      if (!btn) return;
+      btn.classList.remove('locked');
+
+      if (isMobileClient()) {
+        if (STATE.gid) {
+          btn.innerText = '📲 驗證通過！點此複製並自動返回原群組貼上';
+          btn.href = 'line://nv/chat';
+        } else if (STATE.botBasicId && rawText) {
+          btn.innerText = '📲 驗證通過！點此將文字貼回 LINE 輸入框';
+          const rawBasicId   = STATE.botBasicId.trim();
+          const cleanBasicId = rawBasicId.startsWith('@') ? rawBasicId : ('@' + rawBasicId);
+          btn.href = 'line://oaMessage/' + cleanBasicId + '/?' + encodeURIComponent(rawText);
+        } else {
+          btn.innerText = '📲 驗證通過！點此複製請假單文字';
+          btn.href = '#';
+        }
+      } else {
+        btn.innerText = '📲 驗證通過！點此複製請假單文字';
+        btn.href = '#';
+      }
+    }
+
+    /**
+     * 當使用者在多行文字框修改任何文字時：
+     * 1. 立即清除舊的驗證通過狀態並鎖定按鈕 href="#"
+     * 2. 先做前端 11 道同步檢查，通過後於停筆 350ms 自動呼叫後端檢查重複請假與特休額度
+     */
+    function onRawTextInput() {
+      const txt     = document.getElementById('txtRawLeave');
+      const rawText = txt ? txt.value.trim() : '';
+
+      STATE.verifiedText   = '';
+      STATE.verifyStatus   = 'idle';
+      STATE.verifyErrorMsg = '';
+      lockPasteButtonForVerification('🔍 正在檢查假單內容...');
+
+      if (rawTextDebounceTimer) clearTimeout(rawTextDebounceTimer);
+
+      const clientCheck = validateLeaveTextClientSide(rawText);
+      if (!clientCheck.valid) {
+        STATE.verifyStatus   = 'invalid';
+        STATE.verifyErrorMsg = clientCheck.errorMessage;
+        lockPasteButtonForVerification('⛔ 假單格式未通過（請先修正上方紅框錯誤）');
+        showStatusBanner('textFormResultBox', 'err', clientCheck.errorMessage);
+        return;
+      }
+
+      showStatusBanner('textFormResultBox', 'info', '🔍 正在與後端資料庫核對假單（檢查是否重複請假與特休額度）...');
+      rawTextDebounceTimer = setTimeout(() => {
+        runBackendTextValidation(rawText, false);
+      }, 350);
+    }
+
+    /**
+     * 核心後端驗證函式：呼叫後端 validateLeaveTextFromWeb (內部執行 4 大關卡驗證，且不發送任何洗版按鈕)
+     */
+    function runBackendTextValidation(rawText, autoJumpOnSuccess) {
+      const clientCheck = validateLeaveTextClientSide(rawText);
+      if (!clientCheck.valid) {
+        STATE.verifiedText   = '';
+        STATE.verifyStatus   = 'invalid';
+        STATE.verifyErrorMsg = clientCheck.errorMessage;
+        lockPasteButtonForVerification('⛔ 假單格式未通過（請先修正上方紅框錯誤）');
+        showStatusBanner('textFormResultBox', 'err', clientCheck.errorMessage);
+        return;
+      }
+
+      const currentSeq   = ++STATE.verifySeq;
+      STATE.verifyStatus = 'verifying';
+      lockPasteButtonForVerification('⏳ 正在與資料庫核對（檢查重複請假）...');
+      showStatusBanner('textFormResultBox', 'info', '⏳ 正在與 Google Sheet 資料庫核對（檢查是否重複請假、休假日與特休餘額）...');
+
+      google.script.run
+        .withSuccessHandler(res => {
+          if (currentSeq !== STATE.verifySeq) return;
+
+          if (!res || !res.valid) {
+            STATE.verifiedText   = '';
+            STATE.verifyStatus   = 'invalid';
+            STATE.verifyErrorMsg = (res && res.errorMessage) ? res.errorMessage : '❌ 假單驗證未通過';
+            lockPasteButtonForVerification('⛔ 假單驗證未通過（請先修正上方錯誤）');
+            showStatusBanner('textFormResultBox', 'err', STATE.verifyErrorMsg);
+            return;
+          }
+
+          STATE.verifiedText   = rawText;
+          STATE.verifyStatus   = 'valid';
+          STATE.verifyErrorMsg = '';
+          STATE.verifySummary  = res.summaryText || '';
+
+          unlockPasteButtonWithVerifiedText(rawText);
+          copyToClipboardSafe(rawText);
+
+          if (!autoJumpOnSuccess) {
+            showStatusBanner(
+              'textFormResultBox',
+              'ok',
+              STATE.gid
+                ? `✅ 資料庫驗證通過！（${STATE.verifySummary}）\n請點擊下方綠色按鈕自動複製並返回原群組貼上（或點灰色按鈕直接送出）。`
+                : `✅ 資料庫驗證通過！（${STATE.verifySummary}）\n確認無重複請假且格式正確，請點擊下方綠色按鈕直接將文字貼回 LINE 輸入框。`
+            );
+            return;
+          }
+
+          executeVerifiedPasteAction(rawText);
+        })
+        .withFailureHandler(err => {
+          if (currentSeq !== STATE.verifySeq) return;
+          STATE.verifiedText   = '';
+          STATE.verifyStatus   = 'invalid';
+          STATE.verifyErrorMsg = '❌ 無法連接後端驗證伺服器：' + err.message;
+          lockPasteButtonForVerification('⚠️ 驗證連線失敗，請點擊重試');
+          showStatusBanner('textFormResultBox', 'err', STATE.verifyErrorMsg);
+        })
+        .validateLeaveTextFromWeb({
+          text:    rawText,
+          userId:  STATE.uid,
+          groupId: STATE.gid
+        });
+    }
+
+    /**
+     * 當使用者在驗證完成前就點擊按鈕，待後端驗證通過後自動執行的動作
+     */
+    function executeVerifiedPasteAction(rawText) {
+      copyToClipboardSafe(rawText);
+      const btn = document.getElementById('btnPasteToLine');
+
+      if (isMobileClient()) {
+        if (STATE.gid) {
+          unlockPasteButtonWithVerifiedText(rawText);
+          showStatusBanner(
+            'textFormResultBox',
+            'ok',
+            `✅ 【驗證 100% 通過】${STATE.verifySummary}\n📋 假單文字已自動複製！正在返回原群組（在群組輸入框點一下貼上即可發送）...`
+          );
+          try { if (typeof liff !== 'undefined' && liff.isInClient()) liff.closeWindow(); } catch (_) {}
+          try { window.top.location.href = 'line://nv/chat'; } catch (_) {}
+          return;
+        }
+
+        if (STATE.botBasicId) {
+          unlockPasteButtonWithVerifiedText(rawText);
+          showStatusBanner(
+            'textFormResultBox',
+            'ok',
+            `✅ 【驗證 100% 通過】${STATE.verifySummary}\n正在將文字貼回您的 LINE 聊天輸入框...`
+          );
+          if (btn && btn.href && btn.href.startsWith('line://')) {
+            try { window.top.location.href = btn.href; } catch (_) {}
+          }
+          return;
+        }
+      }
+
+      // 電腦版（Windows / Mac）
+      showStatusBanner(
+        'textFormResultBox',
+        'ok',
+        `✅ 【資料庫驗證 100% 通過】${STATE.verifySummary}\n\n` +
+        `📋 請假文字已自動複製到剪貼簿！\n` +
+        `👉 請直接切回 LINE 聊天輸入框按【Ctrl + V】（Mac 按 Cmd + V）貼上，並按 Enter 發送！`
+      );
+    }
+
+    /**
+     * 點擊「📲 驗證通過！」綠色按鈕處理器
+     */
+    function handlePasteToLineClick(event) {
+      const rawText = document.getElementById('txtRawLeave').value.trim();
+
+      // 1. 先執行前端 11 道同步驗證
+      const syncCheck = validateLeaveTextClientSide(rawText);
+      if (!syncCheck.valid) {
+        event.preventDefault();
+        STATE.verifiedText   = '';
+        STATE.verifyStatus   = 'invalid';
+        STATE.verifyErrorMsg = syncCheck.errorMessage;
+        lockPasteButtonForVerification('⛔ 假單格式未通過（請先修正上方紅框錯誤）');
+        showStatusBanner('textFormResultBox', 'err', syncCheck.errorMessage);
+        return false;
+      }
+
+      // 2. 若後端已判定為錯誤或重複請假 -> 強制攔截，絕不放行！
+      if (STATE.verifyStatus === 'invalid' && STATE.verifyErrorMsg) {
+        event.preventDefault();
+        lockPasteButtonForVerification('⛔ 假單驗證未通過（請先修正上方錯誤）');
+        showStatusBanner('textFormResultBox', 'err', STATE.verifyErrorMsg);
+        return false;
+      }
+
+      // 3. 若前端與後端 Google Sheet 皆已 100% 驗證通過
+      if (STATE.verifyStatus === 'valid' && STATE.verifiedText === rawText) {
+        copyToClipboardSafe(rawText);
+
+        // 手機版（無論群組或 1對1）：直接放行原生 <a target="_top">！
+        // - 群組 (STATE.gid) 觸發 href="line://nv/chat" 直接關閉視窗回到「原群組」讓使用者貼上（絕不跳回 1對1 私訊）
+        // - 1對1 (!STATE.gid) 觸發 href="line://oaMessage/@id/?text" 直接塞入 1對1 輸入框
+        if (isMobileClient() && (STATE.gid || STATE.botBasicId)) {
+          unlockPasteButtonWithVerifiedText(rawText);
+          showStatusBanner(
+            'textFormResultBox',
+            'ok',
+            STATE.gid
+              ? `✅ 驗證通過（${STATE.verifySummary}）！文字已複製，正在自動返回原群組...`
+              : `✅ 驗證通過（${STATE.verifySummary}）！正在將文字自動貼回您的 LINE 聊天輸入框...`
+          );
+          if (STATE.gid && typeof liff !== 'undefined' && liff.isInClient()) {
+            setTimeout(() => { try { liff.closeWindow(); } catch (_) {} }, 150);
+          }
+          return true;
+        }
+
+        // 電腦版
+        event.preventDefault();
+        executeVerifiedPasteAction(rawText);
+        return false;
+      }
+
+      // 4. 若後端尚在核對中 -> 攔截本次點擊，等待後端確認無重複請假後自動執行（不需點第 2 次）
+      event.preventDefault();
+      if (rawTextDebounceTimer) clearTimeout(rawTextDebounceTimer);
+      runBackendTextValidation(rawText, true);
+      return false;
+    }
+
+    /**
+     * 前端同步 11 道格式與邏輯驗證
+     */
+    function validateLeaveTextClientSide(rawText) {
+      if (!rawText || !rawText.trim()) {
+        return { valid: false, errorMessage: '⚠️ 請假單內容為空，請輸入請假單內容' };
+      }
+
+      const reqFields = ['請假人', '請假日期', '請假時數', '假別', '事由', '職務代理', '核准'];
+      const missing   = [];
+      const empty     = [];
+      const parsed    = {};
+
+      reqFields.forEach(f => {
+        if (!new RegExp(f + '\\s*[：:]').test(rawText)) {
+          missing.push(f);
+        }
+      });
+      if (missing.length > 0) {
+        return { valid: false, errorMessage: `⚠️ 請假單缺少必填欄位：\n• ${missing.join('\n• ')}` };
+      }
+
+      rawText.split(/\r?\n/).forEach(line => {
+        const t   = line.trim();
+        const idx = t.search(/[：:]/);
+        if (idx !== -1) {
+          const k = t.substring(0, idx).trim();
+          const v = t.substring(idx + 1).trim();
+          if (k) parsed[k] = v;
+        }
+      });
+
+      reqFields.forEach(f => {
+        if (!parsed[f]) empty.push(f);
+      });
+      if (empty.length > 0) {
+        return { valid: false, errorMessage: `⚠️ 請假單填寫不完整（以下欄位未填內容）：\n• ${empty.join('\n• ')}` };
+      }
+
+      const dateRaw = parsed['請假日期'].replace(/[（(][一二三四五六日][)）]/g, '').trim();
+      const parts   = dateRaw.split(/[～~\-–—]/).map(s => s.trim()).filter(Boolean);
+      const parseOneDate = (s, refY, refM) => {
+        let m = s.match(/^(\d{4})[\/\-\.年](\d{1,2})[\/\-\.月](\d{1,2})[日號]?$/);
+        if (m) return new Date(parseInt(m[1], 10), parseInt(m[2], 10) - 1, parseInt(m[3], 10));
+        m = s.match(/^(\d{2,3})[\/\-年](\d{1,2})[\/\-月](\d{1,2})[日號]?$/);
+        if (m) return new Date(parseInt(m[1], 10) + 1911, parseInt(m[2], 10) - 1, parseInt(m[3], 10));
+        if (refY) {
+          m = s.match(/^(\d{1,2})[\/\-](\d{1,2})$/);
+          if (m) return new Date(refY, parseInt(m[1], 10) - 1, parseInt(m[2], 10));
+          if (/^\d{1,2}$/.test(s) && refM !== undefined) return new Date(refY, refM, parseInt(s, 10));
+        }
+        return null;
+      };
+
+      const sDate = parseOneDate(parts[0]);
+      const eDate = parts.length > 1 && sDate
+        ? parseOneDate(parts[1], sDate.getFullYear(), sDate.getMonth())
+        : sDate;
+
+      if (!sDate || !eDate || isNaN(sDate.getTime()) || isNaN(eDate.getTime())) {
+        return { valid: false, errorMessage: `⚠️ 請假日期格式錯誤：「${parsed['請假日期']}」\n支援格式：2026/10/20 或 2026/10/20～2026/10/22` };
+      }
+      if (eDate.getTime() < sDate.getTime()) {
+        return { valid: false, errorMessage: '⚠️ 請假日期區間錯誤：結束日期不能早於開始日期' };
+      }
+
+      let workDayCount = 0;
+      const spDates = (STATE.scheduleOverview && STATE.scheduleOverview.specialDates) || [];
+      const spMap   = {};
+      spDates.forEach(sp => { if (sp && sp.date) spMap[sp.date] = sp; });
+
+      const cur = new Date(sDate.getFullYear(), sDate.getMonth(), sDate.getDate());
+      const end = new Date(eDate.getFullYear(), eDate.getMonth(), eDate.getDate());
+      while (cur <= end) {
+        const yyyy   = cur.getFullYear();
+        const mm     = String(cur.getMonth() + 1).padStart(2, '0');
+        const dd     = String(cur.getDate()).padStart(2, '0');
+        const dSlash = `${yyyy}/${mm}/${dd}`;
+        const dow    = cur.getDay();
+
+        let isWork = (dow !== 0);
+        if (STATE.scheduleOverview && Array.isArray(STATE.scheduleOverview.days) && STATE.scheduleOverview.days[dow]) {
+          isWork = !!STATE.scheduleOverview.days[dow].isWorkDay;
+        }
+        if (spMap[dSlash]) {
+          isWork = !!spMap[dSlash].isWorkDay;
+        }
+        if (isWork) workDayCount++;
+        cur.setDate(cur.getDate() + 1);
+      }
+      if (workDayCount === 0) {
+        return { valid: false, errorMessage: `⚠️ 請假日期「${parsed['請假日期']}」為休假日（如週日或店休假日），無有效工作日！` };
+      }
+
+      const startDow = sDate.getDay();
+      const dayCfg   = (STATE.scheduleOverview && Array.isArray(STATE.scheduleOverview.days) && STATE.scheduleOverview.days[startDow])
+        ? STATE.scheduleOverview.days[startDow]
+        : { fullDayHours: 8, morningHours: 3, afternoonHours: 5, halfDayHours: 4, lunchStart: '12:00', lunchEnd: '13:00' };
+
+      const hRaw = parsed['請假時數'].replace(/\s+/g, '');
+      let hoursPerDay = 0;
+      if (/^(全天|一天|整天)$/.test(hRaw)) hoursPerDay = Number(dayCfg.fullDayHours || 8);
+      else if (/^上午$/.test(hRaw)) hoursPerDay = Number(dayCfg.morningHours || 3);
+      else if (/^下午$/.test(hRaw)) hoursPerDay = Number(dayCfg.afternoonHours || 5);
+      else if (/^(半天|上半天|下半天)$/.test(hRaw)) hoursPerDay = Number(dayCfg.halfDayHours || 4);
+      else {
+        const tr = hRaw.match(/^(\d{1,2})[：:](\d{2})[～~\-–—](\d{1,2})[：:](\d{2})$/);
+        if (tr) {
+          const sh = parseInt(tr[1], 10), sm = parseInt(tr[2], 10);
+          const eh = parseInt(tr[3], 10), em = parseInt(tr[4], 10);
+          const startMin = sh * 60 + sm;
+          const endMin   = eh * 60 + em;
+          const rawDiff  = endMin - startMin;
+          if (rawDiff <= 0 || rawDiff > 600) {
+            return { valid: false, errorMessage: `⚠️ 請假時間區間無效：「${parsed['請假時數']}」` };
+          }
+          const parseMin = (hhmm, defMin) => {
+            if (!hhmm) return defMin;
+            const p = String(hhmm).split(':');
+            return p.length === 2 ? (parseInt(p[0], 10) * 60 + parseInt(p[1], 10)) : defMin;
+          };
+          const lunchStart = parseMin(dayCfg.lunchStart, 12 * 60);
+          const lunchEnd   = parseMin(dayCfg.lunchEnd,   13 * 60);
+          let deductMin = 0;
+          if (startMin < lunchEnd && endMin > lunchStart) {
+            deductMin = Math.max(0, Math.min(endMin, lunchEnd) - Math.max(startMin, lunchStart));
+          }
+          hoursPerDay = Math.max(0, (rawDiff - deductMin) / 60);
+          if (hoursPerDay <= 0) {
+            return { valid: false, errorMessage: `⚠️ 請假時間區間不能全為午休時間：「${parsed['請假時數']}」` };
+          }
+        } else {
+          const nm = hRaw.match(/^(\d+(\.\d+)?)(h|hr|hrs|hours?|小時|天)?$/i);
+          if (nm) {
+            const valNum = parseFloat(nm[1]);
+            const fullH  = Number(dayCfg.fullDayHours || 8);
+            if (nm[3] === '天') {
+              hoursPerDay = (valNum > 1 && workDayCount > 1) ? ((valNum * fullH) / workDayCount) : (valNum * fullH);
+            } else {
+              hoursPerDay = valNum;
+            }
+          } else {
+            return { valid: false, errorMessage: `⚠️ 請假時數格式錯誤：「${parsed['請假時數']}」\n支援：全天、上午、下午、半天、09:00～12:00、3h` };
+          }
+        }
+      }
+
+      const tRaw = parsed['假別'].trim();
+      const validTypes = STATE.leaveTypes && STATE.leaveTypes.length > 0
+        ? STATE.leaveTypes
+        : ['特休', '事假', '病假', '公假', '補休', '婚假', '喪假', '產假', '陪產假'];
+      let matchedType = '';
+      if (tRaw.includes('特休')) {
+        matchedType = '特休';
+      } else {
+        for (const vt of validTypes) {
+          if (tRaw === vt || tRaw.includes(vt)) { matchedType = vt; break; }
+        }
+        if (!matchedType && Array.isArray(STATE.leaveTypesFull)) {
+          for (const ltObj of STATE.leaveTypesFull) {
+            if ((ltObj.aliases || []).some(a => tRaw === a || tRaw.includes(a))) {
+              matchedType = ltObj.name;
+              break;
+            }
+          }
+        }
+      }
+      if (!matchedType) {
+        return { valid: false, errorMessage: `⚠️ 假別不存在：「${tRaw}」\n目前可用假別：${validTypes.join('、')}` };
+      }
+
+      if (matchedType === '特休' && STATE.dashboard && STATE.dashboard.hasQuota && STATE.dashboard.name === parsed['請假人']) {
+        const reqTotal = Math.round(hoursPerDay * workDayCount * 10) / 10;
+        if (reqTotal > STATE.dashboard.remainingHours) {
+          return {
+            valid: false,
+            errorMessage: `⚠️ 特休額度不足！\n申請時數：${reqTotal}h｜目前剩餘：${STATE.dashboard.remainingHours}h`
+          };
+        }
+      }
+
+      return { valid: true };
+    }
+
+    function copyToClipboardSafe(text) {
+      try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(text).catch(() => {});
+        }
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.position = 'fixed';
+        ta.style.opacity  = '0';
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        return true;
+      } catch (e) {
+        return false;
+      }
+    }
+
+    function switchTab(tab) {
+      const validTabs = ['form', 'my', 'textform', 'today', 'schedule', 'help', 'admin'];
+      const targetTab = validTabs.includes(tab) ? tab : 'form';
+      STATE.tab = targetTab;
+
+      const topBar = document.getElementById('topTabsBar');
+      if (topBar) {
+        topBar.classList.toggle('hidden', targetTab === 'textform');
+      }
+
+      if (targetTab === 'textform') {
+        const txt = document.getElementById('txtRawLeave');
+        if (txt && txt.value.trim() && STATE.verifiedText !== txt.value.trim()) {
+          runBackendTextValidation(txt.value.trim(), false);
+        }
+      }
+
+      if (targetTab === 'admin') {
+        const admBtn = document.getElementById('tabBtn_admin');
+        admBtn.classList.remove('hidden');
+        try { admBtn.scrollIntoView({ behavior: 'smooth', inline: 'center' }); } catch (_) {}
+        if (!STATE.adminData) {
+          reloadAdminDatabase();
+        }
+      }
+
+      validTabs.forEach(t => {
+        const btn = document.getElementById('tabBtn_' + t);
+        const sec = document.getElementById('sec_' + t);
+        if (btn) btn.classList.toggle('active', t === targetTab);
+        if (sec) sec.classList.toggle('hidden', t !== targetTab);
+      });
+    }
+
+    function reloadAdminDatabase() {
+      const banner = document.getElementById('adminLoadingBanner');
+      if (banner) banner.classList.remove('hidden');
+      google.script.run
+        .withSuccessHandler(adm => {
+          if (banner) banner.classList.add('hidden');
+          if (adm && adm.success) {
+            STATE.adminData = adm;
+            renderAdminConsole(adm);
+          }
+        })
+        .withFailureHandler(() => {
+          if (banner) banner.classList.add('hidden');
+        })
+        .adminGetBackendData(STATE.uid);
+    }
+
+    // ==================== 修改假單模式控制 ====================
+    function enterEditMode(rec) {
+      if (rec.inactive) {
+        showStatusBanner('formResultBox', 'err', `⚠️ 記錄 #${rec.rowNumber} 已取消或刪除，無法修改！`);
+        exitEditMode();
+        return;
+      }
+      STATE.editRow = rec.rowNumber;
+      const banner = document.getElementById('editModeBanner');
+      banner.innerHTML = `✏️ 正在修改假單編號 <strong>#${rec.rowNumber}</strong>（修改後點擊下方按鈕即可覆蓋更新）`;
+      banner.classList.remove('hidden');
+
+      document.getElementById('inpName').value      = rec.name || '';
+      document.getElementById('inpStartDate').value = rec.startDate || '';
+      document.getElementById('inpEndDate').value   = rec.endDate || '';
+      document.getElementById('inpStartTime').value = rec.startTime || '09:00';
+      document.getElementById('inpEndTime').value   = rec.endTime || '12:00';
+      document.getElementById('selLeaveType').value = rec.leaveType || '特休';
+      document.getElementById('inpDeputy').value    = rec.deputy || '';
+      document.getElementById('inpReason').value    = rec.reason || '';
+      document.getElementById('selApproval').value  = rec.approval || '已報請主管核准';
+
+      const targetPill = document.querySelector(`.pill[data-mode="${rec.periodMode}"]`) || document.querySelector('.pill[data-mode="全天"]');
+      selectPeriod(rec.periodMode || '全天', targetPill);
+
+      document.getElementById('btnSubmit').innerText = `💾 儲存修改假單 (#${rec.rowNumber})`;
+      document.getElementById('btnSubmit').classList.add('blue');
+      document.getElementById('btnCancelEdit').classList.remove('hidden');
+      switchTab('form');
+    }
+
+    function exitEditMode() {
+      STATE.editRow = '';
+      document.getElementById('editModeBanner').classList.add('hidden');
+      document.getElementById('btnSubmit').innerText = '✅ 送出請假申請';
+      document.getElementById('btnSubmit').classList.remove('blue');
+      document.getElementById('btnCancelEdit').classList.add('hidden');
+    }
+
+    function onNameChange() {
+      const name = document.getElementById('inpName').value.trim();
+      if (name) {
+        localStorage.setItem('leave_sys_user_name', name);
+        document.getElementById('inpQueryName').value = name;
+        loadPersonalDashboard(name);
+
+        const txt = document.getElementById('txtRawLeave');
+        if (txt && txt.value) {
+          txt.value = txt.value.replace(/^請假人\s*[：:].*$/m, `請假人：${name}`);
+          STATE.verifiedText = '';
+          STATE.verifyStatus = 'idle';
+        }
+
+        if (!STATE.editRow) {
+          google.script.run.withSuccessHandler(res => {
+            if (res && res.success) {
+              const isUserAdmin = !!res.isAdmin;
+              document.getElementById('tabBtn_today').classList.toggle('hidden', !isUserAdmin);
+              document.getElementById('tabBtn_schedule').classList.toggle('hidden', !isUserAdmin);
+              document.getElementById('tabBtn_admin').classList.toggle('hidden', !isUserAdmin);
+              if (isUserAdmin && res.adminData) {
+                STATE.adminData = res.adminData;
+                renderAdminConsole(res.adminData);
+              }
+            }
+          }).getWebFormInitData(STATE.uid, name, 0, STATE.tab);
+        }
+      }
+    }
+
+    function onStartDateChange() {
+      const s = document.getElementById('inpStartDate').value;
+      const e = document.getElementById('inpEndDate').value;
+      if (!e || e < s) document.getElementById('inpEndDate').value = s;
+      triggerPreview();
+    }
+
+    function selectPeriod(mode, el) {
+      STATE.periodMode = mode;
+      document.querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
+      if (el) el.classList.add('active');
+      document.getElementById('customTimeBox').classList.toggle('hidden', mode !== 'custom');
+      triggerPreview();
+    }
+
+    function updateQuotaHint() {
+      const type = document.getElementById('selLeaveType').value;
+      const box  = document.getElementById('quotaHintBox');
+      if (type && type.includes('特休') && STATE.dashboard && STATE.dashboard.hasQuota) {
+        box.innerHTML = `🔒 您的個人特休剩餘：<strong>${STATE.dashboard.remainingDays} 天 (${STATE.dashboard.remainingHours} 小時)</strong>`;
+        box.classList.remove('hidden');
+      } else {
+        box.classList.add('hidden');
+      }
+    }
+
+    function triggerPreview() {
+      const sDate = document.getElementById('inpStartDate').value;
+      const eDate = document.getElementById('inpEndDate').value;
+      const sTime = document.getElementById('inpStartTime').value;
+      const eTime = document.getElementById('inpEndTime').value;
+      const box   = document.getElementById('previewBox');
+
+      if (!sDate) return;
+      google.script.run.withSuccessHandler(res => {
+        if (!res) return;
+        if (res.valid) {
+          box.className = 'preview-box ok';
+          box.innerHTML = `⏰ 試算結果：共 <strong>${res.workDays}</strong> 個工作天，合計請假 <strong>${res.totalHours} 小時</strong>`;
+        } else {
+          box.className = 'preview-box err';
+          box.innerHTML = `⚠️ ${res.message}`;
+        }
+      }).previewLeaveHoursFromWeb(sDate, eDate, STATE.periodMode, sTime, eTime);
+    }
+
+    // ==================== 個人特休與私訊傳送 ====================
+    function loadPersonalDashboard(name) {
+      if (!name) return;
+      const container = document.getElementById('dashboardContent');
+      container.innerHTML = `<p style="text-align:center; color:var(--muted);">🔍 正在讀取 ${name} 的個人紀錄...</p>`;
+      google.script.run.withSuccessHandler(d => {
+        STATE.dashboard = d;
+        renderDashboard(d);
+        updateQuotaHint();
+      }).getPrivateUserDashboardData(name);
+    }
+
+    function sendDmReport() {
+      const name = document.getElementById('inpQueryName').value.trim() || document.getElementById('inpName').value.trim();
+      const btn  = document.getElementById('btnSendDm');
+      btn.disabled = true;
+      btn.innerText = '📨 私訊發送中...';
+      google.script.run.withSuccessHandler(res => {
+        btn.disabled = false;
+        btn.innerText = '📩 私訊傳送特休與紀錄至個人LINE';
+        alert(res ? res.message : '已處理');
+      }).sendPrivateLeaveReportToUser(STATE.uid, name);
+    }
+
+    function renderDashboard(d) {
+      const container = document.getElementById('dashboardContent');
+      if (!d || !d.found) {
+        container.innerHTML = `<p style="text-align:center; color:var(--muted);">${(d && d.message) || '請選擇姓名以檢視個人特休與請假紀錄'}</p>`;
+        return;
+      }
+
+      let quotaHtml = d.hasQuota ? `
+        <div style="font-size:13px; color:var(--muted); margin-bottom:4px;">👤 ${d.name}｜年資：${d.seniority}｜${d.year} 年度特休</div>
+        <div class="quota-grid">
+          <div class="quota-item"><div class="quota-num">${d.totalDays}<span style="font-size:12px;">天</span></div><div class="quota-sub">年度總額 (${d.totalHours}h)</div></div>
+          <div class="quota-item"><div class="quota-num" style="color:#D97706;">${d.usedDays}<span style="font-size:12px;">天</span></div><div class="quota-sub">已使用 (${d.usedHours}h)</div></div>
+          <div class="quota-item"><div class="quota-num" style="color:#059669;">${d.remainingDays}<span style="font-size:12px;">天</span></div><div class="quota-sub">剩餘可用 (${d.remainingHours}h)</div></div>
+        </div>
+      ` : `<div class="banner">ℹ️ ${d.name} 目前尚未設定 ${d.year} 年度特休額度</div>`;
+
+      let recHtml = `<h4 style="margin:16px 0 8px 0; font-size:14px;">📋 ${d.year} 年度請假明細（共 ${d.recordCount} 筆 / ${d.totalLeaveHours}h）</h4>`;
+      if (!d.records || d.records.length === 0) {
+        recHtml += `<p style="color:var(--muted); font-size:13px;">今年尚無請假記錄</p>`;
+      } else {
+        recHtml += d.records.map(r => `
+          <div class="record-item">
+            <div>
+              <div style="font-weight:700;">#${r.rowNumber} ${r.date} <span style="color:var(--muted); font-weight:400;">(${r.period})</span></div>
+              <div style="font-size:12px; color:var(--muted);">事由：${r.reason || '-'}｜職代：${r.deputy || '-'}</div>
+            </div>
+            <div style="text-align:right;">
+              <span class="badge">${r.type}</span>
+              <div style="font-size:13px; font-weight:700; margin-top:3px;">${r.hours}h</div>
+              <button class="btn sm blue" style="margin-top:4px;" onclick="loadRecordForEdit(${r.rowNumber})">✏️ 修改</button>
+            </div>
+          </div>
+        `).join('');
+      }
+      container.innerHTML = quotaHtml + recHtml;
+    }
+
+    function loadRecordForEdit(rowNumber) {
+      google.script.run.withSuccessHandler(rec => {
+        if (rec) enterEditMode(rec);
+      }).getLeaveRecordByRowForWeb(rowNumber);
+    }
+
+    // ==================== 今日請假與班表渲染 ====================
+    function renderTodayOverview(ov) {
+      document.getElementById('lblTodayDate').innerText = ov.todayStr || '';
+      document.getElementById('lblWeekRange').innerText = ov.weekRangeStr || '';
+
+      const tBox = document.getElementById('todayListBox');
+      if (!ov.todayList || ov.todayList.length === 0) {
+        tBox.innerHTML = `<p style="color:var(--muted); font-size:13.5px;">🎉 今日無人請假，全員到齊！</p>`;
+      } else {
+        tBox.innerHTML = ov.todayList.map(r => `
+          <div class="record-item">
+            <div>
+              <div style="font-weight:700;">${r.name} <span class="badge">${r.type}</span></div>
+              <div style="font-size:12px; color:var(--muted);">時段：${r.time}｜職代：${r.deputy}</div>
+            </div>
+            <div style="font-weight:800; color:var(--blue);">${r.hours}h</div>
+          </div>
+        `).join('');
+      }
+
+      const wBox = document.getElementById('weekListBox');
+      if (!ov.weekList || ov.weekList.length === 0) {
+        wBox.innerHTML = `<p style="color:var(--muted); font-size:13.5px;">本週尚無請假記錄</p>`;
+      } else {
+        wBox.innerHTML = ov.weekList.map(r => `
+          <div class="record-item">
+            <div>
+              <div style="font-weight:700;">${r.name}｜${r.date}</div>
+              <div style="font-size:12px; color:var(--muted);">${r.time}｜職代：${r.deputy}</div>
+            </div>
+            <span class="badge">${r.type} (${r.hours}h)</span>
+          </div>
+        `).join('');
+      }
+    }
+
+    function renderScheduleOverview(sc) {
+      const dBox = document.getElementById('scheduleDaysBox');
+      if (sc && Array.isArray(sc.days)) {
+        dBox.innerHTML = sc.days.map(d => `
+          <div class="record-item">
+            <div>
+              <strong>${d.dayName}</strong>
+              <span class="badge ${d.isWorkDay ? 'on' : 'off'}" style="margin-left:6px;">${d.isWorkDay ? '開放請假' : '固定休假'}</span>
+            </div>
+            <div style="font-size:12.5px; color:var(--muted); text-align:right;">
+              ${d.isWorkDay ? `全天 ${d.fullDayHours}h (早${d.morningHours}h / 午${d.afternoonHours}h)<br>${d.morningStart}~${d.afternoonEnd}` : '拒絕單日請假 / 區間自動略過'}
+            </div>
+          </div>
+        `).join('');
+      }
+
+      const spBox = document.getElementById('scheduleSpecialBox');
+      if (!sc || !sc.specialDates || sc.specialDates.length === 0) {
+        spBox.innerHTML = `<p style="color:var(--muted); font-size:13px;">目前無啟用之特定國定假日或補班日</p>`;
+      } else {
+        spBox.innerHTML = sc.specialDates.map(sp => `
+          <div class="record-item">
+            <div><strong>${sp.date}</strong>｜${sp.name}</div>
+            <span class="badge ${sp.isWorkDay ? 'on' : 'off'}">${sp.rawType}</span>
+          </div>
+        `).join('');
+      }
+    }
+
+    // ==================== 送出日曆假單 / 修改假單 ====================
+    function submitForm() {
+      if (isSubmitting) return;
+      const name      = document.getElementById('inpName').value.trim();
+      const startDate = document.getElementById('inpStartDate').value;
+      const endDate   = document.getElementById('inpEndDate').value;
+      const startTime = document.getElementById('inpStartTime').value;
+      const endTime   = document.getElementById('inpEndTime').value;
+      const leaveType = document.getElementById('selLeaveType').value;
+      const deputy    = document.getElementById('inpDeputy').value.trim();
+      const reason    = document.getElementById('inpReason').value.trim();
+      const approval  = document.getElementById('selApproval').value;
+
+      if (!name || !startDate || !leaveType || !deputy || !reason) {
+        showStatusBanner('formResultBox', 'err', '⚠️ 請確認「請假人員、日期、假別、職務代理人、事由」皆已填寫！');
+        return;
+      }
+
+      isSubmitting = true;
+      const btn = document.getElementById('btnSubmit');
+      btn.disabled = true;
+      btn.innerText = '🔒 安全寫入資料庫中...';
+      showStatusBanner('formResultBox', 'info', '⏳ 正在驗證並送出假單，請稍候...');
+
+      if (!STATE.editRow) {
+        localStorage.setItem('leave_sys_user_name', name);
+      }
+      const timeBucket = Math.floor(Date.now() / 15000);
+      const reqToken   = `WEB_${STATE.editRow || 'NEW'}_${name}_${startDate}_${endDate}_${STATE.periodMode}_${leaveType}_${timeBucket}`;
+
+      try {
+        google.script.run
+          .withSuccessHandler(res => {
+            isSubmitting = false;
+            btn.disabled = false;
+            btn.innerText = STATE.editRow ? `💾 儲存修改假單 (#${STATE.editRow})` : '✅ 送出請假申請';
+            if (!res || !res.success) {
+              showStatusBanner('formResultBox', 'err', res ? res.errorMessage : '❌ 處理失敗，請稍後再試');
+              return;
+            }
+            if (res.dashboard) {
+              STATE.dashboard = res.dashboard;
+              renderDashboard(res.dashboard);
+            }
+            showStatusBanner('formResultBox', 'ok', `🎉 ${res.isUpdated ? '假單修改成功' : '請假申請成功'}！（編號 #${res.rowNumber}）\n${res.summaryText}`);
+            exitEditMode();
+            if (STATE.liffId && typeof liff !== 'undefined' && liff.isInClient()) {
+              setTimeout(() => liff.closeWindow(), 1200);
+            }
+          })
+          .withFailureHandler(err => {
+            isSubmitting = false;
+            btn.disabled = false;
+            btn.innerText = '✅ 送出請假申請';
+            showStatusBanner('formResultBox', 'err', '❌ 系統發生錯誤：' + err.message);
+          })
+          .submitLeaveFormFromWeb({
+            editRow: STATE.editRow,
+            name, startDate, endDate,
+            periodMode: STATE.periodMode,
+            startTime, endTime,
+            leaveType, deputy, reason, approval,
+            userId: STATE.uid,
+            groupId: STATE.gid,
+            reqToken
+          });
+      } catch (syncErr) {
+        isSubmitting = false;
+        btn.disabled = false;
+        btn.innerText = '✅ 送出請假申請';
+        showStatusBanner('formResultBox', 'err', '❌ 呼叫後端失敗：' + syncErr.message);
+      }
+    }
+
+    // ==================== 彈出視窗「🚀 直接留言並送出假單」====================
+    function submitTextForm() {
+      if (isSubmitting) return;
+      const rawText = document.getElementById('txtRawLeave').value.trim();
+
+      const syncCheck = validateLeaveTextClientSide(rawText);
+      if (!syncCheck.valid) {
+        showStatusBanner('textFormResultBox', 'err', syncCheck.errorMessage);
+        return;
+      }
+
+      isSubmitting = true;
+      const btn = document.getElementById('btnSubmitText');
+      btn.disabled = true;
+      btn.innerText = '🚀 正在留言並送出假單...';
+      showStatusBanner('textFormResultBox', 'info', '⏳ 正在驗證請假單格式並推播至當前 LINE 聊天室，請稍候...');
+
+      try {
+        google.script.run
+          .withSuccessHandler(res => {
+            isSubmitting = false;
+            btn.disabled = false;
+            btn.innerText = '🚀 直接留言並送出假單';
+
+            if (!res || !res.success) {
+              showStatusBanner('textFormResultBox', 'err', res ? res.errorMessage : '❌ 格式驗證失敗，請檢查欄位');
+              return;
+            }
+
+            if (res.dashboard) {
+              STATE.dashboard = res.dashboard;
+              renderDashboard(res.dashboard);
+            }
+
+            STATE.verifiedText   = '';
+            STATE.verifyStatus   = 'invalid';
+            STATE.verifyErrorMsg = `⚠️ 此筆假單（#${res.rowNumber}）剛剛已直接建檔送出，請勿重複貼回發送！`;
+            lockPasteButtonForVerification('⛔ 此筆假單已建檔送出');
+
+            showStatusBanner(
+              'textFormResultBox',
+              'ok',
+              `🎉 請假單已直接留言並送出至 LINE 聊天室！\n🔖 記錄編號：#${res.rowNumber}\n📋 摘要：${res.summaryText}\n\n（正在自動返回聊天室...）`
+            );
+
+            setTimeout(() => {
+              try { if (typeof liff !== 'undefined' && liff.isInClient()) liff.closeWindow(); } catch (_) {}
+              if (isMobileClient() && STATE.gid) {
+                try { window.top.location.href = 'line://nv/chat'; } catch (_) {}
+              }
+            }, 900);
+          })
+          .withFailureHandler(err => {
+            isSubmitting = false;
+            btn.disabled = false;
+            btn.innerText = '🚀 直接留言並送出假單';
+            showStatusBanner('textFormResultBox', 'err', '❌ 系統執行錯誤：' + err.message);
+          })
+          .submitRawTextLeaveFromWeb({
+            text: rawText,
+            userId: STATE.uid,
+            groupId: STATE.gid
+          });
+      } catch (syncErr) {
+        isSubmitting = false;
+        btn.disabled = false;
+        btn.innerText = '🚀 直接留言並送出假單';
+        showStatusBanner('textFormResultBox', 'err', '❌ 無法連接後端函式：' + syncErr.message);
+      }
+    }
+
+    // ==================== 管理員後台資料庫管理系統 (Admin Console) ====================
+    function switchAdminPanel(panel) {
+      ['admins', 'quota', 'recs', 'sched', 'types'].forEach(p => {
+        const btn = document.getElementById('admBtn_' + p);
+        const sec = document.getElementById('admPanel_' + p);
+        if (btn) btn.classList.toggle('active', p === panel);
+        if (sec) sec.classList.toggle('hidden', p !== panel);
+      });
+    }
+
+    function renderAdminConsole(adm) {
+      if (!adm || !adm.success) return;
+
+      const admList = adm.adminUsersList || [];
+      const qList   = adm.quotaList || [];
+      const countEl = document.getElementById('admAdminCount');
+      if (countEl) countEl.innerText = admList.length;
+
+      const empNameSet = new Set();
+      qList.forEach(q => { if (q.name) empNameSet.add(q.name); });
+      admList.forEach(a => { if (a.name) empNameSet.add(a.name); });
+
+      const selAdminEmp = document.getElementById('admSelAdminEmp');
+      if (selAdminEmp) {
+        selAdminEmp.innerHTML = `<option value="">-- ➕ 手動輸入或選擇現有員工 --</option>` +
+          Array.from(empNameSet).map(n => {
+            const existing = admList.find(a => a.name === n);
+            const roleTag  = existing ? ` [目前:${existing.role}]` : ' [一般成員]';
+            return `<option value="${n}">${n}${roleTag}</option>`;
+          }).join('');
+      }
+
+      const admBox = document.getElementById('admAdminListBox');
+      if (admBox) {
+        admBox.innerHTML = admList.length === 0
+          ? `<p style="color:var(--muted); font-size:13px;">目前尚無帳號權限記錄（可於上方新增指派）</p>`
+          : admList.map((a, idx) => {
+            const isRoleAdmin = ['ADMIN', 'SUPER_ADMIN', '管理員', '超級管理員'].includes((a.role || '').toUpperCase());
+            const roleLabel   = a.role === 'SUPER_ADMIN'
+              ? '👑 超級管理員'
+              : (isRoleAdmin ? '🛡️ 管理員' : '👤 一般成員');
+            const badgeClass  = !a.enabled ? 'off' : (isRoleAdmin ? 'admin-role' : '');
+            const nextRole    = isRoleAdmin ? 'USER' : 'ADMIN';
+            const toggleText  = isRoleAdmin ? '改為一般成員' : '升為管理員';
+
+            return `
+              <div class="record-item">
+                <div>
+                  <strong>${a.name}</strong>
+                  <span class="badge ${badgeClass}" style="margin-left:4px;">${roleLabel}</span>
+                  <span class="badge ${a.enabled ? 'on' : 'off'}" style="margin-left:4px;">${a.enabled ? '啟用' : '停用'}</span>
+                  <div style="font-size:12px; color:var(--muted); margin-top:2px;">
+                    LINE ID：${a.userId ? a.userId.substring(0, 10) + '...' : '依姓名自動對應'}｜備註：${a.remarks || '-'}
+                  </div>
+                </div>
+                <div style="display:flex; gap:4px; flex-wrap:wrap; justify-content:flex-end;">
+                  <button class="btn sm ${isRoleAdmin ? 'secondary' : 'teal'}" onclick="quickToggleUserRole(${idx}, '${nextRole}')">${toggleText}</button>
+                  <button class="btn sm blue" onclick="editAdminUserByIndex(${idx})">編輯</button>
+                  <button class="btn sm danger" onclick="deleteAdminUserRecord(${a.rowNumber}, '${a.name}')">刪除</button>
+                </div>
+              </div>
+            `;
+          }).join('');
+      }
+
+      const selEmp = document.getElementById('admSelEmp');
+      document.getElementById('admQuotaCount').innerText = qList.length;
+
+      selEmp.innerHTML = `<option value="">-- ➕ 新增員工資料 --</option>` +
+        qList.map((q, i) => `<option value="${i}">${q.name} (額度:${q.days}天 / 剩餘:${q.remainingHours}h)</option>`).join('');
+
+      document.getElementById('admQuotaListBox').innerHTML = qList.length === 0
+        ? `<p style="color:var(--muted); font-size:13px;">目前尚無員工特休資料</p>`
+        : qList.map((q, i) => `
+          <div class="record-item">
+            <div>
+              <strong>${q.name}</strong> <span style="font-size:12px; color:var(--muted);">(${q.seniority || '未填年資'})</span>
+              ${q.manualLock ? '<span class="badge off">已鎖定</span>' : ''}
+              <div style="font-size:12px; color:var(--muted);">
+                額度：${q.days}天(${q.hours}h)｜期初：${q.initUsed}h｜系統已請：${q.systemUsedHours}h｜<strong style="color:#059669;">剩餘：${q.remainingHours}h</strong>
+              </div>
+            </div>
+            <div style="display:flex; gap:4px;">
+              <button class="btn sm blue" onclick="onAdminSelectEmployee(${i})">編輯</button>
+              <button class="btn sm danger" onclick="deleteAdminQuota(${q.rowNumber}, '${q.name}')">刪除</button>
+            </div>
+          </div>
+        `).join('');
+
+      renderAdminRecordsList(adm.recentRecords || []);
+
+      if (adm.scheduleOverview && Array.isArray(adm.scheduleOverview.days)) {
+        document.getElementById('admScheduleFormBox').innerHTML = adm.scheduleOverview.days.map((d, idx) => `
+          <div style="padding:8px 0; border-bottom:1px solid #E2E8F0; font-size:13px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+              <strong>${d.dayName}</strong>
+              <label style="margin:0; display:flex; align-items:center; gap:6px;">
+                <input type="checkbox" id="admDayWork_${idx}" ${d.isWorkDay ? 'checked' : ''}> 開放請假
+              </label>
+            </div>
+            <div class="row-3">
+              <div><span style="font-size:11px; color:var(--muted);">全天(h)</span><input type="number" id="admDayFull_${idx}" value="${d.fullDayHours}"></div>
+              <div><span style="font-size:11px; color:var(--muted);">上午(h)</span><input type="number" id="admDayMorn_${idx}" value="${d.morningHours}"></div>
+              <div><span style="font-size:11px; color:var(--muted);">下午(h)</span><input type="number" id="admDayAft_${idx}" value="${d.afternoonHours}"></div>
+            </div>
+          </div>
+        `).join('');
+
+        const spList = adm.scheduleOverview.specialDates || [];
+        document.getElementById('admSpecialDatesManageBox').innerHTML = spList.length === 0
+          ? `<p style="color:var(--muted); font-size:13px;">無特定國定假日或補班日</p>`
+          : spList.map(sp => `
+            <div class="record-item">
+              <div><strong>${sp.date}</strong>｜${sp.name} <span class="badge ${sp.isWorkDay ? 'on' : 'off'}">${sp.rawType}</span></div>
+              <button class="btn sm danger" onclick="deleteAdminSpecialDate('${sp.date}')">移除</button>
+            </div>
+          `).join('');
+      }
+
+      const ltBox = document.getElementById('admLeaveTypeListBox');
+      if (ltBox && Array.isArray(adm.leaveTypes)) {
+        ltBox.innerHTML = adm.leaveTypes.map((lt, idx) => `
+          <div class="record-item">
+            <div>
+              <strong>${lt.name}</strong>
+              <span class="badge ${lt.enabled ? 'on' : 'off'}" style="margin-left:6px;">${lt.enabled ? '啟用中' : '已停用'}</span>
+              <div style="font-size:12px; color:var(--muted);">別名：${lt.aliases || '無'}</div>
+            </div>
+            <button class="btn sm ${lt.enabled ? 'secondary' : 'blue'}"
+              onclick="toggleAdminLeaveTypeByIndex(${idx})">
+              ${lt.enabled ? '停用' : '啟用'}
+            </button>
+          </div>
+        `).join('');
+      }
+    }
+
+    function onAdminSelectAdminEmp(empName) {
+      if (!empName) {
+        document.getElementById('admAdminName').value    = '';
+        document.getElementById('admAdminUid').value     = '';
+        document.getElementById('admAdminRole').value    = 'ADMIN';
+        document.getElementById('admAdminEnabled').value = 'true';
+        document.getElementById('admAdminRemarks').value = '';
+        return;
+      }
+      document.getElementById('admAdminName').value = empName;
+      const admList  = (STATE.adminData && STATE.adminData.adminUsersList) || [];
+      const existing = admList.find(a => a.name === empName);
+      if (existing) {
+        document.getElementById('admAdminUid').value     = existing.userId || '';
+        document.getElementById('admAdminRole').value    = existing.role || 'ADMIN';
+        document.getElementById('admAdminEnabled').value = existing.enabled ? 'true' : 'false';
+        document.getElementById('admAdminRemarks').value = existing.remarks || '';
+      } else {
+        document.getElementById('admAdminUid').value     = '';
+        document.getElementById('admAdminRole').value    = 'ADMIN';
+        document.getElementById('admAdminEnabled').value = 'true';
+        document.getElementById('admAdminRemarks').value = '';
+      }
+    }
+
+    function editAdminUserByIndex(idx) {
+      const admList = (STATE.adminData && STATE.adminData.adminUsersList) || [];
+      const a = admList[idx];
+      if (!a) return;
+      document.getElementById('admAdminName').value    = a.name || '';
+      document.getElementById('admAdminUid').value     = a.userId || '';
+      document.getElementById('admAdminRole').value    = a.role || 'ADMIN';
+      document.getElementById('admAdminEnabled').value = a.enabled ? 'true' : 'false';
+      document.getElementById('admAdminRemarks').value = a.remarks || '';
+      switchAdminPanel('admins');
+    }
+
+    function quickToggleUserRole(idx, newRole) {
+      const admList = (STATE.adminData && STATE.adminData.adminUsersList) || [];
+      const a = admList[idx];
+      if (!a) return;
+      google.script.run.withSuccessHandler(res => {
+        alert(res ? res.message : '已更新權限');
+        if (res && res.adminData) {
+          STATE.adminData = res.adminData;
+          renderAdminConsole(res.adminData);
+        }
+      }).adminSaveAdminUser(STATE.uid, {
+        name:    a.name,
+        userId:  a.userId || '',
+        role:    newRole,
+        enabled: true,
+        remarks: a.remarks || (newRole === 'USER' ? '一般成員' : '系統管理員')
+      });
+    }
+
+    function saveAdminUserRecord() {
+      const payload = {
+        name:    document.getElementById('admAdminName').value.trim(),
+        userId:  document.getElementById('admAdminUid').value.trim(),
+        role:    document.getElementById('admAdminRole').value,
+        enabled: document.getElementById('admAdminEnabled').value === 'true',
+        remarks: document.getElementById('admAdminRemarks').value.trim()
+      };
+      if (!payload.name) {
+        alert('⚠️ 請輸入或選擇員工姓名');
+        return;
+      }
+      google.script.run.withSuccessHandler(res => {
+        alert(res ? res.message : '已儲存帳號權限');
+        if (res && res.adminData) {
+          STATE.adminData = res.adminData;
+          renderAdminConsole(res.adminData);
+        }
+      }).adminSaveAdminUser(STATE.uid, payload);
+    }
+
+    function deleteAdminUserRecord(rowNumber, name) {
+      if (!confirm(`確定要從帳號權限資料庫移除「${name}」嗎？（移除後將恢復為一般成員）`)) return;
+      google.script.run.withSuccessHandler(res => {
+        alert(res ? res.message : '已移除');
+        if (res && res.adminData) {
+          STATE.adminData = res.adminData;
+          renderAdminConsole(res.adminData);
+        }
+      }).adminDeleteAdminUser(STATE.uid, rowNumber);
+    }
+
+    function renderAdminRecordsList(records) {
+      const box = document.getElementById('admRecentRecordsBox');
+      if (!records || records.length === 0) {
+        box.innerHTML = `<p style="color:var(--muted); font-size:13px;">找不到符合條件的請假記錄</p>`;
+        return;
+      }
+      box.innerHTML = records.map(r => `
+        <div class="record-item">
+          <div>
+            <strong>#${r.rowNumber} ${r.name}</strong> <span class="badge">${r.leaveType} ${r.hoursCalc}h</span>
+            <div style="font-size:12px; color:var(--muted);">${r.date} (${r.period})｜事由：${r.reason || '-'}｜職代：${r.deputy || '-'}</div>
+          </div>
+          <div style="display:flex; gap:4px;">
+            <button class="btn sm blue" onclick="loadRecordForEdit(${r.rowNumber})">✏️ 修改</button>
+            <button class="btn sm danger" onclick="adminCancelRow(${r.rowNumber})">🗑️ 取消</button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function filterAdminRecords() {
+      const kw  = (document.getElementById('admSearchRec').value || '').trim().toLowerCase();
+      const all = (STATE.adminData && STATE.adminData.recentRecords) || [];
+      if (!kw) {
+        renderAdminRecordsList(all);
+        return;
+      }
+      const filtered = all.filter(r =>
+        (r.name && r.name.toLowerCase().includes(kw)) ||
+        (r.date && r.date.toLowerCase().includes(kw)) ||
+        (r.leaveType && r.leaveType.toLowerCase().includes(kw)) ||
+        String(r.rowNumber).includes(kw)
+      );
+      renderAdminRecordsList(filtered);
+    }
+
+    function onAdminSelectEmployee(idx) {
+      document.getElementById('admSelEmp').value = idx;
+      if (idx === '' || !STATE.adminData || !STATE.adminData.quotaList[idx]) {
+        document.getElementById('admEmpName').value    = '';
+        document.getElementById('admSeniority').value  = '';
+        document.getElementById('admDays').value       = 7;
+        document.getElementById('admHours').value      = 56;
+        document.getElementById('admInitUsed').value   = 0;
+        document.getElementById('admHireDate').value   = '';
+        document.getElementById('admManualLock').value = '';
+        document.getElementById('admRemarks').value    = '';
+        return;
+      }
+      const q = STATE.adminData.quotaList[idx];
+      document.getElementById('admEmpName').value    = q.name;
+      document.getElementById('admSeniority').value  = q.seniority;
+      document.getElementById('admDays').value       = q.days;
+      document.getElementById('admHours').value      = q.hours;
+      document.getElementById('admInitUsed').value   = q.initUsed;
+      document.getElementById('admHireDate').value   = q.hireDate;
+      document.getElementById('admManualLock').value = q.manualLock ? 'Y' : '';
+      document.getElementById('admRemarks').value    = q.remarks;
+    }
+
+    function saveAdminQuota() {
+      const payload = {
+        name:       document.getElementById('admEmpName').value.trim(),
+        seniority:  document.getElementById('admSeniority').value.trim(),
+        days:       document.getElementById('admDays').value,
+        hours:      document.getElementById('admHours').value,
+        initUsed:   document.getElementById('admInitUsed').value,
+        hireDate:   document.getElementById('admHireDate').value,
+        manualLock: document.getElementById('admManualLock').value === 'Y',
+        remarks:    document.getElementById('admRemarks').value.trim()
+      };
+      if (!payload.name) { alert('⚠️ 請輸入員工姓名'); return; }
+      google.script.run.withSuccessHandler(res => {
+        alert(res ? res.message : '已處理');
+        if (res && res.adminData) {
+          STATE.adminData = res.adminData;
+          renderAdminConsole(res.adminData);
+        }
+      }).adminSaveEmployeeQuota(STATE.uid, payload);
+    }
+
+    function deleteAdminQuota(rowNumber, empName) {
+      if (!confirm(`確定要從特休資料庫刪除「${empName}」嗎？`)) return;
+      google.script.run.withSuccessHandler(res => {
+        alert(res ? res.message : '已刪除');
+        if (res && res.adminData) {
+          STATE.adminData = res.adminData;
+          renderAdminConsole(res.adminData);
+        }
+      }).adminDeleteEmployeeQuota(STATE.uid, rowNumber);
+    }
+
+    function triggerAutoAnnualLeave() {
+      if (!confirm('確定要依到職日與年資自動重算全體員工本年度特休額度嗎？（已設定手動鎖定 Y 的員工不會被覆蓋）')) return;
+      google.script.run.withSuccessHandler(res => {
+        alert(res ? res.message : '已重算');
+        if (res && res.adminData) {
+          STATE.adminData = res.adminData;
+          renderAdminConsole(res.adminData);
+        }
+      }).adminTriggerAutoAnnualLeave(STATE.uid);
+    }
+
+    function saveAdminSchedule() {
+      const origDays = (STATE.adminData && STATE.adminData.scheduleOverview && STATE.adminData.scheduleOverview.days) || [];
+      const days = origDays.map((d, idx) => ({
+        ...d,
+        isWorkDay:      document.getElementById('admDayWork_' + idx).checked,
+        fullDayHours:   document.getElementById('admDayFull_' + idx).value,
+        morningHours:   document.getElementById('admDayMorn_' + idx).value,
+        afternoonHours: document.getElementById('admDayAft_' + idx).value
+      }));
+      const newSpecialDate = {
+        date: document.getElementById('admSpDate').value,
+        type: document.getElementById('admSpType').value,
+        name: document.getElementById('admSpName').value.trim()
+      };
+      google.script.run.withSuccessHandler(res => {
+        alert(res ? res.message : '已更新');
+        document.getElementById('admSpDate').value = '';
+        document.getElementById('admSpName').value = '';
+        if (res && res.scheduleOverview) renderScheduleOverview(res.scheduleOverview);
+        if (res && res.adminData) {
+          STATE.adminData = res.adminData;
+          renderAdminConsole(res.adminData);
+        }
+      }).adminSaveScheduleSheet(STATE.uid, { days, newSpecialDate });
+    }
+
+    function deleteAdminSpecialDate(dateStr) {
+      if (!confirm(`確定要移除特定日期「${dateStr}」設定嗎？`)) return;
+      google.script.run.withSuccessHandler(res => {
+        alert(res ? res.message : '已移除');
+        if (res && res.scheduleOverview) renderScheduleOverview(res.scheduleOverview);
+        if (res && res.adminData) {
+          STATE.adminData = res.adminData;
+          renderAdminConsole(res.adminData);
+        }
+      }).adminDeleteSpecialDate(STATE.uid, dateStr);
+    }
+
+    function saveAdminLeaveType() {
+      const name    = document.getElementById('admNewTypeName').value.trim();
+      const aliases = document.getElementById('admNewTypeAliases').value.trim();
+      if (!name) { alert('⚠️ 請輸入假別名稱'); return; }
+      google.script.run.withSuccessHandler(res => {
+        alert(res ? res.message : '已儲存');
+        if (res && Array.isArray(res.leaveTypes)) {
+          renderLeaveTypeOptions(res.leaveTypes);
+        }
+        if (res && res.adminData) {
+          STATE.adminData = res.adminData;
+          renderAdminConsole(res.adminData);
+        }
+        document.getElementById('admNewTypeName').value    = '';
+        document.getElementById('admNewTypeAliases').value = '';
+      }).adminAddOrUpdateLeaveType(STATE.uid, { name, aliases, enabled: true });
+    }
+
+    function toggleAdminLeaveTypeByIndex(idx) {
+      if (!STATE.adminData || !STATE.adminData.leaveTypes || !STATE.adminData.leaveTypes[idx]) return;
+      const lt = STATE.adminData.leaveTypes[idx];
+      google.script.run.withSuccessHandler(res => {
+        if (res && Array.isArray(res.leaveTypes)) {
+          renderLeaveTypeOptions(res.leaveTypes);
+        }
+        if (res && res.adminData) {
+          STATE.adminData = res.adminData;
+          renderAdminConsole(res.adminData);
+        }
+      }).adminAddOrUpdateLeaveType(STATE.uid, {
+        name:    lt.name,
+        aliases: lt.aliases || '',
+        enabled: !lt.enabled
+      });
+    }
+
+    function adminCancelRow(rowNumber) {
+      if (!confirm(`確定要強制取消假單 #${rowNumber} 嗎？`)) return;
+      google.script.run.withSuccessHandler(res => {
+        alert(res ? res.message : '已取消');
+        if (res && res.adminData) {
+          STATE.adminData = res.adminData;
+          renderAdminConsole(res.adminData);
+        }
+      }).adminCancelLeaveByRow(STATE.uid, rowNumber);
+    }
+
+    function clearSystemCacheFromAdmin() {
+      google.script.run.withSuccessHandler(res => {
+        try { localStorage.removeItem(CACHE_KEY_INIT); } catch (_) {}
+        alert(res ? res.message : '已清除快取');
+        if (res && res.adminData) {
+          STATE.adminData = res.adminData;
+          renderAdminConsole(res.adminData);
+        }
+      }).adminClearCacheAndReload(STATE.uid);
+    }
+  </script>
+</body>
+</html>
