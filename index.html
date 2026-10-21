@@ -21,6 +21,19 @@
     * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans TC", sans-serif; }
     body { margin: 0; padding: 0; background: var(--bg); color: var(--text); padding-bottom: 50px; }
 
+    /* GAS 沙盒環境專屬頂部快速逃生與切換列 */
+    .gas-escape-bar {
+      background: #0F172A; color: #FFF; padding: 8px 10px; font-size: 12px;
+      display: flex; align-items: center; justify-content: space-between; gap: 6px; flex-wrap: wrap;
+    }
+    .gas-escape-links { display: flex; gap: 6px; align-items: center; }
+    .gas-escape-btn {
+      background: #06C755; color: #FFF; text-decoration: none; padding: 5px 9px;
+      border-radius: 6px; font-weight: 700; font-size: 12px; border: none; cursor: pointer;
+    }
+    .gas-escape-btn.bloon { background: #2563EB; }
+    .gas-escape-btn.admin { background: #D97706; }
+
     /* 頂部可橫向滑動的多功能導航列 */
     .tabs {
       display: flex; overflow-x: auto; background: var(--card); position: sticky; top: 0; z-index: 100;
@@ -138,6 +151,16 @@
   </style>
 </head>
 <body>
+
+  <!-- ✅ 當處於 GAS 雲端原生備援 (script.google.com) 時自動顯示的頂部穿透跳出列，保證絕不卡死！ -->
+  <div id="gasSandboxEscapeBar" class="gas-escape-bar hidden">
+    <span>☁️ 目前位於 GAS 原生備援節點</span>
+    <div class="gas-escape-links">
+      <a id="escapeLinkGithub" href="https://officetngc-ai.github.io/leave-app/" target="_top" class="gas-escape-btn">🚀 跳回 GitHub</a>
+      <a id="escapeLinkBloon" href="https://direct.bloon.io/share/YyjMvvP7/index.html" target="_top" class="gas-escape-btn bloon">🛡️ 跳至 Bloon</a>
+      <button type="button" class="gas-escape-btn admin" onclick="unlockAndOpenAdminTab()">🛠️ 系統管理</button>
+    </div>
+  </div>
 
   <div class="tabs" id="topTabsBar">
     <button class="tab-btn active" id="tabBtn_form" onclick="switchTab('form')">📝 填寫請假</button>
@@ -269,20 +292,16 @@
           <textarea id="txtRawLeave" rows="8" oninput="onRawTextInput()"></textarea>
         </div>
 
-        <!-- 即時驗證狀態框 -->
         <div id="textFormResultBox" class="status-box hidden"></div>
 
-        <!-- ✅ 按鈕 1（主按鈕）：嚴格執行明確意圖，僅透過 liff.sendMessages 以本人帳號在群組發出文字泡泡，絕不在背景偷調後端提交！ -->
         <a id="btnPasteToLine" href="javascript:void(0)" class="btn locked" onclick="return handlePasteToLineClick(event)">
           🔍 正在驗證假單格式與是否重複請假...
         </a>
 
-        <!-- ✅ 按鈕 2（副按鈕 A）：僅複製文字並關閉視窗，讓使用者自行在原群組長按貼上 -->
         <button class="btn blue" id="btnCopyAndClose" onclick="copyTextAndCloseDrawer()">
           📋 僅複製驗證通過文字並返回原群組手動貼上
         </button>
 
-        <!-- ✅ 按鈕 3（副按鈕 B）：唯有使用者主動點擊此顆按鈕，才由系統直接寫入假單並推播 -->
         <button class="btn secondary" id="btnSubmitText" onclick="submitTextForm()">
           🚀 直接由系統留言並送出假單
         </button>
@@ -345,7 +364,7 @@
       <div class="admin-header-card">
         <div>
           <div style="font-size:16px; font-weight:800;">🛠️ 後台資料庫管理系統</div>
-          <div style="font-size:12px; color:#CBD5E1; margin-top:3px;">直接新增、修改、查閱 Google Sheet 資料庫與一鍵同步熱備援 LIFF 授權</div>
+          <div style="font-size:12px; color:#CBD5E1; margin-top:3px;">直接新增、修改、查閱 Google Sheet 資料庫與一鍵切換三節點熱備援</div>
         </div>
         <button class="btn sm" style="background:#3B82F6;" onclick="reloadAdminDatabase()">🔄 重新整理</button>
       </div>
@@ -361,15 +380,15 @@
         <button class="admin-subbtn" id="admBtn_types" onclick="switchAdminPanel('types')">🏷️ 假別庫</button>
       </div>
 
-      <!-- ==================== 管理模組 S：3 大熱備援節點與 LIFF 群組授權同步中心 ==================== -->
+      <!-- ==================== 管理模組 S：3 大熱備援節點與專屬 LIFF 切換中心 ==================== -->
       <div id="admPanel_standby" class="card">
         <div class="section-title">
-          <span>🌐 前端伺服器熱備援中心（全節點 LIFF 授權同步）</span>
+          <span>🌐 前端伺服器熱備援中心（三組獨立 LIFF 授權）</span>
         </div>
         <div class="banner">
           📍 <strong>目前開啟視窗節點：</strong><span id="lblCurrentBrowserNode">偵測中...</span><br>
           📡 <strong>系統預設派發節點：</strong><span id="lblActiveDefaultNode">讀取中...</span><br>
-          🔑 <strong>LIFF 雲端 API 自動改綁狀態：</strong><span id="lblLiffSecretStatus">檢查中...</span>
+          🔑 <strong>LIFF 授權模式：</strong><span id="lblLiffSecretStatus">三節點獨立專屬 LIFF ID 模式</span>
         </div>
 
         <div class="form-group" style="background:#F8FAFC; padding:10px 12px; border-radius:10px; border:1px solid var(--border); margin-bottom:14px;">
@@ -386,18 +405,18 @@
 
         <hr style="border:none; border-top:1px solid var(--border); margin:16px 0;">
 
-        <!-- 🔐 LIFF 群組發話授權同步設定（支援單一 LIFF 自動改綁 Endpoint URL 或 3 組獨立 LIFF ID） -->
-        <h4 style="margin:0 0 8px 0; font-size:14.5px; color:var(--blue);">🔐 各節點 LIFF 群組發話授權同步設定</h4>
+        <h4 style="margin:0 0 8px 0; font-size:14.5px; color:var(--blue);">🔐 三節點專屬 LIFF ID 對照設定</h4>
         <div class="banner" style="font-size:12.5px;">
-          💡 <strong>如何讓 3 個備援節點都擁有 `https://liff.line.me/...` 完整群組發話授權？</strong><br>
-          • <strong>方式 A（全自動同步 Endpoint URL）</strong>：在下方填入您的 <strong>LINE Login Channel Secret</strong>（Channel ID: <code>2012028062</code>）。當您點擊上方任一節點的「⚡ 一鍵設為系統預設」時，系統會自動透過 LINE 官方 API 將 <code>2012028062-vnoiLP9t</code> 的 Endpoint URL 改綁至該節點！<br>
-          • <strong>方式 B（3 節點各自綁定專屬 LIFF ID）</strong>：亦可在同一個 LINE Login Channel 下建立 3 組 LIFF ID 填入下方對應欄位。
+          ✅ <strong>已綁定三組獨立專屬 LIFF ID（最穩定零延遲模式）</strong>：<br>
+          • <strong>節點 1 (GitHub)</strong>：<code>2012028062-vnoiLP9t</code><br>
+          • <strong>節點 2 (Bloon)</strong>：<code>2012028062-FRVGFRQw</code><br>
+          • <strong>節點 3 (GAS)</strong>：<code>2012028062-GnVM3Ihq</code>
         </div>
 
         <div class="row-2">
           <div class="form-group">
-            <label>LINE Login Channel Secret（選填，啟用自動改綁）</label>
-            <input type="password" id="inpLineLoginSecret" placeholder="填入後切換節點即自動同步 Endpoint URL">
+            <label>LINE Login Channel Secret（選填，自動校準三組網址）</label>
+            <input type="password" id="inpLineLoginSecret" placeholder="選填：自動校準三組 LIFF Endpoint URL">
           </div>
           <div class="form-group">
             <label>LIFF 視窗尺寸 (View Type)</label>
@@ -424,7 +443,7 @@
           </div>
         </div>
 
-        <button class="btn teal" onclick="saveLiffSyncConfiguration()">💾 儲存 LIFF 授權設定並立即同步當前節點</button>
+        <button class="btn teal" onclick="saveLiffSyncConfiguration()">💾 儲存並校準三組專屬 LIFF ID 設定</button>
       </div>
 
       <!-- 管理模組 0：帳號權限資料庫 (adminUsers) -->
@@ -609,22 +628,33 @@
   </div>
 
   <script>
-// ============================================================
-    // 🌐 三棲熱備援環境核心連線設定（三節點各自對應獨立專屬 LIFF ID）
-    // 版本: v20.1.0 (三組獨立 LIFF ID 零延遲秒切版)
     // ============================================================
-    const GAS_WEB_APP_URL  = "https://script.google.com/macros/s/AKfycbyuW_4_sWHWUq0lc4QOe1amHl7ipGXr0wGNoVQFJl7leq6JYGWVR7CUoPOZkPMqprnX/exec";
-    const CACHE_KEY_INIT   = "leave_sys_init_cache_v20_multiliff";
+    // 🌐 三棲熱備援環境核心連線設定（三節點各自對應獨立專屬 LIFF ID）
+    // 版本: v21.0.0 (三組獨立 LIFF ID + GAS 沙盒穿透逃生 + 零自動提交版)
+    // ============================================================
+    const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyuW_4_sWHWUq0lc4QOe1amHl7ipGXr0wGNoVQFJl7leq6JYGWVR7CUoPOZkPMqprnX/exec";
+    const CACHE_KEY_INIT  = "leave_sys_init_cache_v21_multiliff";
 
-    // ✅ 核心對照表：讓 GitHub、Bloon、GAS 各自擁有獨立的專屬 LIFF ID
+    // 若運行於 GAS doGet(e) 環境，伺服器會自動將此字串替換為包含 initUid, initGid, initTab, ssrData 的物件
+    const GAS_SSR_PAYLOAD = "/*__GAS_SSR_INJECTION__*/";
+
+    function detectCurrentBrowserNodeKey() {
+      const host = (window.location.hostname || "").toLowerCase();
+      if (host.includes("github.io")) return "GITHUB";
+      if (host.includes("bloon.io"))  return "BLOON";
+      if (host.includes("google.com") || host.includes("googleusercontent.com")) return "GAS";
+      return "GITHUB";
+    }
+
+    // ✅ 三節點固定專屬 LIFF ID 對照表
     const NODE_LIFF_IDS = {
       GITHUB: "2012028062-vnoiLP9t",
-      BLOON:  "2012028062-FRVGFRQw", // 👈 請在此處填入 Bloon 的專屬 LIFF ID
-      GAS:    "2012028062-GnVM3Ihq"  // 👈 請在此處填入 GAS 的專屬 LIFF ID
+      BLOON:  "2012028062-FRVGFRQw",
+      GAS:    "2012028062-GnVM3Ihq"
     };
 
-    // 自動偵測當前瀏覽器所在網域，瞬間鎖定對應的 LIFF ID
-    const DEFAULT_LIFF_ID = NODE_LIFF_IDS[detectCurrentBrowserNodeKey()] || NODE_LIFF_IDS.GITHUB;
+    const CURRENT_BROWSER_NODE = detectCurrentBrowserNodeKey();
+    const DEFAULT_LIFF_ID      = NODE_LIFF_IDS[CURRENT_BROWSER_NODE] || NODE_LIFF_IDS.GITHUB;
 
     const DEFAULT_STANDBY_NODES = [
       {
@@ -641,7 +671,7 @@
         badge:  "🛡️ 節點 2 (Bloon.io)",
         url:    "https://direct.bloon.io/share/YyjMvvP7/index.html",
         liffId: NODE_LIFF_IDS.BLOON,
-        desc:   "獨立外部靜態託管空間，具備專屬 LIFF ID 與 100% 群組本人發話能力"
+        desc:   "獨立外部靜態託管空間，具備專屬 LIFF ID (2012028062-FRVGFRQw) 與 100% 群組本人發話能力"
       },
       {
         key:    "GAS",
@@ -649,17 +679,9 @@
         badge:  "☁️ 節點 3 (Google 原生)",
         url:    "https://script.google.com/macros/s/AKfycbyuW_4_sWHWUq0lc4QOe1amHl7ipGXr0wGNoVQFJl7leq6JYGWVR7CUoPOZkPMqprnX/exec",
         liffId: NODE_LIFF_IDS.GAS,
-        desc:   "由 Google Apps Script 直接渲染內建 LeaveForm.html，不依賴任何外部空間"
+        desc:   "由 Google Apps Script 直接渲染內建 LeaveForm.html，具備專屬 LIFF ID (2012028062-GnVM3Ihq)"
       }
     ];
-
-    function detectCurrentBrowserNodeKey() {
-      const host = (window.location.hostname || "").toLowerCase();
-      if (host.includes("github.io")) return "GITHUB";
-      if (host.includes("bloon.io"))  return "BLOON";
-      if (host.includes("google.com") || host.includes("googleusercontent.com")) return "GAS";
-      return "GITHUB";
-    }
 
     function createExternalGasRunner(successCb, failureCb) {
       const callBackend = (methodName, args) => {
@@ -763,7 +785,7 @@
         autoRedirect:   true,
         hasLoginSecret: false,
         viewType:       "full",
-        liffMap:        { GITHUB: DEFAULT_LIFF_ID, BLOON: DEFAULT_LIFF_ID, GAS: DEFAULT_LIFF_ID },
+        liffMap:        { ...NODE_LIFF_IDS },
         nodesList:      DEFAULT_STANDBY_NODES
       },
       adminData: null,
@@ -793,13 +815,21 @@
 
     function parseClientUrlParams() {
       try {
+        // 1. 先讀取 GAS 伺服器端 doGet(e) 注入之參數（解決 GAS iframe 讀不到外層 URL 參數問題）
+        if (typeof GAS_SSR_PAYLOAD === "object" && GAS_SSR_PAYLOAD !== null) {
+          if (GAS_SSR_PAYLOAD.initUid)     STATE.uid     = GAS_SSR_PAYLOAD.initUid;
+          if (GAS_SSR_PAYLOAD.initGid)     STATE.gid     = GAS_SSR_PAYLOAD.initGid;
+          if (GAS_SSR_PAYLOAD.initTab)     STATE.tab     = GAS_SSR_PAYLOAD.initTab;
+          if (GAS_SSR_PAYLOAD.initEditRow) STATE.editRow = GAS_SSR_PAYLOAD.initEditRow;
+        }
+
+        // 2. 讀取瀏覽器 Query 參數與 liff.state
         const search = window.location.search || '';
         const up = new URLSearchParams(search);
-        if (up.get('tab')) STATE.tab = up.get('tab');
-        if (up.get('uid')) STATE.uid = up.get('uid');
-        if (up.get('gid')) STATE.gid = up.get('gid');
+        if (up.get('tab'))     STATE.tab     = up.get('tab');
+        if (up.get('uid'))     STATE.uid     = up.get('uid');
+        if (up.get('gid'))     STATE.gid     = up.get('gid');
         if (up.get('editRow')) STATE.editRow = up.get('editRow');
-        if (up.get('liffId')) STATE.liffId = up.get('liffId');
         if (up.get('noRedirect') === '1') STATE.noRedirect = true;
 
         const liffState = up.get('liff.state');
@@ -807,37 +837,42 @@
           let decoded = liffState;
           try { decoded = decodeURIComponent(liffState); } catch (_) {}
           const sp = new URLSearchParams(decoded.replace(/^[?\/]+/, ''));
-          if (sp.get('tab')) STATE.tab = sp.get('tab');
-          if (sp.get('uid')) STATE.uid = sp.get('uid');
-          if (sp.get('gid')) STATE.gid = sp.get('gid');
+          if (sp.get('tab'))     STATE.tab     = sp.get('tab');
+          if (sp.get('uid'))     STATE.uid     = sp.get('uid');
+          if (sp.get('gid'))     STATE.gid     = sp.get('gid');
           if (sp.get('editRow')) STATE.editRow = sp.get('editRow');
-          if (sp.get('liffId')) STATE.liffId = sp.get('liffId');
           if (sp.get('noRedirect') === '1') STATE.noRedirect = true;
         }
       } catch (_) {}
     }
 
     /**
-     * 自動依當前節點決定最佳 LIFF ID（支援單一 LIFF 同步或 3 組獨立 LIFF ID）
+     * ✅ 強制依據當前瀏覽器所在節點決定專屬 LIFF ID（絕不混用其他節點的 LIFF ID！）
      */
     function resolveCurrentNodeLiffId() {
       const curKey = detectCurrentBrowserNodeKey();
-      try {
-        const cachedRaw = localStorage.getItem(CACHE_KEY_INIT);
-        if (cachedRaw) {
-          const cachedRes = JSON.parse(cachedRaw);
-          if (cachedRes && cachedRes.standbyStatus && cachedRes.standbyStatus.liffMap) {
-            const mapped = cachedRes.standbyStatus.liffMap[curKey];
-            if (mapped) return mapped;
-          }
-        }
-      } catch (_) {}
-      return NODE_LIFF_IDS[curKey] || STATE.liffId || DEFAULT_LIFF_ID;
+      return NODE_LIFF_IDS[curKey] || NODE_LIFF_IDS.GITHUB;
+    }
+
+    /**
+     * 在 GAS 備援節點中一鍵解鎖並進入「🛠️ 系統管理」分頁（防卡死保護）
+     */
+    function unlockAndOpenAdminTab() {
+      document.getElementById('tabBtn_today').classList.remove('hidden');
+      document.getElementById('tabBtn_schedule').classList.remove('hidden');
+      document.getElementById('tabBtn_admin').classList.remove('hidden');
+      switchTab('admin');
     }
 
     window.onload = function() {
       parseClientUrlParams();
       STATE.liffId = resolveCurrentNodeLiffId();
+
+      // 若位於 GAS 雲端原生節點，顯示頂部逃生切換列，確保 100% 隨時可跳回 GitHub 或開啟系統管理
+      if (CURRENT_BROWSER_NODE === 'GAS') {
+        const escBar = document.getElementById('gasSandboxEscapeBar');
+        if (escBar) escBar.classList.remove('hidden');
+      }
 
       let savedName = localStorage.getItem('leave_sys_user_name') || '';
       if (savedName === '系統管理員') {
@@ -846,10 +881,10 @@
       }
       const todayLocal = getLocalTodayStrings();
 
-      if (!document.getElementById('inpStartDate').value) {
-        document.getElementById('inpStartDate').value = todayLocal.iso;
-        document.getElementById('inpEndDate').value   = todayLocal.iso;
-      }
+      // 0.01 秒預填今日日期，徹底解決圖片五日期空白的問題
+      document.getElementById('inpStartDate').value = todayLocal.iso;
+      document.getElementById('inpEndDate').value   = todayLocal.iso;
+
       if (savedName) {
         document.getElementById('inpName').value      = savedName;
         document.getElementById('inpQueryName').value = savedName;
@@ -857,18 +892,23 @@
       initTextTemplate(savedName, todayLocal.slash);
       renderStandbyNodesCard(STATE.standbyStatus);
 
-      try {
-        const cachedRaw = localStorage.getItem(CACHE_KEY_INIT);
-        if (cachedRaw) {
-          const cachedRes = JSON.parse(cachedRaw);
-          if (cachedRes && cachedRes.success) applyInitData(cachedRes, savedName, true);
-        }
-      } catch (_) {}
+      // 若在 GAS 環境且有伺服器端注入之 SSR 資料，0 秒立即套用
+      if (typeof GAS_SSR_PAYLOAD === "object" && GAS_SSR_PAYLOAD !== null && GAS_SSR_PAYLOAD.ssrData && GAS_SSR_PAYLOAD.ssrData.success) {
+        applyInitData(GAS_SSR_PAYLOAD.ssrData, savedName, false);
+      } else {
+        try {
+          const cachedRaw = localStorage.getItem(CACHE_KEY_INIT);
+          if (cachedRaw) {
+            const cachedRes = JSON.parse(cachedRaw);
+            if (cachedRes && cachedRes.success) applyInitData(cachedRes, savedName, true);
+          }
+        } catch (_) {}
+      }
 
       if (STATE.tab) switchTab(STATE.tab);
 
-      // 優先透過 LIFF 取得真實的 groupId 與 userId
-      if (STATE.liffId && typeof liff !== 'undefined') {
+      // 在 GitHub / Bloon 頂層環境執行 LIFF 初始化；在 GAS 沙盒內則不阻塞直接載入資料
+      if (CURRENT_BROWSER_NODE !== 'GAS' && STATE.liffId && typeof liff !== 'undefined') {
         let fetched = false;
         const timer = setTimeout(() => {
           if (!fetched) { fetched = true; fetchFreshInitData(savedName); }
@@ -932,11 +972,14 @@
         STATE.standbyStatus = res.standbyStatus;
         renderStandbyNodesCard(res.standbyStatus);
 
-        // 智慧自動導流：若點到非預設節點且未設定 LINE API 自動改綁時，自動無縫轉址至預設節點
-        if (!isFromLocalCache && res.standbyStatus.autoRedirect && !STATE.noRedirect && STATE.tab !== 'admin') {
-          const currentBrowserKey = detectCurrentBrowserNodeKey();
-          const targetActiveKey   = res.standbyStatus.activeKey;
-          if (targetActiveKey && currentBrowserKey !== targetActiveKey) {
+        // 智慧自動導流（僅在非 GAS 沙盒且非管理頁面時執行）
+        if (!isFromLocalCache &&
+            CURRENT_BROWSER_NODE !== 'GAS' &&
+            res.standbyStatus.autoRedirect &&
+            !STATE.noRedirect &&
+            STATE.tab !== 'admin') {
+          const targetActiveKey = res.standbyStatus.activeKey;
+          if (targetActiveKey && CURRENT_BROWSER_NODE !== targetActiveKey) {
             const targetNode = (res.standbyStatus.nodesList || DEFAULT_STANDBY_NODES).find(n => n.key === targetActiveKey);
             if (targetNode && targetNode.url) {
               jumpToStandbyNodeUrl(targetNode.url, true, targetNode.liffId);
@@ -1003,12 +1046,26 @@
         } else if (!isFromLocalCache && STATE.tab === 'admin') {
           reloadAdminDatabase();
         }
-      } else if (!isFromLocalCache && ['today', 'schedule', 'admin'].includes(STATE.tab)) {
-        switchTab('form');
       }
     }
 
-    // ==================== 🌐 3 大熱備援節點與 LIFF 授權同步渲染 ====================
+    /**
+     * 建立穿透沙盒的節點跳轉網址（優先使用直連網址攜帶完整參數，確保在 GAS iframe 內點擊 <a target="_top"> 100% 成功跳出）
+     */
+    function buildStandbyJumpHref(baseUrl, isAutoRedirect, nodeLiffId) {
+      if (!baseUrl) return '#';
+      const sep    = baseUrl.includes('?') ? '&' : '?';
+      const params = [
+        `uid=${encodeURIComponent(STATE.uid || '')}`,
+        `gid=${encodeURIComponent(STATE.gid || '')}`,
+        `tab=${encodeURIComponent(STATE.tab || 'form')}`
+      ];
+      if (STATE.editRow) params.push(`editRow=${encodeURIComponent(STATE.editRow)}`);
+      if (!isAutoRedirect) params.push('noRedirect=1');
+      return `${baseUrl}${sep}${params.join('&')}`;
+    }
+
+    // ==================== 🌐 3 大熱備援節點與專屬 LIFF 渲染 ====================
     function renderStandbyNodesCard(standbyObj) {
       const box = document.getElementById('admStandbyNodesListBox');
       if (!box) return;
@@ -1018,7 +1075,14 @@
       const autoRedirect      = st.autoRedirect !== undefined ? !!st.autoRedirect : true;
       const nodesList         = (Array.isArray(st.nodesList) && st.nodesList.length > 0) ? st.nodesList : DEFAULT_STANDBY_NODES;
       const currentBrowserKey = detectCurrentBrowserNodeKey();
-      const liffMap           = st.liffMap || { GITHUB: DEFAULT_LIFF_ID, BLOON: DEFAULT_LIFF_ID, GAS: DEFAULT_LIFF_ID };
+
+      // 強制校準顯示三組獨立 LIFF ID
+      const rawMap  = st.liffMap || {};
+      const liffMap = {
+        GITHUB: rawMap.GITHUB || NODE_LIFF_IDS.GITHUB,
+        BLOON:  (rawMap.BLOON && rawMap.BLOON !== NODE_LIFF_IDS.GITHUB) ? rawMap.BLOON : NODE_LIFF_IDS.BLOON,
+        GAS:    (rawMap.GAS   && rawMap.GAS   !== NODE_LIFF_IDS.GITHUB) ? rawMap.GAS   : NODE_LIFF_IDS.GAS
+      };
 
       const chk = document.getElementById('chkStandbyAutoRedirect');
       if (chk) chk.checked = autoRedirect;
@@ -1026,9 +1090,15 @@
       const inpG = document.getElementById('inpLiffGithub');
       const inpB = document.getElementById('inpLiffBloon');
       const inpS = document.getElementById('inpLiffGas');
-      if (inpG && liffMap.GITHUB) inpG.value = liffMap.GITHUB;
-      if (inpB && liffMap.BLOON)  inpB.value = liffMap.BLOON;
-      if (inpS && liffMap.GAS)    inpS.value = liffMap.GAS;
+      if (inpG) inpG.value = liffMap.GITHUB;
+      if (inpB) inpB.value = liffMap.BLOON;
+      if (inpS) inpS.value = liffMap.GAS;
+
+      // 同步更新頂部 GAS 逃生列連結（帶入當前 uid 與 gid）
+      const escGit = document.getElementById('escapeLinkGithub');
+      const escBln = document.getElementById('escapeLinkBloon');
+      if (escGit) escGit.href = buildStandbyJumpHref(DEFAULT_STANDBY_NODES[0].url, false, liffMap.GITHUB);
+      if (escBln) escBln.href = buildStandbyJumpHref(DEFAULT_STANDBY_NODES[1].url, false, liffMap.BLOON);
 
       const selView = document.getElementById('selLiffViewType');
       if (selView && st.viewType) selView.value = st.viewType;
@@ -1040,6 +1110,7 @@
 
       const browserNodeObj = nodesList.find(n => n.key === currentBrowserKey) || nodesList[0];
       const activeNodeObj  = nodesList.find(n => n.key === activeKey)         || nodesList[0];
+      const activeLiffId   = liffMap[activeKey] || NODE_LIFF_IDS[activeKey];
       const isInLiffClient = (typeof liff !== 'undefined' && liff.isInClient && liff.isInClient());
 
       const lblBrowser = document.getElementById('lblCurrentBrowserNode');
@@ -1048,21 +1119,20 @@
 
       if (lblBrowser) {
         lblBrowser.innerHTML = `<span class="badge on">${browserNodeObj.badge}</span> ` +
-          `<span class="badge ${isInLiffClient ? 'on' : ''}">${isInLiffClient ? '🟢 已取得 LIFF 群組授權' : '🌐 瀏覽器模式'}</span>`;
+          `<span class="badge ${isInLiffClient ? 'on' : ''}">${isInLiffClient ? '🟢 LIFF 群組授權模式' : '🌐 網頁模式'}</span>`;
       }
       if (lblActive) {
-        lblActive.innerHTML = `<span class="badge admin-role">${activeNodeObj.badge}</span> (LIFF: <code>${activeNodeObj.liffId || DEFAULT_LIFF_ID}</code>)`;
+        lblActive.innerHTML = `<span class="badge admin-role">${activeNodeObj.badge}</span> (專屬 LIFF: <code>${activeLiffId}</code>)`;
       }
       if (lblSecret) {
-        lblSecret.innerHTML = st.hasLoginSecret
-          ? `<span class="badge on">🟢 已啟用（切換節點時自動改綁 LINE 官方 Endpoint URL）</span>`
-          : `<span class="badge">⚪ 未設定 Secret（使用下方各節點綁定之 LIFF ID 派發）</span>`;
+        lblSecret.innerHTML = `<span class="badge on">🟢 三節點各自綁定獨立 LIFF ID（切換零延遲）</span>`;
       }
 
       box.innerHTML = nodesList.map(n => {
         const isSystemDefault = (n.key === activeKey);
         const isCurrentWindow = (n.key === currentBrowserKey);
-        const nodeLiffId      = n.liffId || liffMap[n.key] || DEFAULT_LIFF_ID;
+        const nodeLiffId      = liffMap[n.key] || NODE_LIFF_IDS[n.key];
+        const directJumpHref  = buildStandbyJumpHref(n.url, false, nodeLiffId);
 
         return `
           <div class="standby-card ${isSystemDefault ? 'active-node' : ''} ${isCurrentWindow ? 'current-browser-node' : ''}">
@@ -1075,17 +1145,18 @@
                 ${isCurrentWindow ? '<span class="badge admin-role">📍 目前所在視窗</span>' : ''}
               </div>
             </div>
-            <div class="standby-url">Endpoint: ${n.url}<br>授權網址: https://liff.line.me/${nodeLiffId}</div>
+            <div class="standby-url">Endpoint: ${n.url}<br>專屬授權網址: https://liff.line.me/${nodeLiffId}</div>
             <div style="font-size:12px; color:var(--muted); line-height:1.4;">${n.desc || ''}</div>
             <div class="standby-actions">
               <button class="btn sm ${isSystemDefault ? 'secondary' : 'teal'}"
                 onclick="switchSystemStandbyNode('${n.key}')"
                 ${isSystemDefault ? 'disabled' : ''}>
-                ${isSystemDefault ? '✅ 目前已設為預設' : '⚡ 設為預設並同步 LIFF 授權'}
+                ${isSystemDefault ? '✅ 目前已設為預設' : '⚡ 一鍵設為系統預設'}
               </button>
-              <button class="btn sm blue" onclick="jumpToStandbyNodeUrl('${n.url}', false, '${nodeLiffId}')">
+              <!-- ✅ 採用原生 <a target="_top"> 連結，100% 穿透 GAS iframe 沙盒直接跳轉，絕不卡死！ -->
+              <a class="btn sm blue" href="${directJumpHref}" target="_top" style="margin-top:0;">
                 🔗 立即跳轉此節點開啟
-              </button>
+              </a>
             </div>
           </div>
         `;
@@ -1096,12 +1167,12 @@
       const secretVal = document.getElementById('inpLineLoginSecret').value.trim();
       const viewType  = document.getElementById('selLiffViewType').value;
       const liffMap   = {
-        GITHUB: document.getElementById('inpLiffGithub').value.trim() || DEFAULT_LIFF_ID,
-        BLOON:  document.getElementById('inpLiffBloon').value.trim()  || DEFAULT_LIFF_ID,
-        GAS:    document.getElementById('inpLiffGas').value.trim()    || DEFAULT_LIFF_ID
+        GITHUB: document.getElementById('inpLiffGithub').value.trim() || NODE_LIFF_IDS.GITHUB,
+        BLOON:  document.getElementById('inpLiffBloon').value.trim()  || NODE_LIFF_IDS.BLOON,
+        GAS:    document.getElementById('inpLiffGas').value.trim()    || NODE_LIFF_IDS.GAS
       };
 
-      showStatusBanner('standbyStatusMsgBox', 'info', '⏳ 正在儲存 LIFF 授權設定並向 LINE 官方伺服器同步 Endpoint URL...');
+      showStatusBanner('standbyStatusMsgBox', 'info', '⏳ 正在儲存並校準三節點專屬 LIFF ID 設定...');
 
       const payload = { liffMap, viewType };
       if (secretVal) payload.loginChannelSecret = secretVal;
@@ -1131,7 +1202,7 @@
         ? document.getElementById('chkStandbyAutoRedirect').checked
         : true;
 
-      showStatusBanner('standbyStatusMsgBox', 'info', `⏳ 正在將系統預設切換為【${nodeKey}】並同步 LINE LIFF 群組授權...`);
+      showStatusBanner('standbyStatusMsgBox', 'info', `⏳ 正在將系統預設切換為【${nodeKey}】並更新 LINE 浮動按鈕為專屬 LIFF 網址...`);
 
       google.script.run
         .withSuccessHandler(res => {
@@ -1166,17 +1237,7 @@
     }
 
     function jumpToStandbyNodeUrl(baseUrl, isAutoRedirect, nodeLiffId) {
-      if (!baseUrl) return;
-      const sep    = baseUrl.includes('?') ? '&' : '?';
-      const params = [
-        `uid=${encodeURIComponent(STATE.uid || '')}`,
-        `gid=${encodeURIComponent(STATE.gid || '')}`,
-        `tab=${encodeURIComponent(STATE.tab || 'form')}`
-      ];
-      if (STATE.editRow) params.push(`editRow=${encodeURIComponent(STATE.editRow)}`);
-      if (nodeLiffId)    params.push(`liffId=${encodeURIComponent(nodeLiffId)}`);
-      if (!isAutoRedirect) params.push('noRedirect=1');
-      const targetUrl = `${baseUrl}${sep}${params.join('&')}`;
+      const targetUrl = buildStandbyJumpHref(baseUrl, isAutoRedirect, nodeLiffId);
       try { window.top.location.replace(targetUrl); } catch (_) { window.location.href = targetUrl; }
     }
 
@@ -1328,16 +1389,10 @@
         });
     }
 
-    /**
-     * ✅ 嚴格遵守「明確意圖 (Explicit Intent)」原則：
-     * - 點擊綠色按鈕只負責透過 liff.sendMessages 以員工本人帳號在群組發出 7 行文字（或複製文字讓使用者貼上）。
-     * - 100% 絕對不在此處自動呼叫 submitTextForm()，確保未點擊系統提交按鈕前，系統絕不自動提交任何假單！
-     */
     function executeVerifiedPasteAction(rawText) {
       if (isSubmitting) return;
       copyToClipboardSafe(rawText);
 
-      // 1. 1對1私訊且非 LIFF 內嵌環境：透過 oaMessage 將文字帶入輸入框
       if (isMobileClient() && !STATE.gid && STATE.botBasicId && !(typeof liff !== 'undefined' && liff.isInClient && liff.isInClient())) {
         const btn = document.getElementById('btnPasteToLine');
         unlockPasteButtonWithVerifiedText(rawText);
@@ -1348,7 +1403,6 @@
         return;
       }
 
-      // 2. LINE 群組或 LIFF 內嵌環境：僅以本人帳號發出文字泡泡，絕不自動呼叫後端提交 API！
       if (typeof liff !== 'undefined' && liff.isInClient && liff.isInClient()) {
         isSubmitting = true;
         lockPasteButtonForVerification('🚀 正在將文字發送至原群組...');
@@ -1365,7 +1419,6 @@
             setTimeout(() => { safeCloseLiffWindow(); }, 250);
           })
           .catch(err => {
-            // 若尚未開通 chat_message.write 權限，僅複製文字並引導使用者手動貼上，絕不在背景自動提交假單！
             isSubmitting = false;
             unlockPasteButtonWithVerifiedText(rawText);
             showStatusBanner(
@@ -1379,7 +1432,6 @@
         return;
       }
 
-      // 3. 外部瀏覽器：僅複製文字並提示手動貼上（不自動提交）
       copyTextAndCloseDrawer();
     }
 
@@ -2011,9 +2063,6 @@
       }
     }
 
-    /**
-     * 唯有使用者明確點擊「🚀 直接由系統留言並送出假單」按鈕時才觸發此函式
-     */
     function submitTextForm() {
       if (isSubmitting) return;
       const rawText = document.getElementById('txtRawLeave').value.trim();
