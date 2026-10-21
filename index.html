@@ -1033,9 +1033,26 @@
       const btn = document.getElementById('btnPasteToLine');
       if (!btn) return;
       btn.classList.remove('locked');
-      btn.innerText = '✅ 驗證通過！點此 1 鍵發送假單至原群組';
-      btn.href = 'javascript:void(0)';
-      btn.removeAttribute('target');
+
+      const isLiffEnv = (typeof liff !== 'undefined' && liff.isInClient && liff.isInClient());
+
+      if (STATE.gid || isLiffEnv) {
+        // 群組環境或 LIFF 內部：以本人名義直接發出文字至當前聊天室
+        btn.innerText = '✅ 驗證通過！點此 1 鍵送出假單至群組';
+        btn.href = 'javascript:void(0)';
+        btn.removeAttribute('target');
+      } else if (isMobileClient() && STATE.botBasicId && rawText) {
+        // 外部瀏覽器開啟且為 1 對 1：掛載原生 oaMessage 喚醒 LINE
+        btn.innerText = '📲 驗證通過！點此將文字貼回 LINE 輸入框';
+        const rawBasicId   = STATE.botBasicId.trim();
+        const cleanBasicId = rawBasicId.startsWith('@') ? rawBasicId : ('@' + rawBasicId);
+        btn.href   = 'line://oaMessage/' + cleanBasicId + '/?' + encodeURIComponent(rawText);
+        btn.target = '_top';
+      } else {
+        btn.innerText = '✅ 驗證通過！點此直接送出假單';
+        btn.href = 'javascript:void(0)';
+        btn.removeAttribute('target');
+      }
     }
 
     function onRawTextInput() {
@@ -1105,7 +1122,9 @@
             showStatusBanner(
               'textFormResultBox',
               'ok',
-              `✅ 資料庫驗證通過！（${STATE.verifySummary}）\n請點擊下方綠色按鈕 1 鍵送出至原群組（或點藍色按鈕手動貼上）。`
+              STATE.gid
+                ? `✅ 資料庫驗證通過！（${STATE.verifySummary}）\n請點擊下方綠色按鈕 1 鍵發送至原群組（或點藍色按鈕手動貼上）。`
+                : `✅ 資料庫驗證通過！（${STATE.verifySummary}）\n確認無重複請假且格式正確，請點擊下方綠色按鈕直接送出假單。`
             );
             return;
           }
@@ -1127,46 +1146,50 @@
         });
     }
 
-    /**
-     * ✅ 核心連續動作：
-     * 步驟 1 (背景)：寫入剪貼簿
-     * 步驟 2 (背景)：LIFF 代表本人帳號直接在原群組傳送 7 行請假文字（等同於貼在輸入框並按下送出）
-     * 步驟 3 (背景)：0.3 秒後收起視窗，直接停留在原群組！
-     * 若未授權發訊，無縫改由後端直接在原群組發出留言與卡片！
-     */
-    function executeVerifiedPasteAction(rawText) {
-      // 步驟 1：背景寫入剪貼簿
+function executeVerifiedPasteAction(rawText) {
       copyToClipboardSafe(rawText);
 
-      // 步驟 2 & 3：LIFF 原生發訊通道（100% 代表本人帳號在當前原群組發出）
-      if (typeof liff !== 'undefined' && liff.isInClient()) {
+      // 1. 1對1私訊環境：透過 oaMessage 貼入輸入框
+      if (isMobileClient() && !STATE.gid && STATE.botBasicId && !(typeof liff !== 'undefined' && liff.isInClient && liff.isInClient())) {
         const btn = document.getElementById('btnPasteToLine');
-        if (btn) {
-          btn.classList.add('locked');
-          btn.innerText = '🚀 正在以您的帳號發送至原群組...';
+        unlockPasteButtonWithVerifiedText(rawText);
+        showStatusBanner('textFormResultBox', 'ok', `✅ 【驗證 100% 通過】${STATE.verifySummary}\n正在將文字貼回您的 LINE 聊天輸入框...`);
+        if (btn && btn.href && btn.href.startsWith('line://')) {
+          try { window.top.location.href = btn.href; } catch (_) { btn.click(); }
         }
-        showStatusBanner('textFormResultBox', 'info', '🚀 正在以您的 LINE 帳號直接發送假單至原群組...');
+        return;
+      }
+
+      // 2. LINE 群組或 LIFF 環境：僅代表本人在聊天室發出文字泡泡，隨後自動收起視窗
+      if (typeof liff !== 'undefined' && liff.isInClient && liff.isInClient()) {
+        if (isSubmitting) return;
+        isSubmitting = true;
+        lockPasteButtonForVerification('🚀 正在將文字發送至聊天室...');
+        showStatusBanner('textFormResultBox', 'info', '🚀 正在以您的 LINE 帳號將假單文字發送至當前聊天室...');
 
         liff.sendMessages([{ type: 'text', text: rawText }])
           .then(() => {
+            isSubmitting = false;
             try { localStorage.removeItem(CACHE_KEY_INIT); } catch (_) {}
             STATE.verifiedText   = '';
             STATE.verifyStatus   = 'invalid';
-            lockPasteButtonForVerification('🎉 假單已成功送出！');
-            showStatusBanner('textFormResultBox', 'ok', `🎉 已成功送出假單！（${STATE.verifySummary}）正在返回群組...`);
-            setTimeout(() => { safeCloseLiffWindow(); }, 300);
+            lockPasteButtonForVerification('🎉 假單文字已發送！');
+            showStatusBanner('textFormResultBox', 'ok', `🎉 假單文字已成功發送至聊天室！（${STATE.verifySummary}）正在關閉視窗...`);
+            setTimeout(() => { safeCloseLiffWindow(); }, 250);
           })
           .catch(err => {
-            // 若未授權發訊，自動改由後端直接在「原群組」推播，絕不跑到 1 對 1 私訊！
-            submitTextForm();
+            // 若 LIFF 發訊失敗，改為提示手動貼上，絕不在背景自動呼叫後端提交
+            isSubmitting = false;
+            lockPasteButtonForVerification('✅ 驗證通過！請點擊藍色按鈕手動複製');
+            showStatusBanner('textFormResultBox', 'info', '💡 提示：請點擊下方「藍色按鈕」複製文字，並在群組輸入框長按貼上。');
           });
         return;
       }
 
-      // 外部瀏覽器環境：後端在原群組建檔並推播
-      submitTextForm();
+      // 3. 外部瀏覽器：提示複製
+      copyTextAndCloseDrawer();
     }
-
+    
     function copyTextAndCloseDrawer() {
       const rawText = document.getElementById('txtRawLeave').value.trim();
       const syncCheck = validateLeaveTextClientSide(rawText);
@@ -1187,9 +1210,10 @@
       setTimeout(() => { safeCloseLiffWindow(); }, 300);
     }
 
-    function handlePasteToLineClick(event) {
+function handlePasteToLineClick(event) {
       const rawText = document.getElementById('txtRawLeave').value.trim();
 
+      // 1. 前端語法防呆
       const syncCheck = validateLeaveTextClientSide(rawText);
       if (!syncCheck.valid) {
         event.preventDefault();
@@ -1201,6 +1225,7 @@
         return false;
       }
 
+      // 2. 錯誤或重複請假攔截
       if (STATE.verifyStatus === 'invalid' && STATE.verifyErrorMsg) {
         event.preventDefault();
         lockPasteButtonForVerification('⛔ 假單驗證未通過（請先修正上方錯誤）');
@@ -1208,13 +1233,21 @@
         return false;
       }
 
+      // 3. 已驗證通過時，立即執行一鍵送出
       if (STATE.verifyStatus === 'valid' && STATE.verifiedText === rawText) {
         copyToClipboardSafe(rawText);
+
+        // 若為 1 對 1 且有原生 oaMessage 連結，直接放行
+        if (isMobileClient() && !STATE.gid && STATE.botBasicId && !(typeof liff !== 'undefined' && liff.isInClient && liff.isInClient())) {
+          return true;
+        }
+
         event.preventDefault();
         executeVerifiedPasteAction(rawText);
         return false;
       }
 
+      // 4. 若尚未完成後端核對，攔截並等待驗證完成後自動送出（不需點兩次）
       event.preventDefault();
       if (rawTextDebounceTimer) clearTimeout(rawTextDebounceTimer);
       runBackendTextValidation(rawText, true);
@@ -1796,6 +1829,16 @@
         return;
       }
 
+      // 嚴格檢查：若在群組但 STATE.gid 尚未抓到，從 liff.getContext() 再試一次抓取
+      if (!STATE.gid && typeof liff !== 'undefined' && liff.getContext) {
+        try {
+          const ctx = liff.getContext();
+          if (ctx && (ctx.groupId || ctx.roomId)) {
+            STATE.gid = ctx.groupId || ctx.roomId;
+          }
+        } catch (_) {}
+      }
+
       isSubmitting = true;
       const btnSubmit = document.getElementById('btnSubmitText');
       const btnPaste  = document.getElementById('btnPasteToLine');
@@ -1844,7 +1887,7 @@
               `🎉 請假單已成功送出至原群組聊天室！\n🔖 記錄編號：#${res.rowNumber}\n📋 摘要：${res.summaryText}\n\n（正在自動關閉視窗返回原群組...）`
             );
 
-            setTimeout(() => { safeCloseLiffWindow(); }, 600);
+            setTimeout(() => { safeCloseLiffWindow(); }, 500);
           })
           .withFailureHandler(err => {
             isSubmitting = false;
@@ -1861,7 +1904,7 @@
           .submitRawTextLeaveFromWeb({
             text:    rawText,
             userId:  STATE.uid,
-            groupId: STATE.gid // 嚴格帶入群組 ID！
+            groupId: STATE.gid // 100% 綁定原群組
           });
       } catch (syncErr) {
         isSubmitting = false;
@@ -1872,7 +1915,7 @@
         showStatusBanner('textFormResultBox', 'err', '❌ 無法連接後端函式：' + syncErr.message);
       }
     }
-
+    
     function switchAdminPanel(panel) {
       ['standby', 'admins', 'quota', 'recs', 'sched', 'types'].forEach(p => {
         const btn = document.getElementById('admBtn_' + p);
