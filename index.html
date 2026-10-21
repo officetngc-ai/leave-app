@@ -1723,7 +1723,10 @@
 
     function reloadAdminDatabase() {
       const banner = document.getElementById('adminLoadingBanner');
-      if (banner) banner.classList.remove('hidden');
+      if (banner) {
+        banner.innerText = '⏳ 正在從後端 Google Sheet 資料庫同步最新數據...';
+        banner.classList.remove('hidden');
+      }
       google.script.run
         .withSuccessHandler(adm => {
           if (banner) banner.classList.add('hidden');
@@ -1731,10 +1734,13 @@
             STATE.adminData = adm;
             if (adm.standbyStatus) STATE.standbyStatus = adm.standbyStatus;
             renderAdminConsole(adm);
+          } else {
+            alert('❌ 讀取後台資料庫失敗：' + ((adm && adm.error) || '請確認 GAS 已更新部署新版本'));
           }
         })
-        .withFailureHandler(() => {
+        .withFailureHandler(err => {
           if (banner) banner.classList.add('hidden');
+          alert('❌ 連線後端資料庫失敗：' + err.message);
         })
         .adminGetBackendData(STATE.uid);
     }
@@ -2400,9 +2406,9 @@
       renderAdminRecordsList(filtered);
     }
 
-    function onAdminSelectEmployee(idx) {
+function onAdminSelectEmployee(idx) {
       document.getElementById('admSelEmp').value = idx;
-      if (idx === '' || !STATE.adminData || !STATE.adminData.quotaList[idx]) {
+      if (idx === '' || idx === null || idx === undefined || !STATE.adminData || !STATE.adminData.quotaList[idx]) {
         document.getElementById('admEmpName').value    = '';
         document.getElementById('admSeniority').value  = '';
         document.getElementById('admDays').value       = 7;
@@ -2414,17 +2420,20 @@
         return;
       }
       const q = STATE.adminData.quotaList[idx];
-      document.getElementById('admEmpName').value    = q.name;
-      document.getElementById('admSeniority').value  = q.seniority;
+      document.getElementById('admEmpName').value    = q.name || '';
+      document.getElementById('admSeniority').value  = q.seniority || '';
       document.getElementById('admDays').value       = q.days;
       document.getElementById('admHours').value      = q.hours;
       document.getElementById('admInitUsed').value   = q.initUsed;
-      document.getElementById('admHireDate').value   = q.hireDate;
+      document.getElementById('admHireDate').value   = q.hireDate || '';
       document.getElementById('admManualLock').value = q.manualLock ? 'Y' : '';
-      document.getElementById('admRemarks').value    = q.remarks;
+      document.getElementById('admRemarks').value    = q.remarks || '';
+      try {
+        document.getElementById('admPanel_quota').scrollIntoView({ behavior: 'smooth', block: 'start' });
+      } catch (_) {}
     }
 
-    function saveAdminQuota() {
+function saveAdminQuota() {
       const payload = {
         name:       document.getElementById('admEmpName').value.trim(),
         seniority:  document.getElementById('admSeniority').value.trim(),
@@ -2439,6 +2448,10 @@
       google.script.run.withSuccessHandler(res => {
         try { localStorage.removeItem(CACHE_KEY_INIT); } catch (_) {}
         alert(res ? res.message : '已處理');
+        if (res && Array.isArray(res.employees)) {
+          const cleanEmpList = res.employees.filter(n => n && n !== '系統管理員');
+          document.getElementById('employeeList').innerHTML = cleanEmpList.map(n => `<option value="${n}">`).join('');
+        }
         if (res && res.adminData) {
           STATE.adminData = res.adminData;
           renderAdminConsole(res.adminData);
@@ -2451,6 +2464,10 @@
       google.script.run.withSuccessHandler(res => {
         try { localStorage.removeItem(CACHE_KEY_INIT); } catch (_) {}
         alert(res ? res.message : '已刪除');
+        if (res && Array.isArray(res.employees)) {
+          const cleanEmpList = res.employees.filter(n => n && n !== '系統管理員');
+          document.getElementById('employeeList').innerHTML = cleanEmpList.map(n => `<option value="${n}">`).join('');
+        }
         if (res && res.adminData) {
           STATE.adminData = res.adminData;
           renderAdminConsole(res.adminData);
