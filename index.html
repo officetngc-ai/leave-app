@@ -609,13 +609,22 @@
   </div>
 
   <script>
-    // ============================================================
-    // 🌐 三棲熱備援環境核心連線設定（同時相容 GitHub Pages / Bloon.io / GAS LeaveForm.html）
-    // 版本: v20.0.0 (全節點 LIFF 群組授權同步 + 嚴格明確意圖零自動提交版)
+// ============================================================
+    // 🌐 三棲熱備援環境核心連線設定（三節點各自對應獨立專屬 LIFF ID）
+    // 版本: v20.1.0 (三組獨立 LIFF ID 零延遲秒切版)
     // ============================================================
     const GAS_WEB_APP_URL  = "https://script.google.com/macros/s/AKfycbyuW_4_sWHWUq0lc4QOe1amHl7ipGXr0wGNoVQFJl7leq6JYGWVR7CUoPOZkPMqprnX/exec";
-    const DEFAULT_LIFF_ID  = "2012028062-vnoiLP9t";
-    const CACHE_KEY_INIT   = "leave_sys_init_cache_v20_sync";
+    const CACHE_KEY_INIT   = "leave_sys_init_cache_v20_multiliff";
+
+    // ✅ 核心對照表：讓 GitHub、Bloon、GAS 各自擁有獨立的專屬 LIFF ID
+    const NODE_LIFF_IDS = {
+      GITHUB: "2012028062-vnoiLP9t",
+      BLOON:  "2012028062-FRVGFRQw", // 👈 請在此處填入 Bloon 的專屬 LIFF ID
+      GAS:    "2012028062-GnVM3Ihq"  // 👈 請在此處填入 GAS 的專屬 LIFF ID
+    };
+
+    // 自動偵測當前瀏覽器所在網域，瞬間鎖定對應的 LIFF ID
+    const DEFAULT_LIFF_ID = NODE_LIFF_IDS[detectCurrentBrowserNodeKey()] || NODE_LIFF_IDS.GITHUB;
 
     const DEFAULT_STANDBY_NODES = [
       {
@@ -623,7 +632,7 @@
         name:   "GitHub Pages 極速主節點",
         badge:  "🚀 節點 1 (GitHub CDN)",
         url:    "https://officetngc-ai.github.io/leave-app/",
-        liffId: "2012028062-vnoiLP9t",
+        liffId: NODE_LIFF_IDS.GITHUB,
         desc:   "透過 GitHub Fastly 全球 CDN 載入，支援 LIFF 頂層抽屜、本人群組發話與自動收起視窗"
       },
       {
@@ -631,15 +640,15 @@
         name:   "Bloon.io 極速靜態備援",
         badge:  "🛡️ 節點 2 (Bloon.io)",
         url:    "https://direct.bloon.io/share/YyjMvvP7/index.html",
-        liffId: "2012028062-vnoiLP9t",
-        desc:   "獨立外部靜態託管空間，同步 LIFF 授權後同樣具備 100% 群組本人發話與 0.2 秒秒開能力"
+        liffId: NODE_LIFF_IDS.BLOON,
+        desc:   "獨立外部靜態託管空間，具備專屬 LIFF ID 與 100% 群組本人發話能力"
       },
       {
         key:    "GAS",
         name:   "GAS 雲端原生備援",
         badge:  "☁️ 節點 3 (Google 原生)",
         url:    "https://script.google.com/macros/s/AKfycbyuW_4_sWHWUq0lc4QOe1amHl7ipGXr0wGNoVQFJl7leq6JYGWVR7CUoPOZkPMqprnX/exec",
-        liffId: "2012028062-vnoiLP9t",
+        liffId: NODE_LIFF_IDS.GAS,
         desc:   "由 Google Apps Script 直接渲染內建 LeaveForm.html，不依賴任何外部空間"
       }
     ];
@@ -812,18 +821,18 @@
      * 自動依當前節點決定最佳 LIFF ID（支援單一 LIFF 同步或 3 組獨立 LIFF ID）
      */
     function resolveCurrentNodeLiffId() {
+      const curKey = detectCurrentBrowserNodeKey();
       try {
         const cachedRaw = localStorage.getItem(CACHE_KEY_INIT);
         if (cachedRaw) {
           const cachedRes = JSON.parse(cachedRaw);
           if (cachedRes && cachedRes.standbyStatus && cachedRes.standbyStatus.liffMap) {
-            const curKey = detectCurrentBrowserNodeKey();
             const mapped = cachedRes.standbyStatus.liffMap[curKey];
             if (mapped) return mapped;
           }
         }
       } catch (_) {}
-      return STATE.liffId || DEFAULT_LIFF_ID;
+      return NODE_LIFF_IDS[curKey] || STATE.liffId || DEFAULT_LIFF_ID;
     }
 
     window.onload = function() {
