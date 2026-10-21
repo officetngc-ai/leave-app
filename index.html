@@ -78,6 +78,17 @@
     }
     .standby-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
 
+    /* 群組顯示控制核取方塊格線 */
+    .group-ui-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px;
+    }
+    .group-ui-item {
+      background: #F8FAFC; border: 1px solid var(--border); border-radius: 9px;
+      padding: 9px 10px; display: flex; align-items: center; justify-content: space-between;
+      font-size: 13px; font-weight: 700; cursor: pointer;
+    }
+    .group-ui-item input[type="checkbox"] { width: 18px; height: 18px; margin: 0; cursor: pointer; }
+
     /* 狀態提示框 */
     .status-box {
       padding: 12px 14px; border-radius: 10px; font-size: 13.5px; font-weight: 700;
@@ -139,10 +150,10 @@
     .badge.on { background: #DCFCE7; color: #166534; }
     .badge.admin-role { background: #FEF3C7; color: #92400E; }
 
-    /* 6 欄式後台管理子導航列 */
-    .admin-subtabs { display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px; margin-bottom: 12px; }
+    /* 後台管理子導航列 */
+    .admin-subtabs { display: flex; overflow-x: auto; gap: 5px; margin-bottom: 12px; padding-bottom: 2px; }
     .admin-subbtn {
-      padding: 10px 2px; font-size: 11.5px; font-weight: 700; border-radius: 9px;
+      flex: 1 0 auto; padding: 10px 8px; font-size: 12px; font-weight: 700; border-radius: 9px;
       border: 1px solid var(--border); background: #FFF; color: var(--text); cursor: pointer; text-align: center;
       white-space: nowrap;
     }
@@ -152,23 +163,24 @@
 </head>
 <body>
 
-  <!-- ✅ 當處於 GAS 雲端原生備援 (script.google.com) 時自動顯示的頂部穿透跳出列，保證絕不卡死！ -->
+  <!-- 當處於 GAS 雲端原生備援時自動顯示的頂部穿透跳出列 -->
   <div id="gasSandboxEscapeBar" class="gas-escape-bar hidden">
     <span>☁️ 目前位於 GAS 原生備援節點</span>
     <div class="gas-escape-links">
       <a id="escapeLinkGithub" href="https://officetngc-ai.github.io/leave-app/" target="_top" class="gas-escape-btn">🚀 跳回 GitHub</a>
       <a id="escapeLinkBloon" href="https://direct.bloon.io/share/YyjMvvP7/index.html" target="_top" class="gas-escape-btn bloon">🛡️ 跳至 Bloon</a>
-      <button type="button" class="gas-escape-btn admin" onclick="unlockAndOpenAdminTab()">🛠️ 系統管理</button>
+      <button type="button" id="btnGasEscapeAdmin" class="gas-escape-btn admin hidden" onclick="unlockAndOpenAdminTab()">🛠️ 系統管理</button>
     </div>
   </div>
 
+  <!-- 頂部多功能切換導航列（依群組設定與 1對1 身分角色動態控制顯示） -->
   <div class="tabs" id="topTabsBar">
     <button class="tab-btn active" id="tabBtn_form" onclick="switchTab('form')">📝 填寫請假</button>
     <button class="tab-btn" id="tabBtn_my" onclick="switchTab('my')">🔒 查特休/紀錄</button>
     <button class="tab-btn hidden" id="tabBtn_textform" onclick="switchTab('textform')">✍️ 文字快填</button>
+    <button class="tab-btn hidden" id="tabBtn_schedule" onclick="switchTab('schedule')">⚙️ 班表設定</button>
     <button class="tab-btn" id="tabBtn_help" onclick="switchTab('help')">📖 說明</button>
     <button class="tab-btn hidden" id="tabBtn_today" onclick="switchTab('today')">📋 今日請假</button>
-    <button class="tab-btn hidden" id="tabBtn_schedule" onclick="switchTab('schedule')">⚙️ 班表設定</button>
     <button class="tab-btn admin-tab hidden" id="tabBtn_admin" onclick="switchTab('admin')">🛠️ 系統管理</button>
   </div>
 
@@ -263,17 +275,20 @@
       </div>
     </div>
 
-    <!-- ==================== 2. 私密查特休 & 私訊傳送 (tab=my) ==================== -->
+    <!-- ==================== 2. 私密查特休 & 本人身分驗證 (tab=my) ==================== -->
     <div id="sec_my" class="tab-sec hidden">
-      <div class="banner">
-        🔒 <strong>群組零曝光保護：</strong>此頁僅顯示於您的個人畫面，群組其他人完全看不到。您也可點擊下方按鈕將紀錄私訊給自己！
+      <div class="banner" id="myTabPrivacyBanner">
+        🔒 <strong>本人身分驗證保護：</strong>系統會自動核對您的 LINE 帳號是否與輸入的姓名為同一人（於第一次提送假單時自動建立綁定），僅限查詢本人紀錄！
       </div>
       <div class="card">
         <div class="form-group">
-          <label>查詢員工姓名</label>
-          <input type="text" id="inpQueryName" list="employeeList" placeholder="請選擇您的姓名" onchange="loadPersonalDashboard(this.value)">
+          <label id="lblQueryNameTitle">查詢員工姓名（須與此 LINE 帳號綁定姓名相符）</label>
+          <div style="display:flex; gap:8px;">
+            <input type="text" id="inpQueryName" placeholder="請輸入您的姓名後點擊驗證查詢" onkeydown="if(event.key==='Enter') loadPersonalDashboard(this.value)">
+            <button type="button" class="btn sm teal" style="white-space:nowrap; padding:0 16px;" onclick="loadPersonalDashboard(document.getElementById('inpQueryName').value)">🔍 驗證查詢</button>
+          </div>
         </div>
-        <button class="btn blue" id="btnSendDm" onclick="sendDmReport()" style="margin-bottom:14px; margin-top:0;">📩 私訊傳送特休與紀錄至個人LINE</button>
+        <button class="btn blue" id="btnSendDm" onclick="sendDmReport()" style="margin-bottom:14px; margin-top:0;">📩 私訊傳送本人特休與紀錄至個人LINE</button>
         <div id="dashboardContent"></div>
       </div>
     </div>
@@ -350,29 +365,29 @@
           • 點擊<strong>綠色按鈕</strong>：以您的 LINE 帳號直接在原群組發出 7 行請假文字並收起視窗。<br>
           • 點擊<strong>藍色按鈕</strong>：僅複製驗證通過的文字並收起視窗，讓您在原群組輸入框手動貼上發送。<br>
           • 點擊<strong>灰色按鈕</strong>：明確授權由系統直接在原聊天室發出留言與假單卡片。</p>
-          <p><strong>3️⃣ 修改或取消已送出的假單：</strong><br>
-          • <strong>修改假單：</strong>直接點擊聊天室假單卡片上的 <strong>「✏️ 修改假單」</strong> 按鈕，即可載入原假單內容進行修改。<br>
-          • <strong>取消假單：</strong>點擊假單卡片上的 <strong>「🗑️ 取消假單」</strong> 按鈕（或在 24 小時內於 LINE 收回訊息），系統會自動取消並返還特休。</p>
-          <p><strong>4️⃣ 私密查詢個人特休與紀錄：</strong><br>
-          切換至「🔒 查特休/紀錄」分頁，即可在不驚動群組任何人的情況下查看自己的特休餘額與本年度請假明細，或點擊「📩 私訊傳送」由機器人 1對1 發送給您。</p>
+          <p><strong>3️⃣ 取消已送出的假單：</strong><br>
+          • 點擊假單卡片上的 <strong>「🗑️ 取消假單」</strong> 按鈕（或在 24 小時內於 LINE 收回訊息），系統會自動取消並返還特休。</p>
+          <p><strong>4️⃣ 本人驗證查詢個人特休與紀錄：</strong><br>
+          切換至「🔒 查特休/紀錄」分頁，系統會核對您的 LINE 帳號與首次請假綁定之姓名，確認為本人後即可私密查看特休餘額與請假明細，或點擊「📩 私訊傳送」由機器人 1對1 發送給您。</p>
         </div>
       </div>
     </div>
 
-    <!-- ==================== 7. 管理員專屬後台資料庫管理系統 (tab=admin) ==================== -->
+    <!-- ==================== 7. 管理員與超級管理員專屬後台管理系統 (tab=admin) ==================== -->
     <div id="sec_admin" class="tab-sec hidden">
       <div class="admin-header-card">
         <div>
-          <div style="font-size:16px; font-weight:800;">🛠️ 後台資料庫管理系統</div>
-          <div style="font-size:12px; color:#CBD5E1; margin-top:3px;">直接新增、修改、查閱 Google Sheet 資料庫與一鍵切換三節點熱備援</div>
+          <div style="font-size:16px; font-weight:800;" id="lblAdminHeaderTitle">🛠️ 後台資料庫管理系統</div>
+          <div style="font-size:12px; color:#CBD5E1; margin-top:3px;" id="lblAdminRoleSubtitle">直接新增、修改、查閱 Google Sheet 資料庫</div>
         </div>
         <button class="btn sm" style="background:#3B82F6;" onclick="reloadAdminDatabase()">🔄 重新整理</button>
       </div>
 
       <div id="adminLoadingBanner" class="banner hidden">⏳ 正在從後端 Google Sheet 資料庫同步最新數據...</div>
 
+      <!-- 子導航列：超級管理員可見全部 6 個分頁；一般管理員可見特休庫/假單庫/班表庫/假別庫 -->
       <div class="admin-subtabs">
-        <button class="admin-subbtn active" id="admBtn_standby" onclick="switchAdminPanel('standby')">🌐 備援切換</button>
+        <button class="admin-subbtn active" id="admBtn_standby" onclick="switchAdminPanel('standby')">🌐 備援與群組控制</button>
         <button class="admin-subbtn" id="admBtn_admins" onclick="switchAdminPanel('admins')">🔐 帳號權限</button>
         <button class="admin-subbtn" id="admBtn_quota" onclick="switchAdminPanel('quota')">👥 特休庫</button>
         <button class="admin-subbtn" id="admBtn_recs" onclick="switchAdminPanel('recs')">📋 假單庫</button>
@@ -380,8 +395,70 @@
         <button class="admin-subbtn" id="admBtn_types" onclick="switchAdminPanel('types')">🏷️ 假別庫</button>
       </div>
 
-      <!-- ==================== 管理模組 S：3 大熱備援節點與專屬 LIFF 切換中心 ==================== -->
+      <!-- ==================== 管理模組 S：群組顯示控制中心 ＋ 3 大熱備援節點切換 ==================== -->
       <div id="admPanel_standby" class="card">
+        <!-- 💬 新增：群組顯示控制中心（控制群組跳出的膠囊按鈕與視窗分頁） -->
+        <div class="section-title">
+          <span>💬 群組顯示控制設定（膠囊按鈕與群組分頁）</span>
+        </div>
+        <div class="banner" style="font-size:12.5px;">
+          💡 您可在此自由勾選在 <strong>「LINE 群組」</strong> 中要跳出的底部膠囊按鈕，以及在群組點開視窗時頂部要顯示的分頁（<code>🛠️ 系統管理</code> 於群組內強制鎖定隱藏）：
+        </div>
+
+        <label style="color:var(--blue); margin-bottom:6px;">1️⃣ 群組聊天室底部跳出的「膠囊按鈕 (Quick Reply)」：</label>
+        <div class="group-ui-grid">
+          <label class="group-ui-item">
+            <span>📅 請假 / 查特休</span>
+            <input type="checkbox" id="chkGrpQr_form" checked>
+          </label>
+          <label class="group-ui-item">
+            <span>✍️ 文字範本快填</span>
+            <input type="checkbox" id="chkGrpQr_textform" checked>
+          </label>
+          <label class="group-ui-item">
+            <span>⚙️ 班表設定</span>
+            <input type="checkbox" id="chkGrpQr_schedule">
+          </label>
+          <label class="group-ui-item">
+            <span>📋 今日請假</span>
+            <input type="checkbox" id="chkGrpQr_today">
+          </label>
+          <label class="group-ui-item">
+            <span>📖 說明</span>
+            <input type="checkbox" id="chkGrpQr_help">
+          </label>
+        </div>
+
+        <label style="color:var(--teal); margin-bottom:6px;">2️⃣ 群組內點開視窗時頂部顯示的「功能分頁 (Tabs)」：</label>
+        <div class="group-ui-grid">
+          <label class="group-ui-item">
+            <span>📝 填寫請假</span>
+            <input type="checkbox" id="chkGrpTab_form" checked>
+          </label>
+          <label class="group-ui-item">
+            <span>🔒 查特休(僅限本人)</span>
+            <input type="checkbox" id="chkGrpTab_my" checked>
+          </label>
+          <label class="group-ui-item">
+            <span>⚙️ 班表設定(預設開)</span>
+            <input type="checkbox" id="chkGrpTab_schedule" checked>
+          </label>
+          <label class="group-ui-item">
+            <span>📖 說明</span>
+            <input type="checkbox" id="chkGrpTab_help" checked>
+          </label>
+          <label class="group-ui-item">
+            <span>📋 今日請假(預設關)</span>
+            <input type="checkbox" id="chkGrpTab_today">
+          </label>
+        </div>
+
+        <div id="groupUiStatusMsgBox" class="status-box hidden"></div>
+        <button class="btn blue" style="margin-top:0; margin-bottom:18px;" onclick="saveGroupUiConfiguration()">💾 儲存群組膠囊按鈕與分頁顯示設定</button>
+
+        <hr style="border:none; border-top:2px dashed var(--border); margin:18px 0;">
+
+        <!-- 🌐 3 大熱備援節點切換中心 -->
         <div class="section-title">
           <span>🌐 前端伺服器熱備援中心（三組獨立 LIFF 授權）</span>
         </div>
@@ -400,19 +477,11 @@
 
         <div id="standbyStatusMsgBox" class="status-box hidden"></div>
 
-        <!-- 3 大熱備援節點卡片容器 -->
         <div id="admStandbyNodesListBox"></div>
 
         <hr style="border:none; border-top:1px solid var(--border); margin:16px 0;">
 
         <h4 style="margin:0 0 8px 0; font-size:14.5px; color:var(--blue);">🔐 三節點專屬 LIFF ID 對照設定</h4>
-        <div class="banner" style="font-size:12.5px;">
-          ✅ <strong>已綁定三組獨立專屬 LIFF ID（最穩定零延遲模式）</strong>：<br>
-          • <strong>節點 1 (GitHub)</strong>：<code>2012028062-vnoiLP9t</code><br>
-          • <strong>節點 2 (Bloon)</strong>：<code>2012028062-FRVGFRQw</code><br>
-          • <strong>節點 3 (GAS)</strong>：<code>2012028062-GnVM3Ihq</code>
-        </div>
-
         <div class="row-2">
           <div class="form-group">
             <label>LINE Login Channel Secret（選填，自動校準三組網址）</label>
@@ -446,13 +515,14 @@
         <button class="btn teal" onclick="saveLiffSyncConfiguration()">💾 儲存並校準三組專屬 LIFF ID 設定</button>
       </div>
 
-      <!-- 管理模組 0：帳號權限資料庫 (adminUsers) -->
+      <!-- 管理模組 0：帳號權限資料庫 (adminUsers，僅限超級管理員 SUPER_ADMIN) -->
       <div id="admPanel_admins" class="card hidden">
-        <div class="section-title"><span>🔐 成員與管理員帳號權限設定</span></div>
+        <div class="section-title"><span>🔐 成員與管理員帳號權限設定（超級管理員專屬）</span></div>
         <div class="banner">
           💡 所有設定將直接儲存於 Google Sheet 的 <strong>「adminUsers」</strong> 資料庫分頁：<br>
-          • 設為 <strong>管理員 (ADMIN / SUPER_ADMIN)</strong>：可查看「今日請假」、「班表設定」與「系統管理」。<br>
-          • 設為 <strong>一般成員 (USER)</strong>：僅顯示「請假/查特休」與「文字範本快填」。
+          • <strong>👑 超級管理員 (SUPER_ADMIN)</strong>：於 1對1 聊天室擁有所有系統管理功能（含備援切換、群組顯示控制、帳號權限管理）。<br>
+          • <strong>🛡️ 管理員 (ADMIN)</strong>：於 1對1 聊天室擁有一般管理功能（特休庫、假單庫、班表庫、假別庫、今日請假）。<br>
+          • <strong>👤 一般成員 (USER)</strong>：僅能查詢本人綁定之特休與紀錄，不具查詢他人或修改假單功能。
         </div>
 
         <div class="form-group">
@@ -477,8 +547,8 @@
           <div class="form-group">
             <label>帳號身分權限 <span class="req">*</span></label>
             <select id="admAdminRole">
-              <option value="ADMIN" selected>🛡️ 管理員 (ADMIN)</option>
-              <option value="SUPER_ADMIN">👑 超級管理員 (SUPER_ADMIN)</option>
+              <option value="ADMIN" selected>🛡️ 管理員 (ADMIN - 一般管理功能)</option>
+              <option value="SUPER_ADMIN">👑 超級管理員 (SUPER_ADMIN - 所有系統功能)</option>
               <option value="USER">👤 一般成員 (USER)</option>
             </select>
           </div>
@@ -629,13 +699,12 @@
 
   <script>
     // ============================================================
-    // 🌐 三棲熱備援環境核心連線設定（三節點各自對應獨立專屬 LIFF ID）
-    // 版本: v21.0.0 (三組獨立 LIFF ID + GAS 沙盒穿透逃生 + 零自動提交版)
+    // 🌐 三棲熱備援環境核心連線設定
+    // 版本: v22.0.0 (群組分頁控制器 + 本人LINE綁定強制驗證 + 三級管理權限版)
     // ============================================================
     const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyuW_4_sWHWUq0lc4QOe1amHl7ipGXr0wGNoVQFJl7leq6JYGWVR7CUoPOZkPMqprnX/exec";
-    const CACHE_KEY_INIT  = "leave_sys_init_cache_v21_multiliff";
+    const CACHE_KEY_INIT  = "leave_sys_init_cache_v22_rbac";
 
-    // 若運行於 GAS doGet(e) 環境，伺服器會自動將此字串替換為包含 initUid, initGid, initTab, ssrData 的物件
     const GAS_SSR_PAYLOAD = "/*__GAS_SSR_INJECTION__*/";
 
     function detectCurrentBrowserNodeKey() {
@@ -646,7 +715,6 @@
       return "GITHUB";
     }
 
-    // ✅ 三節點固定專屬 LIFF ID 對照表
     const NODE_LIFF_IDS = {
       GITHUB: "2012028062-vnoiLP9t",
       BLOON:  "2012028062-FRVGFRQw",
@@ -682,6 +750,19 @@
         desc:   "由 Google Apps Script 直接渲染內建 LeaveForm.html，具備專屬 LIFF ID (2012028062-GnVM3Ihq)"
       }
     ];
+
+    const DEFAULT_GROUP_UI_CONFIG = {
+      qr_form:      true,
+      qr_textform:  true,
+      qr_schedule:  false,
+      qr_today:     false,
+      qr_help:      false,
+      tab_form:     true,
+      tab_my:       true,
+      tab_schedule: true,
+      tab_help:     true,
+      tab_today:    false
+    };
 
     function createExternalGasRunner(successCb, failureCb) {
       const callBackend = (methodName, args) => {
@@ -732,7 +813,8 @@
         "adminSaveAdminUser", "adminDeleteAdminUser", "adminSaveEmployeeQuota",
         "adminDeleteEmployeeQuota", "adminTriggerAutoAnnualLeave", "adminSaveScheduleSheet",
         "adminDeleteSpecialDate", "adminAddOrUpdateLeaveType", "adminCancelLeaveByRow",
-        "adminClearCacheAndReload", "adminSwitchFrontendNode", "adminSaveLiffSyncConfig"
+        "adminClearCacheAndReload", "adminSwitchFrontendNode", "adminSaveLiffSyncConfig",
+        "adminSaveGroupUiConfig"
       ];
 
       apiMethods.forEach(m => {
@@ -775,18 +857,24 @@
       noRedirect: false,
       liffId: DEFAULT_LIFF_ID,
       botBasicId: "",
+      userRole: "USER",     // 'SUPER_ADMIN' | 'ADMIN' | 'USER'
+      isAdmin: false,
+      isSuperAdmin: false,
+      boundName: "",        // 後端資料庫綁定之員工本人姓名
       periodMode: "全天",
       leaveTypes: ["特休", "事假", "病假", "公假", "補休", "婚假", "喪假", "產假", "陪產假"],
       leaveTypesFull: [],
       scheduleOverview: null,
       dashboard: null,
+      groupUiConfig: { ...DEFAULT_GROUP_UI_CONFIG },
       standbyStatus: {
         activeKey:      "GITHUB",
         autoRedirect:   true,
         hasLoginSecret: false,
         viewType:       "full",
         liffMap:        { ...NODE_LIFF_IDS },
-        nodesList:      DEFAULT_STANDBY_NODES
+        nodesList:      DEFAULT_STANDBY_NODES,
+        groupUiConfig:  { ...DEFAULT_GROUP_UI_CONFIG }
       },
       adminData: null,
       verifiedText: "",
@@ -815,7 +903,6 @@
 
     function parseClientUrlParams() {
       try {
-        // 1. 先讀取 GAS 伺服器端 doGet(e) 注入之參數（解決 GAS iframe 讀不到外層 URL 參數問題）
         if (typeof GAS_SSR_PAYLOAD === "object" && GAS_SSR_PAYLOAD !== null) {
           if (GAS_SSR_PAYLOAD.initUid)     STATE.uid     = GAS_SSR_PAYLOAD.initUid;
           if (GAS_SSR_PAYLOAD.initGid)     STATE.gid     = GAS_SSR_PAYLOAD.initGid;
@@ -823,7 +910,6 @@
           if (GAS_SSR_PAYLOAD.initEditRow) STATE.editRow = GAS_SSR_PAYLOAD.initEditRow;
         }
 
-        // 2. 讀取瀏覽器 Query 參數與 liff.state
         const search = window.location.search || '';
         const up = new URLSearchParams(search);
         if (up.get('tab'))     STATE.tab     = up.get('tab');
@@ -846,29 +932,132 @@
       } catch (_) {}
     }
 
-    /**
-     * ✅ 強制依據當前瀏覽器所在節點決定專屬 LIFF ID（絕不混用其他節點的 LIFF ID！）
-     */
     function resolveCurrentNodeLiffId() {
       const curKey = detectCurrentBrowserNodeKey();
       return NODE_LIFF_IDS[curKey] || NODE_LIFF_IDS.GITHUB;
     }
 
-    /**
-     * 在 GAS 備援節點中一鍵解鎖並進入「🛠️ 系統管理」分頁（防卡死保護）
-     */
     function unlockAndOpenAdminTab() {
+      if (STATE.gid) {
+        alert('ℹ️ 群組環境不顯示系統管理分頁，請於 1 對 1 聊天室開啟！');
+        return;
+      }
       document.getElementById('tabBtn_today').classList.remove('hidden');
       document.getElementById('tabBtn_schedule').classList.remove('hidden');
       document.getElementById('tabBtn_admin').classList.remove('hidden');
       switchTab('admin');
     }
 
+    /**
+     * ✅ 核心權限與群組顯示控制器：
+     * 1. 若在「LINE 群組 (STATE.gid)」：
+     *    - 預設顯示：填寫請假、查特休/紀錄、班表設定、說明
+     *    - 預設隱藏：今日請假（可由後台開啟）、系統管理（群組內強制永遠隱藏！）
+     * 2. 若在「1 對 1 聊天室 (!STATE.gid)」：
+     *    - 一般成員 (USER)：僅顯示 填寫請假、查特休/紀錄、說明
+     *    - 管理員 (ADMIN)：顯示全部頂部分頁；系統管理內顯示「特休庫、假單庫、班表庫、假別庫」
+     *    - 超級管理員 (SUPER_ADMIN)：顯示全部頂部分頁與所有系統管理子分頁（含備援與群組控制、帳號權限）
+     */
+    function applyTabAndRolePermissions() {
+      const isGroup        = !!(STATE.gid && String(STATE.gid).trim());
+      const gCfg           = STATE.groupUiConfig || DEFAULT_GROUP_UI_CONFIG;
+      const isAdminPrivate = (!isGroup && STATE.isAdmin);
+      const isSuperPrivate = (!isGroup && STATE.isSuperAdmin);
+
+      const btnForm     = document.getElementById('tabBtn_form');
+      const btnMy       = document.getElementById('tabBtn_my');
+      const btnSchedule = document.getElementById('tabBtn_schedule');
+      const btnHelp     = document.getElementById('tabBtn_help');
+      const btnToday    = document.getElementById('tabBtn_today');
+      const btnAdmin    = document.getElementById('tabBtn_admin');
+      const escAdminBtn = document.getElementById('btnGasEscapeAdmin');
+
+      if (isGroup) {
+        // 群組環境：依群組顯示設定控制，且「系統管理」永遠隱藏
+        if (btnForm)     btnForm.classList.toggle('hidden',     gCfg.tab_form === false);
+        if (btnMy)       btnMy.classList.toggle('hidden',       gCfg.tab_my === false);
+        if (btnSchedule) btnSchedule.classList.toggle('hidden', gCfg.tab_schedule === false);
+        if (btnHelp)     btnHelp.classList.toggle('hidden',     gCfg.tab_help === false);
+        if (btnToday)    btnToday.classList.toggle('hidden',    !gCfg.tab_today);
+        if (btnAdmin)    btnAdmin.classList.add('hidden');
+        if (escAdminBtn) escAdminBtn.classList.add('hidden');
+
+        // 若當前網址試圖在群組開 admin 或未授權的 today，自動導回 form
+        if (STATE.tab === 'admin' || (STATE.tab === 'today' && !gCfg.tab_today)) {
+          switchTab('form');
+        }
+      } else {
+        // 1對1 聊天室環境
+        if (btnForm)     btnForm.classList.remove('hidden');
+        if (btnMy)       btnMy.classList.remove('hidden');
+        if (btnHelp)     btnHelp.classList.remove('hidden');
+        if (btnSchedule) btnSchedule.classList.toggle('hidden', !isAdminPrivate);
+        if (btnToday)    btnToday.classList.toggle('hidden',    !isAdminPrivate);
+        if (btnAdmin)    btnAdmin.classList.toggle('hidden',    !isAdminPrivate);
+        if (escAdminBtn) escAdminBtn.classList.toggle('hidden', !isAdminPrivate);
+
+        if (!isAdminPrivate && ['today', 'schedule', 'admin'].includes(STATE.tab)) {
+          switchTab('form');
+        }
+      }
+
+      // 設定「🔒 查特休/紀錄」輸入框權限（僅 1對1 管理員可使用員工清單下拉選取他人；群組與一般成員強制移除下拉清單）
+      const inpQuery     = document.getElementById('inpQueryName');
+      const lblQuery     = document.getElementById('lblQueryNameTitle');
+      const bannerMy     = document.getElementById('myTabPrivacyBanner');
+      const btnSendDmEl  = document.getElementById('btnSendDm');
+
+      if (isAdminPrivate) {
+        if (inpQuery) {
+          inpQuery.setAttribute('list', 'employeeList');
+          inpQuery.placeholder = '管理員模式：可點選或輸入任何員工姓名查詢';
+        }
+        if (lblQuery)    lblQuery.innerText = '查詢員工姓名（管理員模式：可查詢全體成員）';
+        if (bannerMy)    bannerMy.innerHTML = '🛡️ <strong>管理員 1對1 查詢模式：</strong>您可查詢全體同仁之特休餘額與請假明細，並可直接點擊「✏️ 修改」調整假單。';
+        if (btnSendDmEl) btnSendDmEl.innerText = '📩 私訊傳送此員工特休與紀錄至您的LINE';
+      } else {
+        if (inpQuery) {
+          inpQuery.removeAttribute('list');
+          inpQuery.placeholder = STATE.boundName
+            ? `請輸入您的綁定姓名：${STATE.boundName}`
+            : '請輸入您的姓名（須與首次請假綁定之LINE帳號相符）';
+        }
+        if (lblQuery)    lblQuery.innerText = '查詢員工姓名（須與此 LINE 帳號綁定姓名為同一人）';
+        if (bannerMy)    bannerMy.innerHTML = '🔒 <strong>本人身分驗證保護：</strong>系統會從後台資料庫核對您的 LINE 帳號是否與輸入姓名為同一人（於第一次提送假單時建立），不開放查詢他人或修改假單！';
+        if (btnSendDmEl) btnSendDmEl.innerText = '📩 私訊傳送本人特休與紀錄至個人LINE';
+      }
+
+      // 設定「🛠️ 系統管理」內部子分頁權限：超級管理員 (SUPER_ADMIN) vs 一般管理員 (ADMIN)
+      const admBtnStandby = document.getElementById('admBtn_standby');
+      const admBtnAdmins  = document.getElementById('admBtn_admins');
+      const lblHeader     = document.getElementById('lblAdminHeaderTitle');
+      const lblSub        = document.getElementById('lblAdminRoleSubtitle');
+
+      if (isAdminPrivate) {
+        if (admBtnStandby) admBtnStandby.classList.toggle('hidden', !isSuperPrivate);
+        if (admBtnAdmins)  admBtnAdmins.classList.toggle('hidden',  !isSuperPrivate);
+
+        if (isSuperPrivate) {
+          if (lblHeader) lblHeader.innerText = '👑 超級管理員系統管理中心';
+          if (lblSub)    lblSub.innerText    = '具備所有系統管理權限（含備援切換、群組顯示控制、帳號權限與四大資料庫）';
+        } else {
+          if (lblHeader) lblHeader.innerText = '🛡️ 管理員資料庫管理系統';
+          if (lblSub)    lblSub.innerText    = '具備一般管理權限（特休庫、假單庫、班表庫、假別庫）';
+          // 若一般管理員當前停留在 standby 或 admins 子分頁，自動切換至「👥 特休庫 (quota)」
+          const curPanelStandby = document.getElementById('admPanel_standby');
+          const curPanelAdmins  = document.getElementById('admPanel_admins');
+          if ((curPanelStandby && !curPanelStandby.classList.contains('hidden')) ||
+              (curPanelAdmins  && !curPanelAdmins.classList.contains('hidden'))) {
+            switchAdminPanel('quota');
+          }
+        }
+      }
+    }
+
     window.onload = function() {
       parseClientUrlParams();
       STATE.liffId = resolveCurrentNodeLiffId();
 
-      // 若位於 GAS 雲端原生節點，顯示頂部逃生切換列，確保 100% 隨時可跳回 GitHub 或開啟系統管理
       if (CURRENT_BROWSER_NODE === 'GAS') {
         const escBar = document.getElementById('gasSandboxEscapeBar');
         if (escBar) escBar.classList.remove('hidden');
@@ -881,18 +1070,16 @@
       }
       const todayLocal = getLocalTodayStrings();
 
-      // 0.01 秒預填今日日期，徹底解決圖片五日期空白的問題
       document.getElementById('inpStartDate').value = todayLocal.iso;
       document.getElementById('inpEndDate').value   = todayLocal.iso;
 
       if (savedName) {
-        document.getElementById('inpName').value      = savedName;
-        document.getElementById('inpQueryName').value = savedName;
+        document.getElementById('inpName').value = savedName;
       }
       initTextTemplate(savedName, todayLocal.slash);
+      applyTabAndRolePermissions();
       renderStandbyNodesCard(STATE.standbyStatus);
 
-      // 若在 GAS 環境且有伺服器端注入之 SSR 資料，0 秒立即套用
       if (typeof GAS_SSR_PAYLOAD === "object" && GAS_SSR_PAYLOAD !== null && GAS_SSR_PAYLOAD.ssrData && GAS_SSR_PAYLOAD.ssrData.success) {
         applyInitData(GAS_SSR_PAYLOAD.ssrData, savedName, false);
       } else {
@@ -907,7 +1094,6 @@
 
       if (STATE.tab) switchTab(STATE.tab);
 
-      // 在 GitHub / Bloon 頂層環境執行 LIFF 初始化；在 GAS 沙盒內則不阻塞直接載入資料
       if (CURRENT_BROWSER_NODE !== 'GAS' && STATE.liffId && typeof liff !== 'undefined') {
         let fetched = false;
         const timer = setTimeout(() => {
@@ -925,6 +1111,7 @@
               if (trueGid) STATE.gid = trueGid;
             }
           }
+          applyTabAndRolePermissions();
           if (STATE.tab) switchTab(STATE.tab);
           fetched = true;
           fetchFreshInitData(savedName);
@@ -945,7 +1132,7 @@
           } catch (_) {}
           applyInitData(res, savedName, false);
         }
-      }).getWebFormInitData(STATE.uid, savedName, STATE.editRow, STATE.tab);
+      }).getWebFormInitData(STATE.uid, savedName, STATE.editRow, STATE.tab, STATE.gid);
     }
 
     function renderLeaveTypeOptions(leaveTypes, preferredVal) {
@@ -968,11 +1155,22 @@
       if (Array.isArray(res.leaveTypesFull)) STATE.leaveTypesFull = res.leaveTypesFull;
       if (res.scheduleOverview) STATE.scheduleOverview = res.scheduleOverview;
 
+      if (res.userRole) STATE.userRole = res.userRole;
+      STATE.isAdmin      = !!res.isAdmin;
+      STATE.isSuperAdmin = !!res.isSuperAdmin;
+      if (res.boundName !== undefined) STATE.boundName = res.boundName || '';
+
+      if (res.groupUiConfig) {
+        STATE.groupUiConfig = { ...DEFAULT_GROUP_UI_CONFIG, ...res.groupUiConfig };
+      }
+
       if (res.standbyStatus) {
         STATE.standbyStatus = res.standbyStatus;
+        if (res.standbyStatus.groupUiConfig) {
+          STATE.groupUiConfig = { ...DEFAULT_GROUP_UI_CONFIG, ...res.standbyStatus.groupUiConfig };
+        }
         renderStandbyNodesCard(res.standbyStatus);
 
-        // 智慧自動導流（僅在非 GAS 沙盒且非管理頁面時執行）
         if (!isFromLocalCache &&
             CURRENT_BROWSER_NODE !== 'GAS' &&
             res.standbyStatus.autoRedirect &&
@@ -1003,16 +1201,28 @@
         document.getElementById('inpEndDate').value   = res.todayStr;
       }
 
-      const serverName   = (res.currentName && res.currentName !== '系統管理員') ? res.currentName : '';
+      const serverName   = (res.boundName && res.boundName !== '系統管理員')
+        ? res.boundName
+        : ((res.currentName && res.currentName !== '系統管理員') ? res.currentName : '');
       const resolvedName = serverName || savedName || '';
       if (resolvedName) {
-        document.getElementById('inpName').value      = resolvedName;
+        document.getElementById('inpName').value = resolvedName;
+      }
+
+      // 在「🔒 查特休/紀錄」欄位中，若有後端驗證過的本人綁定姓名則自動帶入
+      if (STATE.boundName) {
+        document.getElementById('inpQueryName').value = STATE.boundName;
+      } else if (!STATE.gid && STATE.isAdmin && resolvedName) {
         document.getElementById('inpQueryName').value = resolvedName;
       }
 
       initTextTemplate(resolvedName, res.todaySlashStr || getLocalTodayStrings().slash);
 
-      if (!isFromLocalCache && res.editRecord) {
+      // 套用群組與 1對1 角色權限分頁顯示規則
+      applyTabAndRolePermissions();
+
+      // 僅在 1對1 管理員模式下允許進入修改假單模式
+      if (!isFromLocalCache && res.editRecord && !STATE.gid && STATE.isAdmin) {
         enterEditMode(res.editRecord);
       } else if (!isFromLocalCache) {
         triggerPreview();
@@ -1022,24 +1232,14 @@
         STATE.dashboard = res.personalDashboard;
         renderDashboard(res.personalDashboard);
         updateQuotaHint();
-      } else if (!isFromLocalCache && !serverName && savedName && !STATE._fetchedBySavedName) {
-        STATE._fetchedBySavedName = true;
-        fetchFreshInitData(savedName);
+      } else if (!isFromLocalCache) {
+        renderDashboard(null);
       }
 
       if (res.todayOverview) renderTodayOverview(res.todayOverview);
       if (res.scheduleOverview) renderScheduleOverview(res.scheduleOverview);
 
-      const isUserAdmin = !!res.isAdmin;
-      const btnToday    = document.getElementById('tabBtn_today');
-      const btnSchedule = document.getElementById('tabBtn_schedule');
-      const btnAdmin    = document.getElementById('tabBtn_admin');
-
-      if (btnToday)    btnToday.classList.toggle('hidden', !isUserAdmin);
-      if (btnSchedule) btnSchedule.classList.toggle('hidden', !isUserAdmin);
-      if (btnAdmin)    btnAdmin.classList.toggle('hidden', !isUserAdmin);
-
-      if (isUserAdmin) {
+      if (!STATE.gid && STATE.isAdmin) {
         if (res.adminData && res.adminData.success) {
           STATE.adminData = res.adminData;
           renderAdminConsole(res.adminData);
@@ -1049,9 +1249,6 @@
       }
     }
 
-    /**
-     * 建立穿透沙盒的節點跳轉網址（優先使用直連網址攜帶完整參數，確保在 GAS iframe 內點擊 <a target="_top"> 100% 成功跳出）
-     */
     function buildStandbyJumpHref(baseUrl, isAutoRedirect, nodeLiffId) {
       if (!baseUrl) return '#';
       const sep    = baseUrl.includes('?') ? '&' : '?';
@@ -1065,7 +1262,66 @@
       return `${baseUrl}${sep}${params.join('&')}`;
     }
 
-    // ==================== 🌐 3 大熱備援節點與專屬 LIFF 渲染 ====================
+    // ==================== 💬 群組顯示控制設定 & 🌐 熱備援節點渲染 ====================
+    function renderGroupUiCheckboxes(gCfgObj) {
+      const g = { ...DEFAULT_GROUP_UI_CONFIG, ...(gCfgObj || STATE.groupUiConfig || {}) };
+      const setChk = (id, val) => {
+        const el = document.getElementById(id);
+        if (el) el.checked = !!val;
+      };
+      setChk('chkGrpQr_form',      g.qr_form);
+      setChk('chkGrpQr_textform',  g.qr_textform);
+      setChk('chkGrpQr_schedule',  g.qr_schedule);
+      setChk('chkGrpQr_today',     g.qr_today);
+      setChk('chkGrpQr_help',      g.qr_help);
+
+      setChk('chkGrpTab_form',     g.tab_form);
+      setChk('chkGrpTab_my',       g.tab_my);
+      setChk('chkGrpTab_schedule', g.tab_schedule);
+      setChk('chkGrpTab_help',     g.tab_help);
+      setChk('chkGrpTab_today',    g.tab_today);
+    }
+
+    function saveGroupUiConfiguration() {
+      const getChk = (id) => {
+        const el = document.getElementById(id);
+        return el ? !!el.checked : false;
+      };
+      const payload = {
+        qr_form:      getChk('chkGrpQr_form'),
+        qr_textform:  getChk('chkGrpQr_textform'),
+        qr_schedule:  getChk('chkGrpQr_schedule'),
+        qr_today:     getChk('chkGrpQr_today'),
+        qr_help:      getChk('chkGrpQr_help'),
+        tab_form:     getChk('chkGrpTab_form'),
+        tab_my:       getChk('chkGrpTab_my'),
+        tab_schedule: getChk('chkGrpTab_schedule'),
+        tab_help:     getChk('chkGrpTab_help'),
+        tab_today:    getChk('chkGrpTab_today')
+      };
+
+      showStatusBanner('groupUiStatusMsgBox', 'info', '⏳ 正在儲存群組膠囊按鈕與分頁顯示設定...');
+
+      google.script.run
+        .withSuccessHandler(res => {
+          if (!res || !res.success) {
+            showStatusBanner('groupUiStatusMsgBox', 'err', (res && res.message) || '❌ 儲存失敗');
+            return;
+          }
+          try { localStorage.removeItem(CACHE_KEY_INIT); } catch (_) {}
+          if (res.groupUiConfig) {
+            STATE.groupUiConfig = { ...DEFAULT_GROUP_UI_CONFIG, ...res.groupUiConfig };
+            renderGroupUiCheckboxes(STATE.groupUiConfig);
+            applyTabAndRolePermissions();
+          }
+          showStatusBanner('groupUiStatusMsgBox', 'ok', res.message);
+        })
+        .withFailureHandler(err => {
+          showStatusBanner('groupUiStatusMsgBox', 'err', '❌ 呼叫後端失敗：' + err.message);
+        })
+        .adminSaveGroupUiConfig(STATE.uid, payload);
+    }
+
     function renderStandbyNodesCard(standbyObj) {
       const box = document.getElementById('admStandbyNodesListBox');
       if (!box) return;
@@ -1076,7 +1332,11 @@
       const nodesList         = (Array.isArray(st.nodesList) && st.nodesList.length > 0) ? st.nodesList : DEFAULT_STANDBY_NODES;
       const currentBrowserKey = detectCurrentBrowserNodeKey();
 
-      // 強制校準顯示三組獨立 LIFF ID
+      if (st.groupUiConfig) {
+        STATE.groupUiConfig = { ...DEFAULT_GROUP_UI_CONFIG, ...st.groupUiConfig };
+      }
+      renderGroupUiCheckboxes(STATE.groupUiConfig);
+
       const rawMap  = st.liffMap || {};
       const liffMap = {
         GITHUB: rawMap.GITHUB || NODE_LIFF_IDS.GITHUB,
@@ -1094,7 +1354,6 @@
       if (inpB) inpB.value = liffMap.BLOON;
       if (inpS) inpS.value = liffMap.GAS;
 
-      // 同步更新頂部 GAS 逃生列連結（帶入當前 uid 與 gid）
       const escGit = document.getElementById('escapeLinkGithub');
       const escBln = document.getElementById('escapeLinkBloon');
       if (escGit) escGit.href = buildStandbyJumpHref(DEFAULT_STANDBY_NODES[0].url, false, liffMap.GITHUB);
@@ -1153,7 +1412,6 @@
                 ${isSystemDefault ? 'disabled' : ''}>
                 ${isSystemDefault ? '✅ 目前已設為預設' : '⚡ 一鍵設為系統預設'}
               </button>
-              <!-- ✅ 採用原生 <a target="_top"> 連結，100% 穿透 GAS iframe 沙盒直接跳轉，絕不卡死！ -->
               <a class="btn sm blue" href="${directJumpHref}" target="_top" style="margin-top:0;">
                 🔗 立即跳轉此節點開啟
               </a>
@@ -1692,7 +1950,12 @@
 
     function switchTab(tab) {
       const validTabs = ['form', 'my', 'textform', 'today', 'schedule', 'help', 'admin'];
-      const targetTab = validTabs.includes(tab) ? tab : 'form';
+      let targetTab   = validTabs.includes(tab) ? tab : 'form';
+
+      // 安全攔截：群組環境絕對禁止切入 admin 分頁
+      if (STATE.gid && targetTab === 'admin') {
+        targetTab = 'form';
+      }
       STATE.tab = targetTab;
 
       const topBar = document.getElementById('topTabsBar');
@@ -1705,7 +1968,7 @@
         }
       }
 
-      if (targetTab === 'admin') {
+      if (targetTab === 'admin' && !STATE.gid) {
         const admBtn = document.getElementById('tabBtn_admin');
         admBtn.classList.remove('hidden');
         try { admBtn.scrollIntoView({ behavior: 'smooth', inline: 'center' }); } catch (_) {}
@@ -1733,6 +1996,7 @@
           if (adm && adm.success) {
             STATE.adminData = adm;
             if (adm.standbyStatus) STATE.standbyStatus = adm.standbyStatus;
+            if (adm.groupUiConfig) STATE.groupUiConfig = { ...DEFAULT_GROUP_UI_CONFIG, ...adm.groupUiConfig };
             renderAdminConsole(adm);
           } else {
             alert('❌ 讀取後台資料庫失敗：' + ((adm && adm.error) || '請確認 GAS 已更新部署新版本'));
@@ -1746,6 +2010,11 @@
     }
 
     function enterEditMode(rec) {
+      // 嚴格防呆：群組環境與一般成員禁止進入修改模式
+      if (STATE.gid || !STATE.isAdmin) {
+        alert('⛔ 群組環境與一般成員不具修改假單功能！');
+        return;
+      }
       if (rec.inactive) {
         showStatusBanner('formResultBox', 'err', `⚠️ 記錄 #${rec.rowNumber} 已取消或刪除，無法修改！`);
         exitEditMode();
@@ -1783,12 +2052,14 @@
       document.getElementById('btnCancelEdit').classList.add('hidden');
     }
 
+    /**
+     * 當使用者在「📝 填寫請假」修改請假人員姓名時：
+     * 僅儲存本機偏好並更新文字快填範本，絕不因為輸入他人姓名就自動解鎖他人特休紀錄或管理員分頁！
+     */
     function onNameChange() {
       const name = document.getElementById('inpName').value.trim();
       if (name && name !== '系統管理員') {
         localStorage.setItem('leave_sys_user_name', name);
-        document.getElementById('inpQueryName').value = name;
-        loadPersonalDashboard(name);
 
         const txt = document.getElementById('txtRawLeave');
         if (txt && txt.value) {
@@ -1797,19 +2068,10 @@
           STATE.verifyStatus = 'idle';
         }
 
-        if (!STATE.editRow) {
-          google.script.run.withSuccessHandler(res => {
-            if (res && res.success) {
-              const isUserAdmin = !!res.isAdmin;
-              document.getElementById('tabBtn_today').classList.toggle('hidden', !isUserAdmin);
-              document.getElementById('tabBtn_schedule').classList.toggle('hidden', !isUserAdmin);
-              document.getElementById('tabBtn_admin').classList.toggle('hidden', !isUserAdmin);
-              if (isUserAdmin && res.adminData) {
-                STATE.adminData = res.adminData;
-                renderAdminConsole(res.adminData);
-              }
-            }
-          }).getWebFormInitData(STATE.uid, name, 0, STATE.tab);
+        // 若為 1對1 管理員，或輸入之姓名與已綁定之本人姓名相符，才同步載入特休額度提示
+        if ((!STATE.gid && STATE.isAdmin) || (STATE.boundName && name === STATE.boundName)) {
+          document.getElementById('inpQueryName').value = name;
+          loadPersonalDashboard(name);
         }
       }
     }
@@ -1831,8 +2093,9 @@
 
     function updateQuotaHint() {
       const type = document.getElementById('selLeaveType').value;
+      const name = document.getElementById('inpName').value.trim();
       const box  = document.getElementById('quotaHintBox');
-      if (type && type.includes('特休') && STATE.dashboard && STATE.dashboard.hasQuota) {
+      if (type && type.includes('特休') && STATE.dashboard && STATE.dashboard.hasQuota && STATE.dashboard.name === name) {
         box.innerHTML = `🔒 您的個人特休剩餘：<strong>${STATE.dashboard.remainingDays} 天 (${STATE.dashboard.remainingHours} 小時)</strong>`;
         box.classList.remove('hidden');
       } else {
@@ -1860,44 +2123,73 @@
       }).previewLeaveHoursFromWeb(sDate, eDate, STATE.periodMode, sTime, eTime);
     }
 
+    /**
+     * ✅ 查詢特休/紀錄：強制傳入 (name, STATE.uid, STATE.gid) 由後端核對是否為本人！
+     */
     function loadPersonalDashboard(name) {
-      if (!name) return;
-      const container = document.getElementById('dashboardContent');
-      container.innerHTML = `<p style="text-align:center; color:var(--muted);">🔍 正在讀取 ${name} 的個人紀錄...</p>`;
+      const cleanInput = (name || '').trim();
+      const container  = document.getElementById('dashboardContent');
+      if (!cleanInput) {
+        container.innerHTML = `<div class="status-box info">💡 請在上方輸入您的姓名後點擊「🔍 驗證查詢」。</div>`;
+        return;
+      }
+
+      container.innerHTML = `<p style="text-align:center; color:var(--muted);">🔐 正在向後端資料庫驗證 LINE 帳號與「${cleanInput}」是否為本人...</p>`;
       google.script.run.withSuccessHandler(d => {
-        STATE.dashboard = d;
+        if (d && d.boundName) STATE.boundName = d.boundName;
+        STATE.dashboard = (d && d.found) ? d : null;
         renderDashboard(d);
         updateQuotaHint();
-      }).getPrivateUserDashboardData(name);
+      }).getPrivateUserDashboardData(cleanInput, STATE.uid, STATE.gid);
     }
 
     function sendDmReport() {
       const name = document.getElementById('inpQueryName').value.trim() || document.getElementById('inpName').value.trim();
       const btn  = document.getElementById('btnSendDm');
       btn.disabled = true;
-      btn.innerText = '📨 私訊發送中...';
+      btn.innerText = '📨 驗證身分並發送私訊中...';
       google.script.run.withSuccessHandler(res => {
         btn.disabled = false;
-        btn.innerText = '📩 私訊傳送特休與紀錄至個人LINE';
+        btn.innerText = (!STATE.gid && STATE.isAdmin)
+          ? '📩 私訊傳送此員工特休與紀錄至您的LINE'
+          : '📩 私訊傳送本人特休與紀錄至個人LINE';
         alert(res ? res.message : '已處理');
-      }).sendPrivateLeaveReportToUser(STATE.uid, name);
+      }).sendPrivateLeaveReportToUser(STATE.uid, name, STATE.gid);
     }
 
+    /**
+     * ✅ 渲染特休與請假紀錄：
+     * - 若本人驗證未通過 (d.accessDenied)，顯示紅框攔截訊息
+     * - 在群組 (STATE.gid) 或一般成員 (!d.canEdit) 下，完全不渲染任何「✏️ 修改」按鈕！
+     */
     function renderDashboard(d) {
       const container = document.getElementById('dashboardContent');
       if (!d || !d.found) {
-        container.innerHTML = `<p style="text-align:center; color:var(--muted);">${(d && d.message) || '請選擇姓名以檢視個人特休與請假紀錄'}</p>`;
+        const msgText = (d && d.message) || '請於上方輸入您的姓名並點擊「🔍 驗證查詢」以檢視個人特休與請假紀錄';
+        if (d && d.accessDenied) {
+          container.innerHTML = `<div class="status-box err">${msgText}</div>`;
+        } else {
+          container.innerHTML = `<div class="status-box info">${msgText}</div>`;
+        }
         return;
       }
 
+      const allowEditBtn = Boolean(d.canEdit && !STATE.gid && STATE.isAdmin);
+      const verifiedTag  = (!STATE.gid && STATE.isAdmin)
+        ? `<span class="badge admin-role">🛡️ 管理員檢視</span>`
+        : `<span class="badge on">✅ LINE 帳號本人驗證通過</span>`;
+
       let quotaHtml = d.hasQuota ? `
-        <div style="font-size:13px; color:var(--muted); margin-bottom:4px;">👤 ${d.name}｜年資：${d.seniority}｜${d.year} 年度特休</div>
+        <div style="font-size:13px; color:var(--muted); margin-bottom:6px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:4px;">
+          <span>👤 <strong>${d.name}</strong>｜年資：${d.seniority}｜${d.year} 年度特休</span>
+          ${verifiedTag}
+        </div>
         <div class="quota-grid">
           <div class="quota-item"><div class="quota-num">${d.totalDays}<span style="font-size:12px;">天</span></div><div class="quota-sub">年度總額 (${d.totalHours}h)</div></div>
           <div class="quota-item"><div class="quota-num" style="color:#D97706;">${d.usedDays}<span style="font-size:12px;">天</span></div><div class="quota-sub">已使用 (${d.usedHours}h)</div></div>
           <div class="quota-item"><div class="quota-num" style="color:#059669;">${d.remainingDays}<span style="font-size:12px;">天</span></div><div class="quota-sub">剩餘可用 (${d.remainingHours}h)</div></div>
         </div>
-      ` : `<div class="banner">ℹ️ ${d.name} 目前尚未設定 ${d.year} 年度特休額度</div>`;
+      ` : `<div class="banner">ℹ️ ${d.name} 目前尚未設定 ${d.year} 年度特休額度 ${verifiedTag}</div>`;
 
       let recHtml = `<h4 style="margin:16px 0 8px 0; font-size:14px;">📋 ${d.year} 年度請假明細（共 ${d.recordCount} 筆 / ${d.totalLeaveHours}h）</h4>`;
       if (!d.records || d.records.length === 0) {
@@ -1912,7 +2204,7 @@
             <div style="text-align:right;">
               <span class="badge">${r.type}</span>
               <div style="font-size:13px; font-weight:700; margin-top:3px;">${r.hours}h</div>
-              <button class="btn sm blue" style="margin-top:4px;" onclick="loadRecordForEdit(${r.rowNumber})">✏️ 修改</button>
+              ${allowEditBtn ? `<button class="btn sm blue" style="margin-top:4px;" onclick="loadRecordForEdit(${r.rowNumber})">✏️ 修改</button>` : ''}
             </div>
           </div>
         `).join('');
@@ -1921,9 +2213,13 @@
     }
 
     function loadRecordForEdit(rowNumber) {
+      if (STATE.gid || !STATE.isAdmin) {
+        alert('⛔ 群組環境與一般成員不具修改假單功能！');
+        return;
+      }
       google.script.run.withSuccessHandler(rec => {
         if (rec) enterEditMode(rec);
-      }).getLeaveRecordByRowForWeb(rowNumber);
+      }).getLeaveRecordByRowForWeb(rowNumber, STATE.uid, STATE.gid);
     }
 
     function renderTodayOverview(ov) {
@@ -2037,6 +2333,10 @@
               return;
             }
             try { localStorage.removeItem(CACHE_KEY_INIT); } catch (_) {}
+            if (res.boundName) {
+              STATE.boundName = res.boundName;
+              document.getElementById('inpQueryName').value = res.boundName;
+            }
             if (res.dashboard) {
               STATE.dashboard = res.dashboard;
               renderDashboard(res.dashboard);
@@ -2109,6 +2409,10 @@
             }
 
             try { localStorage.removeItem(CACHE_KEY_INIT); } catch (_) {}
+            if (res.boundName) {
+              STATE.boundName = res.boundName;
+              document.getElementById('inpQueryName').value = res.boundName;
+            }
             if (res.dashboard) {
               STATE.dashboard = res.dashboard;
               renderDashboard(res.dashboard);
@@ -2150,20 +2454,34 @@
       }
     }
 
-    // ==================== 管理員後台資料庫管理系統 ====================
+    // ==================== 管理員與超級管理員後台資料庫管理系統 ====================
     function switchAdminPanel(panel) {
+      let targetPanel = panel;
+      if (!STATE.isSuperAdmin && ['standby', 'admins'].includes(targetPanel)) {
+        targetPanel = 'quota';
+      }
       ['standby', 'admins', 'quota', 'recs', 'sched', 'types'].forEach(p => {
         const btn = document.getElementById('admBtn_' + p);
         const sec = document.getElementById('admPanel_' + p);
-        if (btn) btn.classList.toggle('active', p === panel);
-        if (sec) sec.classList.toggle('hidden', p !== panel);
+        if (btn) btn.classList.toggle('active', p === targetPanel);
+        if (sec) sec.classList.toggle('hidden', p !== targetPanel);
       });
     }
 
     function renderAdminConsole(adm) {
       if (!adm || !adm.success) return;
 
-      if (adm.standbyStatus) STATE.standbyStatus = adm.standbyStatus;
+      if (adm.isSuperAdmin !== undefined) {
+        STATE.isSuperAdmin = !!adm.isSuperAdmin;
+      }
+      if (adm.groupUiConfig) {
+        STATE.groupUiConfig = { ...DEFAULT_GROUP_UI_CONFIG, ...adm.groupUiConfig };
+      }
+      if (adm.standbyStatus) {
+        STATE.standbyStatus = adm.standbyStatus;
+      }
+
+      applyTabAndRolePermissions();
       renderStandbyNodesCard(STATE.standbyStatus);
 
       const admList = adm.adminUsersList || [];
@@ -2406,7 +2724,7 @@
       renderAdminRecordsList(filtered);
     }
 
-function onAdminSelectEmployee(idx) {
+    function onAdminSelectEmployee(idx) {
       document.getElementById('admSelEmp').value = idx;
       if (idx === '' || idx === null || idx === undefined || !STATE.adminData || !STATE.adminData.quotaList[idx]) {
         document.getElementById('admEmpName').value    = '';
@@ -2433,7 +2751,7 @@ function onAdminSelectEmployee(idx) {
       } catch (_) {}
     }
 
-function saveAdminQuota() {
+    function saveAdminQuota() {
       const payload = {
         name:       document.getElementById('admEmpName').value.trim(),
         seniority:  document.getElementById('admSeniority').value.trim(),
