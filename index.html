@@ -77,7 +77,7 @@
     .form-group { margin-bottom: 13px; }
     label { display: block; font-size: 13px; font-weight: 700; color: #334155; margin-bottom: 5px; }
     label span.req { color: var(--danger); margin-left: 2px; }
-    input[type="text"], input[type="number"], input[type="date"], input[type="time"], select, textarea {
+    input[type="text"], input[type="password"], input[type="number"], input[type="date"], input[type="time"], select, textarea {
       width: 100%; padding: 11px 12px; font-size: 15px; border: 1px solid var(--border);
       border-radius: 10px; background: #FFF; color: var(--text); outline: none;
       -webkit-appearance: menulist; appearance: auto;
@@ -150,7 +150,7 @@
   </div>
 
   <div class="container">
-    <!-- 1. 日曆選單請假 (tab=form) -->
+    <!-- ==================== 1. 日曆選單請假 / 修改假單 (tab=form) ==================== -->
     <div id="sec_form" class="tab-sec">
       <div class="card">
         <div id="editModeBanner" class="banner edit-mode hidden"></div>
@@ -240,10 +240,10 @@
       </div>
     </div>
 
-    <!-- 2. 私密查特休 (tab=my) -->
+    <!-- ==================== 2. 私密查特休 & 私訊傳送 (tab=my) ==================== -->
     <div id="sec_my" class="tab-sec hidden">
       <div class="banner">
-        🔒 <strong>群組零曝光保護：</strong>此頁僅顯示於您的個人畫面，群組其他人完全看不到。
+        🔒 <strong>群組零曝光保護：</strong>此頁僅顯示於您的個人畫面，群組其他人完全看不到。您也可點擊下方按鈕將紀錄私訊給自己！
       </div>
       <div class="card">
         <div class="form-group">
@@ -255,13 +255,13 @@
       </div>
     </div>
 
-    <!-- 3. 文字範本快填 (tab=textform) -->
+    <!-- ==================== 3. 獨立彈出式「文字範本快填」視窗 (tab=textform) ==================== -->
     <div id="sec_textform" class="tab-sec hidden">
       <div class="card">
         <h3 class="section-title">✍️ 文字版範本修改（100% 事前驗證防呆）</h3>
         <div class="banner">
           💡 請在下方修改您的請假內容。系統會先<strong>自動執行前端與後端 11 道完整驗證（包含攔截重複請假與檢查特休額度）</strong>，驗證通過後：<br>
-          👉 點擊綠色按鈕將<strong>以您的本人帳號直接在原群組發送假單並自動收起視窗</strong>，一步到位絕不洗版！
+          👉 點擊綠色按鈕將<strong>以您的本人帳號直接在原群組發出請假文字並自動收起視窗</strong>（在您明確點擊送出前，系統絕不會在背景自動提交任何假單）！
         </div>
 
         <div class="form-group">
@@ -272,24 +272,24 @@
         <!-- 即時驗證狀態框 -->
         <div id="textFormResultBox" class="status-box hidden"></div>
 
-        <!-- ✅ 核心按鈕 1：點 1 下連續自動化送出假單並收起視窗留在原群組！ -->
+        <!-- ✅ 按鈕 1（主按鈕）：嚴格執行明確意圖，僅透過 liff.sendMessages 以本人帳號在群組發出文字泡泡，絕不在背景偷調後端提交！ -->
         <a id="btnPasteToLine" href="javascript:void(0)" class="btn locked" onclick="return handlePasteToLineClick(event)">
           🔍 正在驗證假單格式與是否重複請假...
         </a>
 
-        <!-- ✅ 核心按鈕 2：僅複製文字並關閉視窗，讓使用者自行在原群組長按貼上 -->
+        <!-- ✅ 按鈕 2（副按鈕 A）：僅複製文字並關閉視窗，讓使用者自行在原群組長按貼上 -->
         <button class="btn blue" id="btnCopyAndClose" onclick="copyTextAndCloseDrawer()">
-          📋 僅複製驗證通過文字並返回原聊天室手動貼上
+          📋 僅複製驗證通過文字並返回原群組手動貼上
         </button>
 
-        <!-- ✅ 核心按鈕 3：備援直接由後端系統代發留言並建檔 -->
+        <!-- ✅ 按鈕 3（副按鈕 B）：唯有使用者主動點擊此顆按鈕，才由系統直接寫入假單並推播 -->
         <button class="btn secondary" id="btnSubmitText" onclick="submitTextForm()">
           🚀 直接由系統留言並送出假單
         </button>
       </div>
     </div>
 
-    <!-- 4. 今日請假 (tab=today) -->
+    <!-- ==================== 4. 彈出式今日請假與本週名單 (tab=today) ==================== -->
     <div id="sec_today" class="tab-sec hidden">
       <div class="card">
         <div class="section-title">
@@ -307,7 +307,7 @@
       </div>
     </div>
 
-    <!-- 5. 班表設定 (tab=schedule) -->
+    <!-- ==================== 5. 彈出式班表與休假日設定檢視 (tab=schedule) ==================== -->
     <div id="sec_schedule" class="tab-sec hidden">
       <div class="card">
         <h3 class="section-title">⚙️ 每週工時與開放請假設定</h3>
@@ -319,24 +319,33 @@
       </div>
     </div>
 
-    <!-- 6. 說明 (tab=help) -->
+    <!-- ==================== 6. 彈出式系統使用說明 (tab=help) ==================== -->
     <div id="sec_help" class="tab-sec hidden">
       <div class="card">
         <h3 class="section-title">📖 請假系統完整使用說明</h3>
         <div style="font-size:14px; line-height:1.7; color:#334155;">
-          <p><strong>1️⃣ 日曆選單快速請假：</strong> 於「填寫請假」選擇日期時段與假別，送出即完成建檔。</p>
-          <p><strong>2️⃣ 文字範本快填：</strong> 點擊「✍️ 文字範本快填」，修改完後點擊綠色按鈕即可 1 鍵送出至原群組。</p>
-          <p><strong>3️⃣ 修改或取消：</strong> 直接點擊聊天室假單卡片上的「修改假單」或「取消假單」按鈕。</p>
+          <p><strong>1️⃣ 日曆選單快速請假（推薦）：</strong><br>
+          於「📝 填寫請假」分頁選擇日期、時段與假別，系統會自動扣除午休並試算總時數，核准欄位預設為「已報請主管核准」，按送出即完成請假。</p>
+          <p><strong>2️⃣ 文字範本快填：</strong><br>
+          點擊下方「✍️ 文字範本快填」浮動按鈕，修改文字後系統會先與後端資料庫核對格式與是否重複請假，確認無誤後：<br>
+          • 點擊<strong>綠色按鈕</strong>：以您的 LINE 帳號直接在原群組發出 7 行請假文字並收起視窗。<br>
+          • 點擊<strong>藍色按鈕</strong>：僅複製驗證通過的文字並收起視窗，讓您在原群組輸入框手動貼上發送。<br>
+          • 點擊<strong>灰色按鈕</strong>：明確授權由系統直接在原聊天室發出留言與假單卡片。</p>
+          <p><strong>3️⃣ 修改或取消已送出的假單：</strong><br>
+          • <strong>修改假單：</strong>直接點擊聊天室假單卡片上的 <strong>「✏️ 修改假單」</strong> 按鈕，即可載入原假單內容進行修改。<br>
+          • <strong>取消假單：</strong>點擊假單卡片上的 <strong>「🗑️ 取消假單」</strong> 按鈕（或在 24 小時內於 LINE 收回訊息），系統會自動取消並返還特休。</p>
+          <p><strong>4️⃣ 私密查詢個人特休與紀錄：</strong><br>
+          切換至「🔒 查特休/紀錄」分頁，即可在不驚動群組任何人的情況下查看自己的特休餘額與本年度請假明細，或點擊「📩 私訊傳送」由機器人 1對1 發送給您。</p>
         </div>
       </div>
     </div>
 
-    <!-- 7. 系統管理 (tab=admin) -->
+    <!-- ==================== 7. 管理員專屬後台資料庫管理系統 (tab=admin) ==================== -->
     <div id="sec_admin" class="tab-sec hidden">
       <div class="admin-header-card">
         <div>
           <div style="font-size:16px; font-weight:800;">🛠️ 後台資料庫管理系統</div>
-          <div style="font-size:12px; color:#CBD5E1; margin-top:3px;">直接新增、修改、查閱 Google Sheet 資料庫與一鍵切換熱備援</div>
+          <div style="font-size:12px; color:#CBD5E1; margin-top:3px;">直接新增、修改、查閱 Google Sheet 資料庫與一鍵同步熱備援 LIFF 授權</div>
         </div>
         <button class="btn sm" style="background:#3B82F6;" onclick="reloadAdminDatabase()">🔄 重新整理</button>
       </div>
@@ -352,47 +361,102 @@
         <button class="admin-subbtn" id="admBtn_types" onclick="switchAdminPanel('types')">🏷️ 假別庫</button>
       </div>
 
-      <!-- S. 熱備援切換中心 -->
+      <!-- ==================== 管理模組 S：3 大熱備援節點與 LIFF 群組授權同步中心 ==================== -->
       <div id="admPanel_standby" class="card">
         <div class="section-title">
-          <span>🌐 前端伺服器熱備援中心（一鍵點擊轉換）</span>
+          <span>🌐 前端伺服器熱備援中心（全節點 LIFF 授權同步）</span>
         </div>
         <div class="banner">
           📍 <strong>目前開啟視窗節點：</strong><span id="lblCurrentBrowserNode">偵測中...</span><br>
-          📡 <strong>系統預設派發節點：</strong><span id="lblActiveDefaultNode">讀取中...</span>
+          📡 <strong>系統預設派發節點：</strong><span id="lblActiveDefaultNode">讀取中...</span><br>
+          🔑 <strong>LIFF 雲端 API 自動改綁狀態：</strong><span id="lblLiffSecretStatus">檢查中...</span>
         </div>
+
         <div class="form-group" style="background:#F8FAFC; padding:10px 12px; border-radius:10px; border:1px solid var(--border); margin-bottom:14px;">
           <label style="margin:0; display:flex; align-items:center; justify-content:space-between; cursor:pointer;">
             <span>🔄 <strong>智慧自動導流保護</strong>（當點到舊按鈕時自動轉址至預設節點）</span>
             <input type="checkbox" id="chkStandbyAutoRedirect" checked onchange="onToggleStandbyAutoRedirect(this.checked)" style="width:20px; height:20px;">
           </label>
         </div>
+
         <div id="standbyStatusMsgBox" class="status-box hidden"></div>
+
+        <!-- 3 大熱備援節點卡片容器 -->
         <div id="admStandbyNodesListBox"></div>
+
+        <hr style="border:none; border-top:1px solid var(--border); margin:16px 0;">
+
+        <!-- 🔐 LIFF 群組發話授權同步設定（支援單一 LIFF 自動改綁 Endpoint URL 或 3 組獨立 LIFF ID） -->
+        <h4 style="margin:0 0 8px 0; font-size:14.5px; color:var(--blue);">🔐 各節點 LIFF 群組發話授權同步設定</h4>
+        <div class="banner" style="font-size:12.5px;">
+          💡 <strong>如何讓 3 個備援節點都擁有 `https://liff.line.me/...` 完整群組發話授權？</strong><br>
+          • <strong>方式 A（全自動同步 Endpoint URL）</strong>：在下方填入您的 <strong>LINE Login Channel Secret</strong>（Channel ID: <code>2012028062</code>）。當您點擊上方任一節點的「⚡ 一鍵設為系統預設」時，系統會自動透過 LINE 官方 API 將 <code>2012028062-vnoiLP9t</code> 的 Endpoint URL 改綁至該節點！<br>
+          • <strong>方式 B（3 節點各自綁定專屬 LIFF ID）</strong>：亦可在同一個 LINE Login Channel 下建立 3 組 LIFF ID 填入下方對應欄位。
+        </div>
+
+        <div class="row-2">
+          <div class="form-group">
+            <label>LINE Login Channel Secret（選填，啟用自動改綁）</label>
+            <input type="password" id="inpLineLoginSecret" placeholder="填入後切換節點即自動同步 Endpoint URL">
+          </div>
+          <div class="form-group">
+            <label>LIFF 視窗尺寸 (View Type)</label>
+            <select id="selLiffViewType">
+              <option value="full" selected>Full (全螢幕 100%)</option>
+              <option value="tall">Tall (高抽屜 80%)</option>
+              <option value="compact">Compact (半螢幕 50%)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="row-3">
+          <div class="form-group">
+            <label>節點 1 (GitHub) LIFF ID</label>
+            <input type="text" id="inpLiffGithub" value="2012028062-vnoiLP9t">
+          </div>
+          <div class="form-group">
+            <label>節點 2 (Bloon) LIFF ID</label>
+            <input type="text" id="inpLiffBloon" value="2012028062-vnoiLP9t">
+          </div>
+          <div class="form-group">
+            <label>節點 3 (GAS) LIFF ID</label>
+            <input type="text" id="inpLiffGas" value="2012028062-vnoiLP9t">
+          </div>
+        </div>
+
+        <button class="btn teal" onclick="saveLiffSyncConfiguration()">💾 儲存 LIFF 授權設定並立即同步當前節點</button>
       </div>
 
-      <!-- 0. 帳號權限 -->
+      <!-- 管理模組 0：帳號權限資料庫 (adminUsers) -->
       <div id="admPanel_admins" class="card hidden">
         <div class="section-title"><span>🔐 成員與管理員帳號權限設定</span></div>
+        <div class="banner">
+          💡 所有設定將直接儲存於 Google Sheet 的 <strong>「adminUsers」</strong> 資料庫分頁：<br>
+          • 設為 <strong>管理員 (ADMIN / SUPER_ADMIN)</strong>：可查看「今日請假」、「班表設定」與「系統管理」。<br>
+          • 設為 <strong>一般成員 (USER)</strong>：僅顯示「請假/查特休」與「文字範本快填」。
+        </div>
+
         <div class="form-group">
-          <label>快速選取現有員工</label>
+          <label>快速選取現有員工（或直接於下方輸入姓名）</label>
           <select id="admSelAdminEmp" onchange="onAdminSelectAdminEmp(this.value)">
             <option value="">-- ➕ 手動輸入或選擇現有員工 --</option>
           </select>
         </div>
+
         <div class="row-2">
           <div class="form-group">
             <label>員工姓名 <span class="req">*</span></label>
             <input type="text" id="admAdminName" list="employeeList" placeholder="例如：林主管">
           </div>
           <div class="form-group">
-            <label>LINE UserID (選填)</label>
-            <input type="text" id="admAdminUid" placeholder="留空時自動依姓名對應">
+            <label>LINE UserID (選填/自動對應)</label>
+            <input type="text" id="admAdminUid" placeholder="留空時由系統依姓名自動綁定">
           </div>
         </div>
+
         <div class="row-2">
           <div class="form-group">
-            <label>帳號身分權限</label>
+            <label>帳號身分權限 <span class="req">*</span></label>
             <select id="admAdminRole">
               <option value="ADMIN" selected>🛡️ 管理員 (ADMIN)</option>
               <option value="SUPER_ADMIN">👑 超級管理員 (SUPER_ADMIN)</option>
@@ -402,28 +466,31 @@
           <div class="form-group">
             <label>帳號啟用狀態</label>
             <select id="admAdminEnabled">
-              <option value="true" selected>✅ 啟用中</option>
-              <option value="false">⛔ 停用權限</option>
+              <option value="true" selected>✅ 啟用中 (TRUE)</option>
+              <option value="false">⛔ 停用權限 (FALSE)</option>
             </select>
           </div>
         </div>
+
         <div class="form-group">
-          <label>備註說明</label>
-          <input type="text" id="admAdminRemarks" placeholder="例如：主管">
+          <label>職務 / 權限備註說明</label>
+          <input type="text" id="admAdminRemarks" placeholder="例如：店務主管、人事管理員、一般員工">
         </div>
-        <button class="btn teal" onclick="saveAdminUserRecord()">💾 儲存帳號權限至 Google Sheet</button>
-        <h4 style="margin:18px 0 8px 0; font-size:14px;">📊 帳號權限清單 (<span id="admAdminCount">0</span> 筆)</h4>
+
+        <button class="btn teal" onclick="saveAdminUserRecord()">💾 儲存帳號權限至 Google Sheet 資料庫</button>
+
+        <h4 style="margin:18px 0 8px 0; font-size:14px;">📊 帳號權限資料庫清單 (<span id="admAdminCount">0</span> 筆)</h4>
         <div id="admAdminListBox"></div>
       </div>
 
-      <!-- 1. 特休庫 -->
+      <!-- 管理模組 1：員工特休資料庫 (annualLeaveQuota) -->
       <div id="admPanel_quota" class="card hidden">
         <div class="section-title">
           <span>👥 新增 / 修改員工特休資料</span>
           <button class="btn sm teal" onclick="triggerAutoAnnualLeave()">🔄 依到職日重算全體</button>
         </div>
         <div class="form-group">
-          <label>選擇員工進行修改</label>
+          <label>選擇現有員工進行修改（或維持空白以新增員工）</label>
           <select id="admSelEmp" onchange="onAdminSelectEmployee(this.value)">
             <option value="">-- ➕ 新增員工資料 --</option>
           </select>
@@ -434,7 +501,7 @@
             <input type="text" id="admEmpName" placeholder="例如：王小明">
           </div>
           <div class="form-group">
-            <label>年資顯示</label>
+            <label>年資顯示 (填到職日可自動算)</label>
             <input type="text" id="admSeniority" placeholder="例如：3年6月">
           </div>
         </div>
@@ -460,33 +527,34 @@
           <div class="form-group">
             <label>手動鎖定額度</label>
             <select id="admManualLock">
-              <option value="">否 (自動更新)</option>
-              <option value="Y">是 (鎖定不覆蓋)</option>
+              <option value="">否 (隨年度自動更新)</option>
+              <option value="Y">是 (Y = 鎖定不自動覆蓋)</option>
             </select>
           </div>
         </div>
         <div class="form-group">
-          <label>調整備註</label>
-          <input type="text" id="admRemarks" placeholder="例如：特休設定">
+          <label>調整原因 / 備註</label>
+          <input type="text" id="admRemarks" placeholder="例如：2026年度特休設定">
         </div>
         <button class="btn teal" onclick="saveAdminQuota()">💾 寫入員工特休資料庫</button>
-        <h4 style="margin:18px 0 8px 0; font-size:14px;">📊 員工特休清單 (<span id="admQuotaCount">0</span> 人)</h4>
+
+        <h4 style="margin:18px 0 8px 0; font-size:14px;">📊 特休資料庫員工清單 (<span id="admQuotaCount">0</span> 人)</h4>
         <div id="admQuotaListBox"></div>
       </div>
 
-      <!-- 2. 假單庫 -->
+      <!-- 管理模組 2：請假記錄資料庫 (請假記錄) -->
       <div id="admPanel_recs" class="card hidden">
         <div class="section-title">
           <span>📋 請假記錄資料庫管理</span>
           <button class="btn sm" onclick="exitEditMode(); switchTab('form');">➕ 代客新增假單</button>
         </div>
         <div class="form-group">
-          <input type="text" id="admSearchRec" placeholder="🔍 搜尋姓名、日期、假別..." oninput="filterAdminRecords()">
+          <input type="text" id="admSearchRec" placeholder="🔍 輸入姓名、日期或假別即時篩選記錄..." oninput="filterAdminRecords()">
         </div>
         <div id="admRecentRecordsBox"></div>
       </div>
 
-      <!-- 3. 班表庫 -->
+      <!-- 管理模組 3：班表與特定假日資料庫 (工時與休假設定) -->
       <div id="admPanel_sched" class="card hidden">
         <h3 class="section-title">⚙️ 修改每週開放請假與工時</h3>
         <div id="admScheduleFormBox"></div>
@@ -500,66 +568,79 @@
           <div class="form-group">
             <label>調整類型</label>
             <select id="admSpType">
-              <option value="休假日">休假日 (禁止請假)</option>
-              <option value="補班日">補班日 (開放請假)</option>
+              <option value="休假日">休假日 (當天禁止請假)</option>
+              <option value="補班日">補班日 (當天開放請假)</option>
             </select>
           </div>
         </div>
         <div class="form-group">
-          <label>假日說明</label>
-          <input type="text" id="admSpName" placeholder="例如：國定假日">
+          <label>假日或調整說明</label>
+          <input type="text" id="admSpName" placeholder="例如：中秋節店休">
         </div>
-        <button class="btn teal" onclick="saveAdminSchedule()">💾 儲存班表與特定假日</button>
-        <div id="admSpecialDatesManageBox" style="margin-top:12px;"></div>
+        <button class="btn teal" onclick="saveAdminSchedule()">💾 儲存班表與假日設定至資料庫</button>
+
+        <h4 style="margin:18px 0 8px 0; font-size:14px;">📅 目前已啟用之特定日期清單</h4>
+        <div id="admSpecialDatesManageBox"></div>
       </div>
 
-      <!-- 4. 假別庫 -->
+      <!-- 管理模組 4：假別資料庫與系統維護 (patterns) -->
       <div id="admPanel_types" class="card hidden">
-        <h3 class="section-title">🏷️ 新增 / 修改假別資料庫</h3>
+        <h3 class="section-title">🏷️ 新增 / 修改後端假別資料庫</h3>
         <div class="row-2">
           <div class="form-group">
             <label>假別標準名稱</label>
-            <input type="text" id="admNewTypeName" placeholder="例如：特別休假">
+            <input type="text" id="admNewTypeName" placeholder="例如：家庭照顧假">
           </div>
           <div class="form-group">
             <label>同義別名 (逗號分隔)</label>
-            <input type="text" id="admNewTypeAliases" placeholder="例如：特休,年假">
+            <input type="text" id="admNewTypeAliases" placeholder="例如：家照假,照顧假">
           </div>
         </div>
         <button class="btn blue" onclick="saveAdminLeaveType()" style="margin-bottom:14px; margin-top:0;">➕ 新增 / 更新假別</button>
-        <div id="admLeaveTypeListBox"></div>
+
+        <h4 style="margin:0 0 8px 0; font-size:14px;">📌 假別資料庫清單（點擊可切換啟用/停用）</h4>
+        <div id="admLeaveTypeListBox" style="margin-bottom:18px;"></div>
+
         <hr style="border:none; border-top:1px solid var(--border); margin:16px 0;">
-        <button class="btn secondary" onclick="clearSystemCacheFromAdmin()">🧹 清除系統快取</button>
+        <h3 class="section-title">🛠️ 系統快取與資料庫維護</h3>
+        <button class="btn secondary" onclick="clearSystemCacheFromAdmin()">🧹 清除系統快取並重新載入 Sheet 設定</button>
       </div>
     </div>
   </div>
 
   <script>
+    // ============================================================
+    // 🌐 三棲熱備援環境核心連線設定（同時相容 GitHub Pages / Bloon.io / GAS LeaveForm.html）
+    // 版本: v20.0.0 (全節點 LIFF 群組授權同步 + 嚴格明確意圖零自動提交版)
+    // ============================================================
     const GAS_WEB_APP_URL  = "https://script.google.com/macros/s/AKfycbyuW_4_sWHWUq0lc4QOe1amHl7ipGXr0wGNoVQFJl7leq6JYGWVR7CUoPOZkPMqprnX/exec";
     const DEFAULT_LIFF_ID  = "2012028062-vnoiLP9t";
-    const CACHE_KEY_INIT   = "leave_sys_init_cache_v21";
+    const CACHE_KEY_INIT   = "leave_sys_init_cache_v20_sync";
 
     const DEFAULT_STANDBY_NODES = [
       {
-        key:   "GITHUB",
-        name:  "GitHub Pages 極速主節點",
-        badge: "🚀 節點 1 (GitHub CDN)",
-        url:   "https://officetngc-ai.github.io/leave-app/",
-        desc:  "透過 GitHub Fastly 全球 CDN 載入，支援 LIFF 頂層抽屜與自動收起視窗"
+        key:    "GITHUB",
+        name:   "GitHub Pages 極速主節點",
+        badge:  "🚀 節點 1 (GitHub CDN)",
+        url:    "https://officetngc-ai.github.io/leave-app/",
+        liffId: "2012028062-vnoiLP9t",
+        desc:   "透過 GitHub Fastly 全球 CDN 載入，支援 LIFF 頂層抽屜、本人群組發話與自動收起視窗"
       },
       {
-        key:   "BLOON",
-        name:  "Bloon.io 極速靜態備援",
-        badge: "🛡️ 節點 2 (Bloon.io)",
-        url:   "https://direct.bloon.io/share/YyjMvvP7/index.html",
-        desc:  "獨立外部靜態託管空間，當 GitHub 異常或維護時提供 0.2 秒高速備援"
+        key:    "BLOON",
+        name:   "Bloon.io 極速靜態備援",
+        badge:  "🛡️ 節點 2 (Bloon.io)",
+        url:    "https://direct.bloon.io/share/YyjMvvP7/index.html",
+        liffId: "2012028062-vnoiLP9t",
+        desc:   "獨立外部靜態託管空間，同步 LIFF 授權後同樣具備 100% 群組本人發話與 0.2 秒秒開能力"
       },
       {
-        key:   "GAS",
-        name:  "GAS 雲端原生備援",
-        badge: "☁️ 節點 3 (Google 原生)",
-        url:   "https://script.google.com/macros/s/AKfycbyuW_4_sWHWUq0lc4QOe1amHl7ipGXr0wGNoVQFJl7leq6JYGWVR7CUoPOZkPMqprnX/exec",
-        desc:  "由 Google Apps Script 直接渲染內建 LeaveForm.html，不依賴任何外部空間"
+        key:    "GAS",
+        name:   "GAS 雲端原生備援",
+        badge:  "☁️ 節點 3 (Google 原生)",
+        url:    "https://script.google.com/macros/s/AKfycbyuW_4_sWHWUq0lc4QOe1amHl7ipGXr0wGNoVQFJl7leq6JYGWVR7CUoPOZkPMqprnX/exec",
+        liffId: "2012028062-vnoiLP9t",
+        desc:   "由 Google Apps Script 直接渲染內建 LeaveForm.html，不依賴任何外部空間"
       }
     ];
 
@@ -590,7 +671,7 @@
           .then(rawText => {
             let payload = null;
             try { payload = JSON.parse(rawText); } catch (e) {
-              throw new Error("無法解析後端回應");
+              throw new Error("無法解析後端回應，請確認 GAS 已建立新版本部署");
             }
             if (payload && payload.ok) {
               if (typeof successCb === "function") successCb(payload.result);
@@ -601,7 +682,10 @@
           })
           .catch(err => {
             if (timeoutId) clearTimeout(timeoutId);
-            if (typeof failureCb === "function") failureCb(err);
+            const friendlyErr = err.name === "AbortError"
+              ? new Error("連線後端逾時（超過 25 秒），請檢查網路連線並重試")
+              : err;
+            if (typeof failureCb === "function") failureCb(friendlyErr);
           });
       };
 
@@ -617,7 +701,7 @@
         "adminSaveAdminUser", "adminDeleteAdminUser", "adminSaveEmployeeQuota",
         "adminDeleteEmployeeQuota", "adminTriggerAutoAnnualLeave", "adminSaveScheduleSheet",
         "adminDeleteSpecialDate", "adminAddOrUpdateLeaveType", "adminCancelLeaveByRow",
-        "adminClearCacheAndReload", "adminSwitchFrontendNode"
+        "adminClearCacheAndReload", "adminSwitchFrontendNode", "adminSaveLiffSyncConfig"
       ];
 
       apiMethods.forEach(m => {
@@ -644,7 +728,7 @@
 
     function safeCloseLiffWindow() {
       try {
-        if (typeof liff !== 'undefined' && liff.isInClient()) {
+        if (typeof liff !== 'undefined' && liff.isInClient && liff.isInClient()) {
           liff.closeWindow();
           return;
         }
@@ -666,9 +750,12 @@
       scheduleOverview: null,
       dashboard: null,
       standbyStatus: {
-        activeKey:    "GITHUB",
-        autoRedirect: true,
-        nodesList:    DEFAULT_STANDBY_NODES
+        activeKey:      "GITHUB",
+        autoRedirect:   true,
+        hasLoginSecret: false,
+        viewType:       "full",
+        liffMap:        { GITHUB: DEFAULT_LIFF_ID, BLOON: DEFAULT_LIFF_ID, GAS: DEFAULT_LIFF_ID },
+        nodesList:      DEFAULT_STANDBY_NODES
       },
       adminData: null,
       verifiedText: "",
@@ -703,6 +790,7 @@
         if (up.get('uid')) STATE.uid = up.get('uid');
         if (up.get('gid')) STATE.gid = up.get('gid');
         if (up.get('editRow')) STATE.editRow = up.get('editRow');
+        if (up.get('liffId')) STATE.liffId = up.get('liffId');
         if (up.get('noRedirect') === '1') STATE.noRedirect = true;
 
         const liffState = up.get('liff.state');
@@ -714,13 +802,34 @@
           if (sp.get('uid')) STATE.uid = sp.get('uid');
           if (sp.get('gid')) STATE.gid = sp.get('gid');
           if (sp.get('editRow')) STATE.editRow = sp.get('editRow');
+          if (sp.get('liffId')) STATE.liffId = sp.get('liffId');
           if (sp.get('noRedirect') === '1') STATE.noRedirect = true;
         }
       } catch (_) {}
     }
 
+    /**
+     * 自動依當前節點決定最佳 LIFF ID（支援單一 LIFF 同步或 3 組獨立 LIFF ID）
+     */
+    function resolveCurrentNodeLiffId() {
+      try {
+        const cachedRaw = localStorage.getItem(CACHE_KEY_INIT);
+        if (cachedRaw) {
+          const cachedRes = JSON.parse(cachedRaw);
+          if (cachedRes && cachedRes.standbyStatus && cachedRes.standbyStatus.liffMap) {
+            const curKey = detectCurrentBrowserNodeKey();
+            const mapped = cachedRes.standbyStatus.liffMap[curKey];
+            if (mapped) return mapped;
+          }
+        }
+      } catch (_) {}
+      return STATE.liffId || DEFAULT_LIFF_ID;
+    }
+
     window.onload = function() {
       parseClientUrlParams();
+      STATE.liffId = resolveCurrentNodeLiffId();
+
       let savedName = localStorage.getItem('leave_sys_user_name') || '';
       if (savedName === '系統管理員') {
         savedName = '';
@@ -749,7 +858,7 @@
 
       if (STATE.tab) switchTab(STATE.tab);
 
-      // ✅ 關鍵：優先透過 LIFF 取得真實的 groupId 與 userId，徹底解決送出到 1 對 1 私訊的 Bug！
+      // 優先透過 LIFF 取得真實的 groupId 與 userId
       if (STATE.liffId && typeof liff !== 'undefined') {
         let fetched = false;
         const timer = setTimeout(() => {
@@ -764,7 +873,7 @@
             if (ctx) {
               if (ctx.userId) STATE.uid = ctx.userId;
               const trueGid = ctx.groupId || ctx.roomId || '';
-              if (trueGid) STATE.gid = trueGid; // 取得真正的群組 ID！
+              if (trueGid) STATE.gid = trueGid;
             }
           }
           if (STATE.tab) switchTab(STATE.tab);
@@ -814,13 +923,14 @@
         STATE.standbyStatus = res.standbyStatus;
         renderStandbyNodesCard(res.standbyStatus);
 
+        // 智慧自動導流：若點到非預設節點且未設定 LINE API 自動改綁時，自動無縫轉址至預設節點
         if (!isFromLocalCache && res.standbyStatus.autoRedirect && !STATE.noRedirect && STATE.tab !== 'admin') {
           const currentBrowserKey = detectCurrentBrowserNodeKey();
           const targetActiveKey   = res.standbyStatus.activeKey;
           if (targetActiveKey && currentBrowserKey !== targetActiveKey) {
             const targetNode = (res.standbyStatus.nodesList || DEFAULT_STANDBY_NODES).find(n => n.key === targetActiveKey);
             if (targetNode && targetNode.url) {
-              jumpToStandbyNodeUrl(targetNode.url, true);
+              jumpToStandbyNodeUrl(targetNode.url, true, targetNode.liffId);
               return;
             }
           }
@@ -889,6 +999,7 @@
       }
     }
 
+    // ==================== 🌐 3 大熱備援節點與 LIFF 授權同步渲染 ====================
     function renderStandbyNodesCard(standbyObj) {
       const box = document.getElementById('admStandbyNodesListBox');
       if (!box) return;
@@ -898,21 +1009,51 @@
       const autoRedirect      = st.autoRedirect !== undefined ? !!st.autoRedirect : true;
       const nodesList         = (Array.isArray(st.nodesList) && st.nodesList.length > 0) ? st.nodesList : DEFAULT_STANDBY_NODES;
       const currentBrowserKey = detectCurrentBrowserNodeKey();
+      const liffMap           = st.liffMap || { GITHUB: DEFAULT_LIFF_ID, BLOON: DEFAULT_LIFF_ID, GAS: DEFAULT_LIFF_ID };
 
       const chk = document.getElementById('chkStandbyAutoRedirect');
       if (chk) chk.checked = autoRedirect;
 
+      const inpG = document.getElementById('inpLiffGithub');
+      const inpB = document.getElementById('inpLiffBloon');
+      const inpS = document.getElementById('inpLiffGas');
+      if (inpG && liffMap.GITHUB) inpG.value = liffMap.GITHUB;
+      if (inpB && liffMap.BLOON)  inpB.value = liffMap.BLOON;
+      if (inpS && liffMap.GAS)    inpS.value = liffMap.GAS;
+
+      const selView = document.getElementById('selLiffViewType');
+      if (selView && st.viewType) selView.value = st.viewType;
+
+      const inpSec = document.getElementById('inpLineLoginSecret');
+      if (inpSec && st.hasLoginSecret && !inpSec.value) {
+        inpSec.placeholder = "✅ 已綁定 LINE Login Secret (留空即維持原設定)";
+      }
+
       const browserNodeObj = nodesList.find(n => n.key === currentBrowserKey) || nodesList[0];
       const activeNodeObj  = nodesList.find(n => n.key === activeKey)         || nodesList[0];
+      const isInLiffClient = (typeof liff !== 'undefined' && liff.isInClient && liff.isInClient());
 
       const lblBrowser = document.getElementById('lblCurrentBrowserNode');
       const lblActive  = document.getElementById('lblActiveDefaultNode');
-      if (lblBrowser) lblBrowser.innerHTML = `<span class="badge on">${browserNodeObj.badge}</span> (${window.location.hostname || '本機'})`;
-      if (lblActive)  lblActive.innerHTML  = `<span class="badge admin-role">${activeNodeObj.badge}</span>`;
+      const lblSecret  = document.getElementById('lblLiffSecretStatus');
+
+      if (lblBrowser) {
+        lblBrowser.innerHTML = `<span class="badge on">${browserNodeObj.badge}</span> ` +
+          `<span class="badge ${isInLiffClient ? 'on' : ''}">${isInLiffClient ? '🟢 已取得 LIFF 群組授權' : '🌐 瀏覽器模式'}</span>`;
+      }
+      if (lblActive) {
+        lblActive.innerHTML = `<span class="badge admin-role">${activeNodeObj.badge}</span> (LIFF: <code>${activeNodeObj.liffId || DEFAULT_LIFF_ID}</code>)`;
+      }
+      if (lblSecret) {
+        lblSecret.innerHTML = st.hasLoginSecret
+          ? `<span class="badge on">🟢 已啟用（切換節點時自動改綁 LINE 官方 Endpoint URL）</span>`
+          : `<span class="badge">⚪ 未設定 Secret（使用下方各節點綁定之 LIFF ID 派發）</span>`;
+      }
 
       box.innerHTML = nodesList.map(n => {
         const isSystemDefault = (n.key === activeKey);
         const isCurrentWindow = (n.key === currentBrowserKey);
+        const nodeLiffId      = n.liffId || liffMap[n.key] || DEFAULT_LIFF_ID;
 
         return `
           <div class="standby-card ${isSystemDefault ? 'active-node' : ''} ${isCurrentWindow ? 'current-browser-node' : ''}">
@@ -925,15 +1066,15 @@
                 ${isCurrentWindow ? '<span class="badge admin-role">📍 目前所在視窗</span>' : ''}
               </div>
             </div>
-            <div class="standby-url">${n.url}</div>
+            <div class="standby-url">Endpoint: ${n.url}<br>授權網址: https://liff.line.me/${nodeLiffId}</div>
             <div style="font-size:12px; color:var(--muted); line-height:1.4;">${n.desc || ''}</div>
             <div class="standby-actions">
               <button class="btn sm ${isSystemDefault ? 'secondary' : 'teal'}"
                 onclick="switchSystemStandbyNode('${n.key}')"
                 ${isSystemDefault ? 'disabled' : ''}>
-                ${isSystemDefault ? '✅ 目前已設為預設' : '⚡ 一鍵設為系統預設'}
+                ${isSystemDefault ? '✅ 目前已設為預設' : '⚡ 設為預設並同步 LIFF 授權'}
               </button>
-              <button class="btn sm blue" onclick="jumpToStandbyNodeUrl('${n.url}', false)">
+              <button class="btn sm blue" onclick="jumpToStandbyNodeUrl('${n.url}', false, '${nodeLiffId}')">
                 🔗 立即跳轉此節點開啟
               </button>
             </div>
@@ -942,12 +1083,46 @@
       }).join('');
     }
 
+    function saveLiffSyncConfiguration() {
+      const secretVal = document.getElementById('inpLineLoginSecret').value.trim();
+      const viewType  = document.getElementById('selLiffViewType').value;
+      const liffMap   = {
+        GITHUB: document.getElementById('inpLiffGithub').value.trim() || DEFAULT_LIFF_ID,
+        BLOON:  document.getElementById('inpLiffBloon').value.trim()  || DEFAULT_LIFF_ID,
+        GAS:    document.getElementById('inpLiffGas').value.trim()    || DEFAULT_LIFF_ID
+      };
+
+      showStatusBanner('standbyStatusMsgBox', 'info', '⏳ 正在儲存 LIFF 授權設定並向 LINE 官方伺服器同步 Endpoint URL...');
+
+      const payload = { liffMap, viewType };
+      if (secretVal) payload.loginChannelSecret = secretVal;
+
+      google.script.run
+        .withSuccessHandler(res => {
+          if (!res || !res.success) {
+            showStatusBanner('standbyStatusMsgBox', 'err', (res && res.message) || '❌ 儲存失敗');
+            return;
+          }
+          document.getElementById('inpLineLoginSecret').value = '';
+          try { localStorage.removeItem(CACHE_KEY_INIT); } catch (_) {}
+          if (res.standbyStatus) {
+            STATE.standbyStatus = res.standbyStatus;
+            renderStandbyNodesCard(res.standbyStatus);
+          }
+          showStatusBanner('standbyStatusMsgBox', 'ok', res.message);
+        })
+        .withFailureHandler(err => {
+          showStatusBanner('standbyStatusMsgBox', 'err', '❌ 呼叫後端失敗：' + err.message);
+        })
+        .adminSaveLiffSyncConfig(STATE.uid, payload);
+    }
+
     function switchSystemStandbyNode(nodeKey) {
       const autoRedirect = document.getElementById('chkStandbyAutoRedirect')
         ? document.getElementById('chkStandbyAutoRedirect').checked
         : true;
 
-      showStatusBanner('standbyStatusMsgBox', 'info', `⏳ 正在將系統預設前端切換為【${nodeKey}】...`);
+      showStatusBanner('standbyStatusMsgBox', 'info', `⏳ 正在將系統預設切換為【${nodeKey}】並同步 LINE LIFF 群組授權...`);
 
       google.script.run
         .withSuccessHandler(res => {
@@ -981,7 +1156,7 @@
       switchSystemStandbyNode(activeKey);
     }
 
-    function jumpToStandbyNodeUrl(baseUrl, isAutoRedirect) {
+    function jumpToStandbyNodeUrl(baseUrl, isAutoRedirect, nodeLiffId) {
       if (!baseUrl) return;
       const sep    = baseUrl.includes('?') ? '&' : '?';
       const params = [
@@ -990,11 +1165,13 @@
         `tab=${encodeURIComponent(STATE.tab || 'form')}`
       ];
       if (STATE.editRow) params.push(`editRow=${encodeURIComponent(STATE.editRow)}`);
+      if (nodeLiffId)    params.push(`liffId=${encodeURIComponent(nodeLiffId)}`);
       if (!isAutoRedirect) params.push('noRedirect=1');
       const targetUrl = `${baseUrl}${sep}${params.join('&')}`;
       try { window.top.location.replace(targetUrl); } catch (_) { window.location.href = targetUrl; }
     }
 
+    // ==================== 文字範本快填（嚴格明確意圖：絕不自動提交假單） ====================
     function initTextTemplate(name, dateSlashStr) {
       const txt = document.getElementById('txtRawLeave');
       if (!txt) return;
@@ -1037,19 +1214,17 @@
       const isLiffEnv = (typeof liff !== 'undefined' && liff.isInClient && liff.isInClient());
 
       if (STATE.gid || isLiffEnv) {
-        // 群組環境或 LIFF 內部：以本人名義直接發出文字至當前聊天室
-        btn.innerText = '✅ 驗證通過！點此 1 鍵送出假單至群組';
+        btn.innerText = '✅ 驗證通過！點此以本人帳號發送文字至群組';
         btn.href = 'javascript:void(0)';
         btn.removeAttribute('target');
       } else if (isMobileClient() && STATE.botBasicId && rawText) {
-        // 外部瀏覽器開啟且為 1 對 1：掛載原生 oaMessage 喚醒 LINE
         btn.innerText = '📲 驗證通過！點此將文字貼回 LINE 輸入框';
         const rawBasicId   = STATE.botBasicId.trim();
         const cleanBasicId = rawBasicId.startsWith('@') ? rawBasicId : ('@' + rawBasicId);
         btn.href   = 'line://oaMessage/' + cleanBasicId + '/?' + encodeURIComponent(rawText);
         btn.target = '_top';
       } else {
-        btn.innerText = '✅ 驗證通過！點此直接送出假單';
+        btn.innerText = '✅ 驗證通過！點此複製請假單文字';
         btn.href = 'javascript:void(0)';
         btn.removeAttribute('target');
       }
@@ -1122,9 +1297,7 @@
             showStatusBanner(
               'textFormResultBox',
               'ok',
-              STATE.gid
-                ? `✅ 資料庫驗證通過！（${STATE.verifySummary}）\n請點擊下方綠色按鈕 1 鍵發送至原群組（或點藍色按鈕手動貼上）。`
-                : `✅ 資料庫驗證通過！（${STATE.verifySummary}）\n確認無重複請假且格式正確，請點擊下方綠色按鈕直接送出假單。`
+              `✅ 資料庫驗證通過！（${STATE.verifySummary}）\n請點擊下方綠色按鈕將文字發送至原群組（或點藍色按鈕複製後手動貼上）。`
             );
             return;
           }
@@ -1146,10 +1319,16 @@
         });
     }
 
-function executeVerifiedPasteAction(rawText) {
+    /**
+     * ✅ 嚴格遵守「明確意圖 (Explicit Intent)」原則：
+     * - 點擊綠色按鈕只負責透過 liff.sendMessages 以員工本人帳號在群組發出 7 行文字（或複製文字讓使用者貼上）。
+     * - 100% 絕對不在此處自動呼叫 submitTextForm()，確保未點擊系統提交按鈕前，系統絕不自動提交任何假單！
+     */
+    function executeVerifiedPasteAction(rawText) {
+      if (isSubmitting) return;
       copyToClipboardSafe(rawText);
 
-      // 1. 1對1私訊環境：透過 oaMessage 貼入輸入框
+      // 1. 1對1私訊且非 LIFF 內嵌環境：透過 oaMessage 將文字帶入輸入框
       if (isMobileClient() && !STATE.gid && STATE.botBasicId && !(typeof liff !== 'undefined' && liff.isInClient && liff.isInClient())) {
         const btn = document.getElementById('btnPasteToLine');
         unlockPasteButtonWithVerifiedText(rawText);
@@ -1160,12 +1339,11 @@ function executeVerifiedPasteAction(rawText) {
         return;
       }
 
-      // 2. LINE 群組或 LIFF 環境：僅代表本人在聊天室發出文字泡泡，隨後自動收起視窗
+      // 2. LINE 群組或 LIFF 內嵌環境：僅以本人帳號發出文字泡泡，絕不自動呼叫後端提交 API！
       if (typeof liff !== 'undefined' && liff.isInClient && liff.isInClient()) {
-        if (isSubmitting) return;
         isSubmitting = true;
-        lockPasteButtonForVerification('🚀 正在將文字發送至聊天室...');
-        showStatusBanner('textFormResultBox', 'info', '🚀 正在以您的 LINE 帳號將假單文字發送至當前聊天室...');
+        lockPasteButtonForVerification('🚀 正在將文字發送至原群組...');
+        showStatusBanner('textFormResultBox', 'info', '🚀 正在以您的 LINE 帳號將假單文字發送至原群組...');
 
         liff.sendMessages([{ type: 'text', text: rawText }])
           .then(() => {
@@ -1174,22 +1352,28 @@ function executeVerifiedPasteAction(rawText) {
             STATE.verifiedText   = '';
             STATE.verifyStatus   = 'invalid';
             lockPasteButtonForVerification('🎉 假單文字已發送！');
-            showStatusBanner('textFormResultBox', 'ok', `🎉 假單文字已成功發送至聊天室！（${STATE.verifySummary}）正在關閉視窗...`);
+            showStatusBanner('textFormResultBox', 'ok', `🎉 假單文字已成功以您的帳號發送至原群組！（${STATE.verifySummary}）正在關閉視窗...`);
             setTimeout(() => { safeCloseLiffWindow(); }, 250);
           })
           .catch(err => {
-            // 若 LIFF 發訊失敗，改為提示手動貼上，絕不在背景自動呼叫後端提交
+            // 若尚未開通 chat_message.write 權限，僅複製文字並引導使用者手動貼上，絕不在背景自動提交假單！
             isSubmitting = false;
-            lockPasteButtonForVerification('✅ 驗證通過！請點擊藍色按鈕手動複製');
-            showStatusBanner('textFormResultBox', 'info', '💡 提示：請點擊下方「藍色按鈕」複製文字，並在群組輸入框長按貼上。');
+            unlockPasteButtonWithVerifiedText(rawText);
+            showStatusBanner(
+              'textFormResultBox',
+              'info',
+              `📋 假單文字已自動複製到剪貼簿！\n` +
+              `（因目前 LIFF 尚未開通 chat_message.write 權限，系統不會自動代交假單）\n` +
+              `👉 請點擊下方「📋 藍色按鈕」關閉視窗並在群組輸入框長按貼上，或明確點擊下方「🚀 灰色按鈕」由系統送出！`
+            );
           });
         return;
       }
 
-      // 3. 外部瀏覽器：提示複製
+      // 3. 外部瀏覽器：僅複製文字並提示手動貼上（不自動提交）
       copyTextAndCloseDrawer();
     }
-    
+
     function copyTextAndCloseDrawer() {
       const rawText = document.getElementById('txtRawLeave').value.trim();
       const syncCheck = validateLeaveTextClientSide(rawText);
@@ -1205,15 +1389,14 @@ function executeVerifiedPasteAction(rawText) {
       showStatusBanner(
         'textFormResultBox',
         'ok',
-        `📋 假單文字已複製到剪貼簿！\n正在關閉視窗返回原群組（在群組輸入框長按貼上即可發送）...`
+        `📋 驗證通過的假單文字已複製到剪貼簿！\n正在關閉視窗返回原群組（直接在群組輸入框長按貼上即可發送）...`
       );
       setTimeout(() => { safeCloseLiffWindow(); }, 300);
     }
 
-function handlePasteToLineClick(event) {
+    function handlePasteToLineClick(event) {
       const rawText = document.getElementById('txtRawLeave').value.trim();
 
-      // 1. 前端語法防呆
       const syncCheck = validateLeaveTextClientSide(rawText);
       if (!syncCheck.valid) {
         event.preventDefault();
@@ -1225,7 +1408,6 @@ function handlePasteToLineClick(event) {
         return false;
       }
 
-      // 2. 錯誤或重複請假攔截
       if (STATE.verifyStatus === 'invalid' && STATE.verifyErrorMsg) {
         event.preventDefault();
         lockPasteButtonForVerification('⛔ 假單驗證未通過（請先修正上方錯誤）');
@@ -1233,11 +1415,9 @@ function handlePasteToLineClick(event) {
         return false;
       }
 
-      // 3. 已驗證通過時，立即執行一鍵送出
       if (STATE.verifyStatus === 'valid' && STATE.verifiedText === rawText) {
         copyToClipboardSafe(rawText);
 
-        // 若為 1 對 1 且有原生 oaMessage 連結，直接放行
         if (isMobileClient() && !STATE.gid && STATE.botBasicId && !(typeof liff !== 'undefined' && liff.isInClient && liff.isInClient())) {
           return true;
         }
@@ -1247,7 +1427,6 @@ function handlePasteToLineClick(event) {
         return false;
       }
 
-      // 4. 若尚未完成後端核對，攔截並等待驗證完成後自動送出（不需點兩次）
       event.preventDefault();
       if (rawTextDebounceTimer) clearTimeout(rawTextDebounceTimer);
       runBackendTextValidation(rawText, true);
@@ -1761,6 +1940,13 @@ function handlePasteToLineClick(event) {
         return;
       }
 
+      if (!STATE.gid && typeof liff !== 'undefined' && liff.getContext) {
+        try {
+          const ctx = liff.getContext();
+          if (ctx && (ctx.groupId || ctx.roomId)) STATE.gid = ctx.groupId || ctx.roomId;
+        } catch (_) {}
+      }
+
       isSubmitting = true;
       const btn = document.getElementById('btnSubmit');
       btn.disabled = true;
@@ -1817,7 +2003,7 @@ function handlePasteToLineClick(event) {
     }
 
     /**
-     * ✅ 嚴格群組綁定：送出時帶入真正的 STATE.gid，保證卡片必定回覆在原群組！
+     * 唯有使用者明確點擊「🚀 直接由系統留言並送出假單」按鈕時才觸發此函式
      */
     function submitTextForm() {
       if (isSubmitting) return;
@@ -1829,26 +2015,18 @@ function handlePasteToLineClick(event) {
         return;
       }
 
-      // 嚴格檢查：若在群組但 STATE.gid 尚未抓到，從 liff.getContext() 再試一次抓取
       if (!STATE.gid && typeof liff !== 'undefined' && liff.getContext) {
         try {
           const ctx = liff.getContext();
-          if (ctx && (ctx.groupId || ctx.roomId)) {
-            STATE.gid = ctx.groupId || ctx.roomId;
-          }
+          if (ctx && (ctx.groupId || ctx.roomId)) STATE.gid = ctx.groupId || ctx.roomId;
         } catch (_) {}
       }
 
       isSubmitting = true;
       const btnSubmit = document.getElementById('btnSubmitText');
-      const btnPaste  = document.getElementById('btnPasteToLine');
       if (btnSubmit) {
         btnSubmit.disabled = true;
         btnSubmit.innerText = '🚀 正在送出假單...';
-      }
-      if (btnPaste) {
-        btnPaste.classList.add('locked');
-        btnPaste.innerText = '🚀 正在送出假單至原群組...';
       }
       showStatusBanner('textFormResultBox', 'info', '⏳ 正在將請假單寫入資料庫並發送至原群組聊天室，請稍候...');
 
@@ -1861,10 +2039,6 @@ function handlePasteToLineClick(event) {
               if (btnSubmit) {
                 btnSubmit.disabled = false;
                 btnSubmit.innerText = '🚀 直接由系統留言並送出假單';
-              }
-              if (btnPaste) {
-                btnPaste.classList.remove('locked');
-                btnPaste.innerText = '✅ 驗證通過！點此 1 鍵發送假單至原群組';
               }
               showStatusBanner('textFormResultBox', 'err', res ? res.errorMessage : '❌ 格式驗證失敗，請檢查欄位');
               return;
@@ -1895,16 +2069,12 @@ function handlePasteToLineClick(event) {
               btnSubmit.disabled = false;
               btnSubmit.innerText = '🚀 直接由系統留言並送出假單';
             }
-            if (btnPaste) {
-              btnPaste.classList.remove('locked');
-              btnPaste.innerText = '✅ 驗證通過！點此 1 鍵發送假單至原群組';
-            }
             showStatusBanner('textFormResultBox', 'err', '❌ 系統執行錯誤：' + err.message);
           })
           .submitRawTextLeaveFromWeb({
             text:    rawText,
             userId:  STATE.uid,
-            groupId: STATE.gid // 100% 綁定原群組
+            groupId: STATE.gid
           });
       } catch (syncErr) {
         isSubmitting = false;
@@ -1915,7 +2085,8 @@ function handlePasteToLineClick(event) {
         showStatusBanner('textFormResultBox', 'err', '❌ 無法連接後端函式：' + syncErr.message);
       }
     }
-    
+
+    // ==================== 管理員後台資料庫管理系統 ====================
     function switchAdminPanel(panel) {
       ['standby', 'admins', 'quota', 'recs', 'sched', 'types'].forEach(p => {
         const btn = document.getElementById('admBtn_' + p);
