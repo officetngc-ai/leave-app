@@ -106,6 +106,7 @@
       border-radius: 10px; background: #FFF; color: var(--text); outline: none;
       -webkit-appearance: menulist; appearance: auto;
     }
+    input[readonly] { background: #F1F5F9; color: #475569; cursor: not-allowed; }
     textarea { font-family: monospace, "Noto Sans TC", sans-serif; line-height: 1.6; resize: vertical; }
     input:focus, select:focus, textarea:focus { border-color: var(--blue); box-shadow: 0 0 0 2px rgba(21,101,192,0.12); }
     .row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
@@ -278,7 +279,7 @@
     <!-- ==================== 2. 私密查特休 & 本人身分驗證 (tab=my) ==================== -->
     <div id="sec_my" class="tab-sec hidden">
       <div class="banner" id="myTabPrivacyBanner">
-        🔒 <strong>本人身分驗證保護：</strong>系統會自動核對您的 LINE 帳號是否與輸入的姓名為同一人（於第一次提送假單時自動建立綁定），僅限查詢本人紀錄！
+        🔒 <strong>本人身分驗證保護：</strong>系統會自動核對您的 LINE 帳號是否與輸入姓名為同一人（於第一次提送假單時自動建立綁定）。今日及未來的假單允許本人修改，昨日以前的過期假單則自動鎖定！
       </div>
       <div class="card">
         <div class="form-group">
@@ -365,8 +366,9 @@
           • 點擊<strong>綠色按鈕</strong>：以您的 LINE 帳號直接在原群組發出 7 行請假文字並收起視窗。<br>
           • 點擊<strong>藍色按鈕</strong>：僅複製驗證通過的文字並收起視窗，讓您在原群組輸入框手動貼上發送。<br>
           • 點擊<strong>灰色按鈕</strong>：明確授權由系統直接在原聊天室發出留言與假單卡片。</p>
-          <p><strong>3️⃣ 取消已送出的假單：</strong><br>
-          • 點擊假單卡片上的 <strong>「🗑️ 取消假單」</strong> 按鈕（或在 24 小時內於 LINE 收回訊息），系統會自動取消並返還特休。</p>
+          <p><strong>3️⃣ 修改或取消已送出的假單（時效保護）：</strong><br>
+          • <strong>今日及未來假單：</strong>申請人本人可直接點擊假單卡片上的 <strong>「✏️ 修改假單」</strong> 或 <strong>「🗑️ 取消假單」</strong> 按鈕進行調整。<br>
+          • <strong>昨日以前的過期假單：</strong>系統會自動鎖定（顯示「🔒 已過期鎖定」），禁止自行修改或取消；如需特殊異動請聯絡管理員。</p>
           <p><strong>4️⃣ 本人驗證查詢個人特休與紀錄：</strong><br>
           切換至「🔒 查特休/紀錄」分頁，系統會核對您的 LINE 帳號與首次請假綁定之姓名，確認為本人後即可私密查看特休餘額與請假明細，或點擊「📩 私訊傳送」由機器人 1對1 發送給您。</p>
         </div>
@@ -397,7 +399,7 @@
 
       <!-- ==================== 管理模組 S：群組顯示控制中心 ＋ 3 大熱備援節點切換 ==================== -->
       <div id="admPanel_standby" class="card">
-        <!-- 💬 新增：群組顯示控制中心（控制群組跳出的膠囊按鈕與視窗分頁） -->
+        <!-- 💬 群組顯示控制中心 -->
         <div class="section-title">
           <span>💬 群組顯示控制設定（膠囊按鈕與群組分頁）</span>
         </div>
@@ -522,7 +524,7 @@
           💡 所有設定將直接儲存於 Google Sheet 的 <strong>「adminUsers」</strong> 資料庫分頁：<br>
           • <strong>👑 超級管理員 (SUPER_ADMIN)</strong>：於 1對1 聊天室擁有所有系統管理功能（含備援切換、群組顯示控制、帳號權限管理）。<br>
           • <strong>🛡️ 管理員 (ADMIN)</strong>：於 1對1 聊天室擁有一般管理功能（特休庫、假單庫、班表庫、假別庫、今日請假）。<br>
-          • <strong>👤 一般成員 (USER)</strong>：僅能查詢本人綁定之特休與紀錄，不具查詢他人或修改假單功能。
+          • <strong>👤 一般成員 (USER)</strong>：僅能查詢本人綁定之特休與紀錄，且僅限修改今日及未來的本人假單。
         </div>
 
         <div class="form-group">
@@ -700,10 +702,10 @@
   <script>
     // ============================================================
     // 🌐 三棲熱備援環境核心連線設定
-    // 版本: v22.0.0 (群組分頁控制器 + 本人LINE綁定強制驗證 + 三級管理權限版)
+    // 版本: v22.2.0 (群組分頁控制 + 本人LINE綁定驗證 + 今日及未來假單可改/昨日以前鎖定版)
     // ============================================================
     const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyuW_4_sWHWUq0lc4QOe1amHl7ipGXr0wGNoVQFJl7leq6JYGWVR7CUoPOZkPMqprnX/exec";
-    const CACHE_KEY_INIT  = "leave_sys_init_cache_v22_rbac";
+    const CACHE_KEY_INIT  = "leave_sys_init_cache_v22_2_rbac";
 
     const GAS_SSR_PAYLOAD = "/*__GAS_SSR_INJECTION__*/";
 
@@ -949,14 +951,7 @@
     }
 
     /**
-     * ✅ 核心權限與群組顯示控制器：
-     * 1. 若在「LINE 群組 (STATE.gid)」：
-     *    - 預設顯示：填寫請假、查特休/紀錄、班表設定、說明
-     *    - 預設隱藏：今日請假（可由後台開啟）、系統管理（群組內強制永遠隱藏！）
-     * 2. 若在「1 對 1 聊天室 (!STATE.gid)」：
-     *    - 一般成員 (USER)：僅顯示 填寫請假、查特休/紀錄、說明
-     *    - 管理員 (ADMIN)：顯示全部頂部分頁；系統管理內顯示「特休庫、假單庫、班表庫、假別庫」
-     *    - 超級管理員 (SUPER_ADMIN)：顯示全部頂部分頁與所有系統管理子分頁（含備援與群組控制、帳號權限）
+     * ✅ 核心權限與群組顯示控制器
      */
     function applyTabAndRolePermissions() {
       const isGroup        = !!(STATE.gid && String(STATE.gid).trim());
@@ -973,7 +968,6 @@
       const escAdminBtn = document.getElementById('btnGasEscapeAdmin');
 
       if (isGroup) {
-        // 群組環境：依群組顯示設定控制，且「系統管理」永遠隱藏
         if (btnForm)     btnForm.classList.toggle('hidden',     gCfg.tab_form === false);
         if (btnMy)       btnMy.classList.toggle('hidden',       gCfg.tab_my === false);
         if (btnSchedule) btnSchedule.classList.toggle('hidden', gCfg.tab_schedule === false);
@@ -982,12 +976,10 @@
         if (btnAdmin)    btnAdmin.classList.add('hidden');
         if (escAdminBtn) escAdminBtn.classList.add('hidden');
 
-        // 若當前網址試圖在群組開 admin 或未授權的 today，自動導回 form
         if (STATE.tab === 'admin' || (STATE.tab === 'today' && !gCfg.tab_today)) {
           switchTab('form');
         }
       } else {
-        // 1對1 聊天室環境
         if (btnForm)     btnForm.classList.remove('hidden');
         if (btnMy)       btnMy.classList.remove('hidden');
         if (btnHelp)     btnHelp.classList.remove('hidden');
@@ -1001,11 +993,10 @@
         }
       }
 
-      // 設定「🔒 查特休/紀錄」輸入框權限（僅 1對1 管理員可使用員工清單下拉選取他人；群組與一般成員強制移除下拉清單）
-      const inpQuery     = document.getElementById('inpQueryName');
-      const lblQuery     = document.getElementById('lblQueryNameTitle');
-      const bannerMy     = document.getElementById('myTabPrivacyBanner');
-      const btnSendDmEl  = document.getElementById('btnSendDm');
+      const inpQuery    = document.getElementById('inpQueryName');
+      const lblQuery    = document.getElementById('lblQueryNameTitle');
+      const bannerMy    = document.getElementById('myTabPrivacyBanner');
+      const btnSendDmEl = document.getElementById('btnSendDm');
 
       if (isAdminPrivate) {
         if (inpQuery) {
@@ -1013,7 +1004,7 @@
           inpQuery.placeholder = '管理員模式：可點選或輸入任何員工姓名查詢';
         }
         if (lblQuery)    lblQuery.innerText = '查詢員工姓名（管理員模式：可查詢全體成員）';
-        if (bannerMy)    bannerMy.innerHTML = '🛡️ <strong>管理員 1對1 查詢模式：</strong>您可查詢全體同仁之特休餘額與請假明細，並可直接點擊「✏️ 修改」調整假單。';
+        if (bannerMy)    bannerMy.innerHTML = '🛡️ <strong>管理員 1對1 查詢模式：</strong>您可查詢全體同仁之特休餘額與請假明細，並可直接點擊「✏️ 修改」調整任何假單。';
         if (btnSendDmEl) btnSendDmEl.innerText = '📩 私訊傳送此員工特休與紀錄至您的LINE';
       } else {
         if (inpQuery) {
@@ -1023,11 +1014,10 @@
             : '請輸入您的姓名（須與首次請假綁定之LINE帳號相符）';
         }
         if (lblQuery)    lblQuery.innerText = '查詢員工姓名（須與此 LINE 帳號綁定姓名為同一人）';
-        if (bannerMy)    bannerMy.innerHTML = '🔒 <strong>本人身分驗證保護：</strong>系統會從後台資料庫核對您的 LINE 帳號是否與輸入姓名為同一人（於第一次提送假單時建立），不開放查詢他人或修改假單！';
+        if (bannerMy)    bannerMy.innerHTML = '🔒 <strong>本人身分驗證保護：</strong>系統會從後台資料庫核對您的 LINE 帳號是否與輸入姓名為同一人（於第一次提送假單時建立）。<strong>今日及未來的本人假單允許修改，昨日以前的過期假單則自動鎖定！</strong>';
         if (btnSendDmEl) btnSendDmEl.innerText = '📩 私訊傳送本人特休與紀錄至個人LINE';
       }
 
-      // 設定「🛠️ 系統管理」內部子分頁權限：超級管理員 (SUPER_ADMIN) vs 一般管理員 (ADMIN)
       const admBtnStandby = document.getElementById('admBtn_standby');
       const admBtnAdmins  = document.getElementById('admBtn_admins');
       const lblHeader     = document.getElementById('lblAdminHeaderTitle');
@@ -1043,7 +1033,6 @@
         } else {
           if (lblHeader) lblHeader.innerText = '🛡️ 管理員資料庫管理系統';
           if (lblSub)    lblSub.innerText    = '具備一般管理權限（特休庫、假單庫、班表庫、假別庫）';
-          // 若一般管理員當前停留在 standby 或 admins 子分頁，自動切換至「👥 特休庫 (quota)」
           const curPanelStandby = document.getElementById('admPanel_standby');
           const curPanelAdmins  = document.getElementById('admPanel_admins');
           if ((curPanelStandby && !curPanelStandby.classList.contains('hidden')) ||
@@ -1209,7 +1198,6 @@
         document.getElementById('inpName').value = resolvedName;
       }
 
-      // 在「🔒 查特休/紀錄」欄位中，若有後端驗證過的本人綁定姓名則自動帶入
       if (STATE.boundName) {
         document.getElementById('inpQueryName').value = STATE.boundName;
       } else if (!STATE.gid && STATE.isAdmin && resolvedName) {
@@ -1217,13 +1205,13 @@
       }
 
       initTextTemplate(resolvedName, res.todaySlashStr || getLocalTodayStrings().slash);
-
-      // 套用群組與 1對1 角色權限分頁顯示規則
       applyTabAndRolePermissions();
 
-      // 僅在 1對1 管理員模式下允許進入修改假單模式
-      if (!isFromLocalCache && res.editRecord && !STATE.gid && STATE.isAdmin) {
+      // ✅ 支援從卡片點擊「✏️ 修改假單」進入：由後端驗證是否為本人且為今日或未來假單
+      if (!isFromLocalCache && res.editRecord) {
         enterEditMode(res.editRecord);
+      } else if (!isFromLocalCache && STATE.editRow && parseInt(STATE.editRow, 10) >= 2 && STATE.uid) {
+        loadRecordForEdit(parseInt(STATE.editRow, 10));
       } else if (!isFromLocalCache) {
         triggerPreview();
       }
@@ -1952,7 +1940,6 @@
       const validTabs = ['form', 'my', 'textform', 'today', 'schedule', 'help', 'admin'];
       let targetTab   = validTabs.includes(tab) ? tab : 'form';
 
-      // 安全攔截：群組環境絕對禁止切入 admin 分頁
       if (STATE.gid && targetTab === 'admin') {
         targetTab = 'form';
       }
@@ -2009,25 +1996,43 @@
         .adminGetBackendData(STATE.uid);
     }
 
+    /**
+     * ✅ 進入假單修改模式：
+     * - 若假單為昨日以前的過期假單 (rec.expiredLock) 或非本人 (rec.permissionDenied)，顯示錯誤提示並攔截
+     * - 一般成員修改今日或未來假單時，自動鎖定姓名不可變更，並設定開始日期不得早於今日
+     */
     function enterEditMode(rec) {
-      // 嚴格防呆：群組環境與一般成員禁止進入修改模式
-      if (STATE.gid || !STATE.isAdmin) {
-        alert('⛔ 群組環境與一般成員不具修改假單功能！');
-        return;
-      }
-      if (rec.inactive) {
-        showStatusBanner('formResultBox', 'err', `⚠️ 記錄 #${rec.rowNumber} 已取消或刪除，無法修改！`);
+      if (!rec) return;
+      if (rec.inactive || rec.permissionDenied || rec.expiredLock) {
+        showStatusBanner('formResultBox', 'err', rec.errorMessage || `⚠️ 記錄 #${rec.rowNumber} 無法修改！`);
         exitEditMode();
+        switchTab('form');
         return;
       }
       STATE.editRow = rec.rowNumber;
       const banner = document.getElementById('editModeBanner');
-      banner.innerHTML = `✏️ 正在修改假單編號 <strong>#${rec.rowNumber}</strong>（修改後點擊下方按鈕即可覆蓋更新）`;
+      banner.innerHTML = `✏️ 正在修改假單編號 <strong>#${rec.rowNumber}</strong>（今日及未來假單允許本人修改，點擊下方按鈕即可覆蓋更新）`;
       banner.classList.remove('hidden');
 
-      document.getElementById('inpName').value      = rec.name || '';
-      document.getElementById('inpStartDate').value = rec.startDate || '';
-      document.getElementById('inpEndDate').value   = rec.endDate || '';
+      const isRestrictedUser = Boolean(STATE.gid || !STATE.isAdmin);
+      const inpNameEl        = document.getElementById('inpName');
+      const inpStartEl       = document.getElementById('inpStartDate');
+      const inpEndEl         = document.getElementById('inpEndDate');
+
+      inpNameEl.value    = rec.name || '';
+      inpNameEl.readOnly = isRestrictedUser;
+
+      if (isRestrictedUser) {
+        const todayIso = getLocalTodayStrings().iso;
+        inpStartEl.setAttribute('min', todayIso);
+        inpEndEl.setAttribute('min', todayIso);
+      } else {
+        inpStartEl.removeAttribute('min');
+        inpEndEl.removeAttribute('min');
+      }
+
+      inpStartEl.value = rec.startDate || '';
+      inpEndEl.value   = rec.endDate || '';
       document.getElementById('inpStartTime').value = rec.startTime || '09:00';
       document.getElementById('inpEndTime').value   = rec.endTime || '12:00';
       document.getElementById('selLeaveType').value = rec.leaveType || '特休';
@@ -2046,16 +2051,19 @@
 
     function exitEditMode() {
       STATE.editRow = '';
+      const inpNameEl  = document.getElementById('inpName');
+      const inpStartEl = document.getElementById('inpStartDate');
+      const inpEndEl   = document.getElementById('inpEndDate');
+      if (inpNameEl)  inpNameEl.readOnly = false;
+      if (inpStartEl) inpStartEl.removeAttribute('min');
+      if (inpEndEl)   inpEndEl.removeAttribute('min');
+
       document.getElementById('editModeBanner').classList.add('hidden');
       document.getElementById('btnSubmit').innerText = '✅ 送出請假申請';
       document.getElementById('btnSubmit').classList.remove('blue');
       document.getElementById('btnCancelEdit').classList.add('hidden');
     }
 
-    /**
-     * 當使用者在「📝 填寫請假」修改請假人員姓名時：
-     * 僅儲存本機偏好並更新文字快填範本，絕不因為輸入他人姓名就自動解鎖他人特休紀錄或管理員分頁！
-     */
     function onNameChange() {
       const name = document.getElementById('inpName').value.trim();
       if (name && name !== '系統管理員') {
@@ -2068,7 +2076,6 @@
           STATE.verifyStatus = 'idle';
         }
 
-        // 若為 1對1 管理員，或輸入之姓名與已綁定之本人姓名相符，才同步載入特休額度提示
         if ((!STATE.gid && STATE.isAdmin) || (STATE.boundName && name === STATE.boundName)) {
           document.getElementById('inpQueryName').value = name;
           loadPersonalDashboard(name);
@@ -2123,9 +2130,6 @@
       }).previewLeaveHoursFromWeb(sDate, eDate, STATE.periodMode, sTime, eTime);
     }
 
-    /**
-     * ✅ 查詢特休/紀錄：強制傳入 (name, STATE.uid, STATE.gid) 由後端核對是否為本人！
-     */
     function loadPersonalDashboard(name) {
       const cleanInput = (name || '').trim();
       const container  = document.getElementById('dashboardContent');
@@ -2158,9 +2162,9 @@
     }
 
     /**
-     * ✅ 渲染特休與請假紀錄：
-     * - 若本人驗證未通過 (d.accessDenied)，顯示紅框攔截訊息
-     * - 在群組 (STATE.gid) 或一般成員 (!d.canEdit) 下，完全不渲染任何「✏️ 修改」按鈕！
+     * ✅ 渲染特休與請假明細：
+     * - 今日及未來的假單 (r.canEditRow === true)：顯示藍色「✏️ 修改」按鈕
+     * - 昨日以前的過期假單 (r.canEditRow === false)：顯示灰底「🔒 已過期鎖定」標籤
      */
     function renderDashboard(d) {
       const container = document.getElementById('dashboardContent');
@@ -2174,8 +2178,7 @@
         return;
       }
 
-      const allowEditBtn = Boolean(d.canEdit && !STATE.gid && STATE.isAdmin);
-      const verifiedTag  = (!STATE.gid && STATE.isAdmin)
+      const verifiedTag = (!STATE.gid && STATE.isAdmin)
         ? `<span class="badge admin-role">🛡️ 管理員檢視</span>`
         : `<span class="badge on">✅ LINE 帳號本人驗證通過</span>`;
 
@@ -2195,30 +2198,36 @@
       if (!d.records || d.records.length === 0) {
         recHtml += `<p style="color:var(--muted); font-size:13px;">今年尚無請假記錄</p>`;
       } else {
-        recHtml += d.records.map(r => `
-          <div class="record-item">
-            <div>
-              <div style="font-weight:700;">#${r.rowNumber} ${r.date} <span style="color:var(--muted); font-weight:400;">(${r.period})</span></div>
-              <div style="font-size:12px; color:var(--muted);">事由：${r.reason || '-'}｜職代：${r.deputy || '-'}</div>
+        recHtml += d.records.map(r => {
+          const actionHtml = r.canEditRow
+            ? `<button class="btn sm blue" style="margin-top:4px;" onclick="loadRecordForEdit(${r.rowNumber})">✏️ 修改</button>`
+            : `<span class="badge" style="background:#F1F5F9; color:#64748B; margin-top:4px; display:inline-block;">🔒 已過期鎖定</span>`;
+
+          return `
+            <div class="record-item">
+              <div>
+                <div style="font-weight:700;">#${r.rowNumber} ${r.date} <span style="color:var(--muted); font-weight:400;">(${r.period})</span></div>
+                <div style="font-size:12px; color:var(--muted);">事由：${r.reason || '-'}｜職代：${r.deputy || '-'}</div>
+              </div>
+              <div style="text-align:right;">
+                <span class="badge">${r.type}</span>
+                <div style="font-size:13px; font-weight:700; margin-top:3px;">${r.hours}h</div>
+                ${actionHtml}
+              </div>
             </div>
-            <div style="text-align:right;">
-              <span class="badge">${r.type}</span>
-              <div style="font-size:13px; font-weight:700; margin-top:3px;">${r.hours}h</div>
-              ${allowEditBtn ? `<button class="btn sm blue" style="margin-top:4px;" onclick="loadRecordForEdit(${r.rowNumber})">✏️ 修改</button>` : ''}
-            </div>
-          </div>
-        `).join('');
+          `;
+        }).join('');
       }
       container.innerHTML = quotaHtml + recHtml;
     }
 
     function loadRecordForEdit(rowNumber) {
-      if (STATE.gid || !STATE.isAdmin) {
-        alert('⛔ 群組環境與一般成員不具修改假單功能！');
-        return;
-      }
       google.script.run.withSuccessHandler(rec => {
-        if (rec) enterEditMode(rec);
+        if (!rec) {
+          alert('⛔ 無法載入該筆假單，請確認您為申請人本人且假單為今日或未來日期！');
+          return;
+        }
+        enterEditMode(rec);
       }).getLeaveRecordByRowForWeb(rowNumber, STATE.uid, STATE.gid);
     }
 
