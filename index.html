@@ -295,7 +295,7 @@
         <div id="formResultBox" class="status-box hidden"></div>
 
         <button class="btn" id="btnSubmit" onclick="submitForm()">✅ 送出請假申請</button>
-        <button class="btn secondary hidden" id="btnCancelEdit" onclick="exitEditMode()">↩️ 放棄修改，切換為新請假單</button>
+        <button class="btn secondary hidden" id="btnCancelEdit" onclick="exitEditMode()">↩️ 放棄修改，返回首頁</button>
       </div>
     </div>
 
@@ -323,7 +323,7 @@
         <h3 class="section-title">✍️ 文字版範本修改（自動帶入姓名與核准）</h3>
         <div class="banner">
           💡 系統已為您<strong>自動帶入上次假單的「請假人」與「核准」文字</strong>，並即時執行防呆驗證。<br>
-          👉 驗證通過後請點擊下方<strong>綠色按鈕</strong>：<strong>直接以本人帳號發送至群組</strong>（或<strong>自動複製文字並返回原群組</strong>讓您貼上）！
+          👉 驗證通過後請點擊下方<strong>綠色按鈕</strong>：手機版將<strong>直接以本人帳號發送至群組</strong>（或自動複製返回）；電腦版將<strong>自動複製到電腦剪貼簿</strong>供您回 LINE 按 Ctrl+V 貼上！
         </div>
 
         <div class="form-group">
@@ -333,7 +333,7 @@
 
         <div id="textFormResultBox" class="status-box hidden"></div>
 
-        <!-- 整合版單一智慧按鈕：自動判斷本人發送或複製返回原群組，若遇斷線點擊可立即重連 -->
+        <!-- 整合版單一智慧按鈕：自動判斷手機本人發送、手機複製返回或電腦版複製，若遇斷線點擊可立即重連 -->
         <a id="btnPasteToLine" href="javascript:void(0)" class="btn locked" onclick="return handlePasteToLineClick(event)">
           🔍 正在驗證假單格式與是否重複請假...
         </a>
@@ -384,8 +384,9 @@
           於「📝 填寫請假」分頁選擇日期、時段與假別，系統會自動扣除午休並試算總時數，核准欄位預設為「已報請主管核准」，按送出即完成請假。</p>
           <p><strong>2️⃣ 文字範本快填（自動記憶您的姓名與核准狀態）：</strong><br>
           點擊下方「✍️ 文字範本快填」浮動按鈕，系統會自動帶入您上次請假的「請假人」與「核准」內容。修改日期與時數後，系統會先與後端資料庫核對格式與是否重複請假，確認無誤後：<br>
-          • 點擊<strong>綠色按鈕</strong>：若已授權將以您的 LINE 帳號直接在原群組發出 7 行請假文字並收起視窗；若未授權則自動將文字複製到剪貼簿並收起視窗返回原群組，讓您直接在輸入框貼上發送。<br>
-          • 點擊<strong>灰色按鈕</strong>：明確授權由系統直接在原聊天室發出留言與假單卡片。</p>
+          • <strong>手機版點擊綠色按鈕</strong>：若已授權將以您的 LINE 帳號直接在原群組發出 7 行請假文字並收起視窗；若未授權則自動將文字複製到剪貼簿並收起視窗返回原群組，讓您直接在輸入框貼上發送。<br>
+          • <strong>電腦版點擊綠色按鈕</strong>：自動將驗證通過的 7 行文字複製到電腦剪貼簿，切回電腦版 LINE 輸入框按 <code>Ctrl + V</code> 即可貼上發送。<br>
+          • <strong>點擊灰色按鈕</strong>：明確授權由系統直接在原聊天室發出留言與假單卡片。</p>
           <p><strong>3️⃣ 修改或取消已送出的假單（時效保護）：</strong><br>
           • <strong>今日及未來假單：</strong>申請人本人可直接點擊假單卡片上的 <strong>「✏️ 修改假單」</strong> 或 <strong>「🗑️ 取消假單」</strong> 按鈕進行調整。<br>
           • <strong>昨日以前的過期假單：</strong>系統會自動鎖定（顯示「🔒 已過期鎖定」），禁止自行修改或取消；如需特殊異動請聯絡管理員。</p>
@@ -420,10 +421,10 @@
       <!-- ==================== 管理模組 S：群組顯示控制中心 ＋ 3 大熱備援節點切換 ==================== -->
       <div id="admPanel_standby" class="card">
         <div class="section-title">
-          <span>💬 群組顯示控制設定（膠囊按鈕與群組分頁）</span>
+          <span>💬 群組與視窗分頁顯示控制設定</span>
         </div>
         <div class="banner" style="font-size:12.5px;">
-          💡 您可在此自由勾選在 <strong>「LINE 群組」</strong> 中要跳出的底部膠囊按鈕，以及在群組點開視窗時頂部要顯示的分頁（<code>🛠️ 系統管理</code> 於群組內強制鎖定隱藏）：
+          💡 您可在此自由勾選在 <strong>「LINE 群組」</strong> 中要跳出的底部膠囊按鈕，以及點開視窗時頂部要開放的功能分頁（當取消勾選「📝 填寫請假」時，開啟視窗的首頁會自動切換為「🔒 查特休/紀錄」）：
         </div>
 
         <label style="color:var(--blue); margin-bottom:6px;">1️⃣ 群組聊天室底部跳出的「膠囊按鈕 (Quick Reply)」：</label>
@@ -450,7 +451,7 @@
           </label>
         </div>
 
-        <label style="color:var(--teal); margin-bottom:6px;">2️⃣ 群組內點開視窗時頂部顯示的「功能分頁 (Tabs)」：</label>
+        <label style="color:var(--teal); margin-bottom:6px;">2️⃣ 點開視窗時頂部顯示的「功能分頁 (Tabs)」：</label>
         <div class="group-ui-grid">
           <label class="group-ui-item">
             <span>📝 填寫請假</span>
@@ -475,7 +476,7 @@
         </div>
 
         <div id="groupUiStatusMsgBox" class="status-box hidden"></div>
-        <button class="btn blue" style="margin-top:0; margin-bottom:18px;" onclick="saveGroupUiConfiguration()">💾 儲存群組膠囊按鈕與分頁顯示設定</button>
+        <button class="btn blue" style="margin-top:0; margin-bottom:18px;" onclick="saveGroupUiConfiguration()">💾 儲存膠囊按鈕與分頁顯示設定</button>
 
         <hr style="border:none; border-top:2px dashed var(--border); margin:18px 0;">
 
@@ -814,7 +815,7 @@
       <div id="admPanel_recs" class="card hidden">
         <div class="section-title">
           <span>📋 請假記錄與月底考勤結算管理</span>
-          <button class="btn sm" onclick="exitEditMode(); switchTab('form');">➕ 代客新增假單</button>
+          <button class="btn sm" onclick="openAdminProxyForm()">➕ 代客新增假單</button>
         </div>
 
         <!-- 月底考勤與薪資扣款統計表匯出中心 -->
@@ -1032,10 +1033,10 @@
   <script>
     // ============================================================
     // 🌐 三棲熱備援環境核心連線設定
-    // 版本: v25.3.0 (Production Final Verified Release)
+    // 版本: v25.4.0 (Production Final Release - 電腦剪貼簿修復 + 動態首頁切換 + 自帶上次文字)
     // ============================================================
     const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyuW_4_sWHWUq0lc4QOe1amHl7ipGXr0wGNoVQFJl7leq6JYGWVR7CUoPOZkPMqprnX/exec";
-    const CACHE_KEY_INIT  = "leave_sys_init_cache_v25_3_final";
+    const CACHE_KEY_INIT  = "leave_sys_init_cache_v25_4_final";
 
     const GAS_SSR_PAYLOAD = "/*__GAS_SSR_INJECTION__*/";
 
@@ -1202,6 +1203,7 @@
       gid: "",
       tab: "form",
       editRow: "",
+      adminForceForm: false,
       noRedirect: false,
       liffId: DEFAULT_LIFF_ID,
       botBasicId: "",
@@ -1332,6 +1334,63 @@
       switchTab('admin');
     }
 
+    function openAdminProxyForm() {
+      STATE.editRow = '';
+      STATE.adminForceForm = true;
+      applyTabAndRolePermissions();
+      switchTab('form');
+    }
+
+    /**
+     * ✅ 檢查指定分頁目前是否開放顯示
+     * 若後台已將「📝 填寫請假 (tab_form)」關閉，除非正在修改特定假單 (editRow) 或管理員代客新增，否則一律禁止進入 form 首頁
+     */
+    function isTabAllowed(tabName) {
+      const isGroup        = !!(STATE.gid && String(STATE.gid).trim());
+      const gCfg           = STATE.groupUiConfig || DEFAULT_GROUP_UI_CONFIG;
+      const uPerms         = STATE.userCustomPerms || {};
+      const isAdminPrivate = (!isGroup && STATE.isAdmin);
+
+      const showTodayTab = isGroup
+        ? Boolean(gCfg.tab_today || uPerms.allowToday)
+        : Boolean(isAdminPrivate || uPerms.allowToday);
+
+      const showScheduleTab = isGroup
+        ? Boolean(gCfg.tab_schedule !== false || uPerms.allowSchedule)
+        : Boolean(isAdminPrivate || uPerms.allowSchedule);
+
+      switch (tabName) {
+        case 'form':
+          return Boolean(STATE.editRow || STATE.adminForceForm || gCfg.tab_form !== false);
+        case 'my':
+          return Boolean(gCfg.tab_my !== false);
+        case 'today':
+          return showTodayTab;
+        case 'schedule':
+          return showScheduleTab;
+        case 'help':
+          return Boolean(gCfg.tab_help !== false);
+        case 'admin':
+          return isAdminPrivate;
+        case 'textform':
+          return true;
+        default:
+          return false;
+      }
+    }
+
+    /**
+     * ✅ 自動取得第一個開放顯示的分頁作為「動態首頁」
+     * 當「📝 填寫請假」被關閉時，首頁會自動切換為「🔒 查特休/紀錄」（或下一個開啟的分頁）
+     */
+    function getFirstAvailableTab() {
+      const priorityOrder = ['form', 'my', 'today', 'schedule', 'help', 'textform', 'admin'];
+      for (const t of priorityOrder) {
+        if (isTabAllowed(t)) return t;
+      }
+      return 'my';
+    }
+
     function applyTabAndRolePermissions() {
       const isGroup        = !!(STATE.gid && String(STATE.gid).trim());
       const gCfg           = STATE.groupUiConfig || DEFAULT_GROUP_UI_CONFIG;
@@ -1354,42 +1413,26 @@
       const btnAdmin    = document.getElementById('tabBtn_admin');
       const escAdminBtn = document.getElementById('btnGasEscapeAdmin');
 
-      const showTodayTab = isGroup
-        ? Boolean(gCfg.tab_today || uPerms.allowToday)
-        : Boolean(isAdminPrivate || uPerms.allowToday);
+      const allowForm     = isTabAllowed('form');
+      const allowMy       = isTabAllowed('my');
+      const allowToday    = isTabAllowed('today');
+      const allowSchedule = isTabAllowed('schedule');
+      const allowHelp     = isTabAllowed('help');
 
-      const showScheduleTab = isGroup
-        ? Boolean(gCfg.tab_schedule !== false || uPerms.allowSchedule)
-        : Boolean(isAdminPrivate || uPerms.allowSchedule);
+      // 無論在群組或 1對1，皆嚴格遵守後台的分頁啟用/關閉設定
+      if (btnForm)     btnForm.classList.toggle('hidden',     !allowForm);
+      if (btnMy)       btnMy.classList.toggle('hidden',       !allowMy);
+      if (btnToday)    btnToday.classList.toggle('hidden',    !allowToday);
+      if (btnSchedule) btnSchedule.classList.toggle('hidden', !allowSchedule);
+      if (btnHelp)     btnHelp.classList.toggle('hidden',     !allowHelp);
+      if (btnAdmin)    btnAdmin.classList.toggle('hidden',    !isAdminPrivate);
+      if (escAdminBtn) escAdminBtn.classList.toggle('hidden', !isAdminPrivate);
 
-      if (isGroup) {
-        if (btnForm)     btnForm.classList.toggle('hidden',     gCfg.tab_form === false);
-        if (btnMy)       btnMy.classList.toggle('hidden',       gCfg.tab_my === false);
-        if (btnSchedule) btnSchedule.classList.toggle('hidden', !showScheduleTab);
-        if (btnHelp)     btnHelp.classList.toggle('hidden',     gCfg.tab_help === false);
-        if (btnToday)    btnToday.classList.toggle('hidden',    !showTodayTab);
-        if (btnAdmin)    btnAdmin.classList.add('hidden');
-        if (escAdminBtn) escAdminBtn.classList.add('hidden');
-
-        if (STATE.tab === 'admin' ||
-            (STATE.tab === 'today'    && !showTodayTab) ||
-            (STATE.tab === 'schedule' && !showScheduleTab)) {
-          switchTab('form');
-        }
+      // ✅ 核心修正：若目前所在分頁（例如預設首頁 'form'）已被後台關閉，立即自動切換至第一個開放的分頁！
+      if (!isTabAllowed(STATE.tab)) {
+        switchTab(getFirstAvailableTab());
       } else {
-        if (btnForm)     btnForm.classList.remove('hidden');
-        if (btnMy)       btnMy.classList.remove('hidden');
-        if (btnHelp)     btnHelp.classList.remove('hidden');
-        if (btnToday)    btnToday.classList.toggle('hidden',    !showTodayTab);
-        if (btnSchedule) btnSchedule.classList.toggle('hidden', !showScheduleTab);
-        if (btnAdmin)    btnAdmin.classList.toggle('hidden',    !isAdminPrivate);
-        if (escAdminBtn) escAdminBtn.classList.toggle('hidden', !isAdminPrivate);
-
-        if ((STATE.tab === 'admin'    && !isAdminPrivate) ||
-            (STATE.tab === 'today'    && !showTodayTab)   ||
-            (STATE.tab === 'schedule' && !showScheduleTab)) {
-          switchTab('form');
-        }
+        switchTab(STATE.tab);
       }
 
       const canQueryAll = Boolean(isAdminPrivate || uPerms.allowQueryAll);
@@ -1492,6 +1535,14 @@
       const savedApproval = localStorage.getItem('leave_sys_last_approval') || '已報請主管核准';
       STATE.lastApproval  = savedApproval;
       syncApprovalSelectOption(savedApproval);
+
+      // ✅ 預先載入本機記憶的 groupUiConfig，避免開啟視窗瞬間閃現已關閉的「填寫請假」首頁
+      try {
+        const savedGrpUi = localStorage.getItem('leave_sys_group_ui_cfg');
+        if (savedGrpUi) {
+          STATE.groupUiConfig = { ...DEFAULT_GROUP_UI_CONFIG, ...JSON.parse(savedGrpUi) };
+        }
+      } catch (_) {}
 
       document.getElementById('inpStartDate').value = todayLocal.iso;
       document.getElementById('inpEndDate').value   = todayLocal.iso;
@@ -1597,12 +1648,14 @@
 
       if (res.groupUiConfig) {
         STATE.groupUiConfig = { ...DEFAULT_GROUP_UI_CONFIG, ...res.groupUiConfig };
+        try { localStorage.setItem('leave_sys_group_ui_cfg', JSON.stringify(STATE.groupUiConfig)); } catch (_) {}
       }
 
       if (res.standbyStatus) {
         STATE.standbyStatus = res.standbyStatus;
         if (res.standbyStatus.groupUiConfig) {
           STATE.groupUiConfig = { ...DEFAULT_GROUP_UI_CONFIG, ...res.standbyStatus.groupUiConfig };
+          try { localStorage.setItem('leave_sys_group_ui_cfg', JSON.stringify(STATE.groupUiConfig)); } catch (_) {}
         }
         renderStandbyNodesCard(res.standbyStatus);
 
@@ -1645,7 +1698,6 @@
         try { localStorage.setItem('leave_sys_user_name', resolvedName); } catch (_) {}
       }
 
-      // ✅ 優先採用後端回傳之該同仁最近一筆假單的「核准」狀態文字（若無則取本機記憶）
       const savedApproval    = localStorage.getItem('leave_sys_last_approval') || '';
       const resolvedApproval = (res.lastApproval && res.lastApproval !== '已報請主管核准')
         ? res.lastApproval
@@ -1671,7 +1723,7 @@
         enterEditMode(res.editRecord);
       } else if (!isFromLocalCache && STATE.editRow && parseInt(STATE.editRow, 10) >= 2 && STATE.uid) {
         loadRecordForEdit(parseInt(STATE.editRow, 10));
-      } else if (!isFromLocalCache) {
+      } else if (!isFromLocalCache && isTabAllowed('form')) {
         triggerPreview();
       }
 
@@ -1748,7 +1800,7 @@
       const params = [
         `uid=${encodeURIComponent(STATE.uid || '')}`,
         `gid=${encodeURIComponent(STATE.gid || '')}`,
-        `tab=${encodeURIComponent(STATE.tab || 'form')}`
+        `tab=${encodeURIComponent(STATE.tab || getFirstAvailableTab())}`
       ];
       if (STATE.editRow) params.push(`editRow=${encodeURIComponent(STATE.editRow)}`);
       if (!isAutoRedirect) params.push('noRedirect=1');
@@ -1793,7 +1845,7 @@
         tab_today:    getChk('chkGrpTab_today')
       };
 
-      showStatusBanner('groupUiStatusMsgBox', 'info', '⏳ 正在儲存群組膠囊按鈕與分頁顯示設定...');
+      showStatusBanner('groupUiStatusMsgBox', 'info', '⏳ 正在儲存膠囊按鈕與分頁顯示設定...');
 
       google.script.run
         .withSuccessHandler(res => {
@@ -1804,6 +1856,7 @@
           try { localStorage.removeItem(CACHE_KEY_INIT); } catch (_) {}
           if (res.groupUiConfig) {
             STATE.groupUiConfig = { ...DEFAULT_GROUP_UI_CONFIG, ...res.groupUiConfig };
+            try { localStorage.setItem('leave_sys_group_ui_cfg', JSON.stringify(STATE.groupUiConfig)); } catch (_) {}
             renderGroupUiCheckboxes(STATE.groupUiConfig);
             applyTabAndRolePermissions();
           }
@@ -1827,6 +1880,7 @@
 
       if (st.groupUiConfig) {
         STATE.groupUiConfig = { ...DEFAULT_GROUP_UI_CONFIG, ...st.groupUiConfig };
+        try { localStorage.setItem('leave_sys_group_ui_cfg', JSON.stringify(STATE.groupUiConfig)); } catch (_) {}
       }
       renderGroupUiCheckboxes(STATE.groupUiConfig);
 
@@ -1992,7 +2046,7 @@
       try { window.top.location.replace(targetUrl); } catch (_) { window.location.href = targetUrl; }
     }
 
-    // ==================== ✅ 文字範本快填（自帶上次假單之姓名與核准狀態，含競態保護） ====================
+    // ==================== ✅ 文字範本快填（自帶上次假單之姓名與核准狀態，含電腦剪貼簿修復） ====================
     function saveLastUsedFieldsFromText(rawText) {
       try {
         if (!rawText) return;
@@ -2039,7 +2093,6 @@
         lockPasteButtonForVerification('🔍 正在驗證假單格式與是否重複請假...');
         if (STATE.tab === 'textform') runBackendTextValidation(txt.value.trim(), false);
       } else if (!STATE.userEditedRawText) {
-        // ✅ 只要使用者尚未手動編輯過文字框，當 LIFF 載入完成並從後端拉回真實綁定姓名與上次核准文字時，自動替換更新！
         let updatedText = txt.value;
         if (cleanInitName !== '王小明') {
           updatedText = updatedText.replace(/^請假人\s*[：:].*$/m, `請假人：${cleanInitName}`);
@@ -2066,6 +2119,49 @@
       if (labelMsg) btn.innerText = labelMsg;
     }
 
+    /**
+     * ✅ 相容 Windows / Mac (Chrome, Edge, Safari) 與 iOS / Android 的雙重剪貼簿複製器
+     */
+    function copyToClipboardSafe(text) {
+      if (!text) return false;
+      let copied = false;
+
+      try {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        ta.setAttribute('readonly', '');
+        ta.style.position   = 'fixed';
+        ta.style.top        = '0';
+        ta.style.left       = '0';
+        ta.style.width      = '2em';
+        ta.style.height     = '2em';
+        ta.style.padding    = '0';
+        ta.style.border     = 'none';
+        ta.style.outline    = 'none';
+        ta.style.boxShadow  = 'none';
+        ta.style.background = 'transparent';
+        ta.style.opacity    = '0.01';
+        document.body.appendChild(ta);
+        ta.focus({ preventScroll: true });
+        ta.select();
+        ta.setSelectionRange(0, ta.value.length);
+        copied = document.execCommand('copy');
+        document.body.removeChild(ta);
+      } catch (e) {}
+
+      try {
+        if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+          navigator.clipboard.writeText(text).catch(() => {});
+          copied = true;
+        }
+      } catch (e) {}
+
+      return copied;
+    }
+
+    /**
+     * ✅ 依「手機版 LIFF」與「電腦版瀏覽器」自動切換最精準的綠色按鈕文字
+     */
     function unlockPasteButtonWithVerifiedText(rawText) {
       const btn = document.getElementById('btnPasteToLine');
       if (!btn) return;
@@ -2089,7 +2185,6 @@
         btn.href   = 'line://oaMessage/' + cleanBasicId + '/?' + encodeURIComponent(rawText);
         btn.target = '_top';
       } else {
-        // 💻 電腦版（Windows / Mac 外部瀏覽器）專屬按鈕提示
         btn.innerText = '💻 驗證通過！點此複製假單文字（回 LINE 按 Ctrl+V 貼上）';
         btn.href = 'javascript:void(0)';
         btn.removeAttribute('target');
@@ -2164,7 +2259,6 @@
           STATE.verifySummary  = res.summaryText || '';
 
           unlockPasteButtonWithVerifiedText(rawText);
-          copyToClipboardSafe(rawText);
 
           if (!autoJumpOnSuccess) {
             showStatusBanner(
@@ -2209,12 +2303,11 @@
         });
     }
 
-function executeVerifiedPasteAction(rawText) {
+    function executeVerifiedPasteAction(rawText) {
       if (isSubmitting) return;
       saveLastUsedFieldsFromText(rawText);
       copyToClipboardSafe(rawText);
 
-      // A. 手機版 1對1 外部瀏覽器：透過 line://oaMessage 自動塞入輸入框
       if (isMobileClient() && !STATE.gid && STATE.botBasicId && !(typeof liff !== 'undefined' && liff.isInClient && liff.isInClient())) {
         const btn = document.getElementById('btnPasteToLine');
         unlockPasteButtonWithVerifiedText(rawText);
@@ -2225,7 +2318,6 @@ function executeVerifiedPasteAction(rawText) {
         return;
       }
 
-      // B. 手機版 LINE 內建 LIFF 容器：直接以本人 LINE 帳號發送至群組/聊天室並關閉視窗
       if (typeof liff !== 'undefined' && liff.isInClient && liff.isInClient()) {
         isSubmitting = true;
         lockPasteButtonForVerification('🚀 正在以您的 LINE 帳號發送假單文字...');
@@ -2248,11 +2340,10 @@ function executeVerifiedPasteAction(rawText) {
         return;
       }
 
-      // C. 電腦版（Windows / Mac）或手機外部瀏覽器：執行剪貼簿複製與分流提示
       copyTextAndCloseDrawer();
     }
-    
-function copyTextAndCloseDrawer() {
+
+    function copyTextAndCloseDrawer() {
       const txtEl   = document.getElementById('txtRawLeave');
       const rawText = txtEl ? txtEl.value.trim() : '';
       const syncCheck = validateLeaveTextClientSide(rawText);
@@ -2268,7 +2359,6 @@ function copyTextAndCloseDrawer() {
       saveLastUsedFieldsFromText(rawText);
       copyToClipboardSafe(rawText);
 
-      // 📱 手機版：自動關閉視窗並跳回原群組聊天室
       if (isMobileClient()) {
         lockPasteButtonForVerification('📋 已複製文字，正在返回原群組...');
         showStatusBanner(
@@ -2285,7 +2375,6 @@ function copyTextAndCloseDrawer() {
         return;
       }
 
-      // 💻 電腦版（Windows / Mac）：反白選取文字框、保持綠色按鈕可重複點擊，並提示按 Ctrl+V 或點下方灰色按鈕直接送出
       if (txtEl) {
         try { txtEl.focus(); txtEl.select(); } catch (_) {}
       }
@@ -2304,7 +2393,7 @@ function copyTextAndCloseDrawer() {
       );
     }
 
-function handlePasteToLineClick(event) {
+    function handlePasteToLineClick(event) {
       const rawText = document.getElementById('txtRawLeave').value.trim();
 
       const syncCheck = validateLeaveTextClientSide(rawText);
@@ -2318,7 +2407,6 @@ function handlePasteToLineClick(event) {
         return false;
       }
 
-      // ✅ 在使用者點擊瞬間（具備瀏覽器最高剪貼簿權限）立即同步寫入剪貼簿！
       saveLastUsedFieldsFromText(rawText);
       copyToClipboardSafe(rawText);
 
@@ -2522,51 +2610,13 @@ function handlePasteToLineClick(event) {
       return { valid: true };
     }
 
-    function copyToClipboardSafe(text) {
-      if (!text) return false;
-      let copied = false;
-
-      // 1. 優先執行同步 textarea + focus + setSelectionRange + execCommand('copy')
-      try {
-        const ta = document.createElement('textarea');
-        ta.value = text;
-        ta.setAttribute('readonly', '');
-        ta.style.position   = 'fixed';
-        ta.style.top        = '0';
-        ta.style.left       = '0';
-        ta.style.width      = '2em';
-        ta.style.height     = '2em';
-        ta.style.padding    = '0';
-        ta.style.border     = 'none';
-        ta.style.outline    = 'none';
-        ta.style.boxShadow  = 'none';
-        ta.style.background = 'transparent';
-        ta.style.opacity    = '0.01';
-        document.body.appendChild(ta);
-        ta.focus({ preventScroll: true });
-        ta.select();
-        ta.setSelectionRange(0, ta.value.length);
-        copied = document.execCommand('copy');
-        document.body.removeChild(ta);
-      } catch (e) {}
-
-      // 2. 雙重保險：呼叫現代瀏覽器 Clipboard API
-      try {
-        if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
-          navigator.clipboard.writeText(text).catch(() => {});
-          copied = true;
-        }
-      } catch (e) {}
-
-      return copied;
-    }
-
     function switchTab(tab) {
       const validTabs = ['form', 'my', 'textform', 'today', 'schedule', 'help', 'admin'];
-      let targetTab   = validTabs.includes(tab) ? tab : 'form';
+      let targetTab   = validTabs.includes(tab) ? tab : getFirstAvailableTab();
 
-      if (STATE.gid && targetTab === 'admin') {
-        targetTab = 'form';
+      // ✅ 若目標分頁已被後台關閉（例如 tab='form' 但後台已關閉填寫請假），自動導向第一個開放的分頁
+      if (!isTabAllowed(targetTab)) {
+        targetTab = getFirstAvailableTab();
       }
       STATE.tab = targetTab;
 
@@ -2608,7 +2658,10 @@ function handlePasteToLineClick(event) {
           if (adm && adm.success) {
             STATE.adminData = adm;
             if (adm.standbyStatus) STATE.standbyStatus = adm.standbyStatus;
-            if (adm.groupUiConfig) STATE.groupUiConfig = { ...DEFAULT_GROUP_UI_CONFIG, ...adm.groupUiConfig };
+            if (adm.groupUiConfig) {
+              STATE.groupUiConfig = { ...DEFAULT_GROUP_UI_CONFIG, ...adm.groupUiConfig };
+              try { localStorage.setItem('leave_sys_group_ui_cfg', JSON.stringify(STATE.groupUiConfig)); } catch (_) {}
+            }
             if (adm.enterpriseConfig) STATE.enterpriseConfig = { ...STATE.enterpriseConfig, ...adm.enterpriseConfig };
             renderAdminConsole(adm);
           } else {
@@ -2625,9 +2678,8 @@ function handlePasteToLineClick(event) {
     function enterEditMode(rec) {
       if (!rec) return;
       if (rec.inactive || rec.permissionDenied || rec.expiredLock) {
-        showStatusBanner('formResultBox', 'err', rec.errorMessage || `⚠️ 記錄 #${rec.rowNumber} 無法修改！`);
+        alert(rec.errorMessage || `⚠️ 記錄 #${rec.rowNumber} 無法修改！`);
         exitEditMode();
-        switchTab('form');
         return;
       }
       STATE.editRow = rec.rowNumber;
@@ -2676,11 +2728,13 @@ function handlePasteToLineClick(event) {
       document.getElementById('btnSubmit').innerText = `💾 儲存修改假單 (#${rec.rowNumber})`;
       document.getElementById('btnSubmit').classList.add('blue');
       document.getElementById('btnCancelEdit').classList.remove('hidden');
+      applyTabAndRolePermissions();
       switchTab('form');
     }
 
     function exitEditMode() {
       STATE.editRow = '';
+      STATE.adminForceForm = false;
       clearAttachmentFile();
       const existAttBox = document.getElementById('existingAttachmentBox');
       if (existAttBox) existAttBox.classList.add('hidden');
@@ -3915,6 +3969,7 @@ function handlePasteToLineClick(event) {
       }
       if (adm.groupUiConfig) {
         STATE.groupUiConfig = { ...DEFAULT_GROUP_UI_CONFIG, ...adm.groupUiConfig };
+        try { localStorage.setItem('leave_sys_group_ui_cfg', JSON.stringify(STATE.groupUiConfig)); } catch (_) {}
       }
       if (adm.standbyStatus) {
         STATE.standbyStatus = adm.standbyStatus;
