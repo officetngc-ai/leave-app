@@ -186,7 +186,7 @@
     </div>
   </div>
 
-  <!-- 頂部多功能切換導航列（依群組設定、1對1角色與個別同仁功能授權動態顯示） -->
+  <!-- 頂部多功能切換導航列 -->
   <div class="tabs" id="topTabsBar">
     <button class="tab-btn active" id="tabBtn_form" onclick="switchTab('form')">📝 填寫請假</button>
     <button class="tab-btn" id="tabBtn_my" onclick="switchTab('my')">🔒 查特休/紀錄</button>
@@ -274,7 +274,7 @@
 
         <div class="form-group">
           <label>主管核准狀態 <span class="req">*</span></label>
-          <select id="selApproval">
+          <select id="selApproval" onchange="onApprovalChange()">
             <option value="已報請主管核准" selected>已報請主管核准（預設）</option>
             <option value="已當面報請主管核准">已當面報請主管核准</option>
             <option value="已LINE報請主管核准">已LINE報請主管核准</option>
@@ -320,10 +320,10 @@
     <!-- ==================== 3. 獨立彈出式「文字範本快填」視窗 (tab=textform) ==================== -->
     <div id="sec_textform" class="tab-sec hidden">
       <div class="card">
-        <h3 class="section-title">✍️ 文字版範本修改（100% 事前驗證防呆）</h3>
+        <h3 class="section-title">✍️ 文字版範本修改（自動帶入姓名與核准）</h3>
         <div class="banner">
-          💡 請在下方修改您的請假內容。系統會先<strong>自動執行請假驗證（含攔截重複請假與檢查特休/補休額度）</strong>。<br>
-          👉 驗證通過後請點擊下方<strong>綠色按鈕</strong>：若已授權將<strong>直接以本人帳號發送至群組</strong>；若未授權則<strong>自動複製文字並返回原群組</strong>讓您貼上！
+          💡 系統已為您<strong>自動帶入上次假單的「請假人」與「核准」文字</strong>，並即時執行防呆驗證。<br>
+          👉 驗證通過後請點擊下方<strong>綠色按鈕</strong>：<strong>直接以本人帳號發送至群組</strong>（或<strong>自動複製文字並返回原群組</strong>讓您貼上）！
         </div>
 
         <div class="form-group">
@@ -382,8 +382,8 @@
         <div style="font-size:14px; line-height:1.7; color:#334155;">
           <p><strong>1️⃣ 日曆選單快速請假（推薦）：</strong><br>
           於「📝 填寫請假」分頁選擇日期、時段與假別，系統會自動扣除午休並試算總時數，核准欄位預設為「已報請主管核准」，按送出即完成請假。</p>
-          <p><strong>2️⃣ 文字範本快填：</strong><br>
-          點擊下方「✍️ 文字範本快填」浮動按鈕，修改文字後系統會先與後端資料庫核對格式與是否重複請假，確認無誤後：<br>
+          <p><strong>2️⃣ 文字範本快填（自動記憶您的姓名與核准狀態）：</strong><br>
+          點擊下方「✍️ 文字範本快填」浮動按鈕，系統會自動帶入您上次請假的「請假人」與「核准」內容。修改日期與時數後，系統會先與後端資料庫核對格式與是否重複請假，確認無誤後：<br>
           • 點擊<strong>綠色按鈕</strong>：若已授權將以您的 LINE 帳號直接在原群組發出 7 行請假文字並收起視窗；若未授權則自動將文字複製到剪貼簿並收起視窗返回原群組，讓您直接在輸入框貼上發送。<br>
           • 點擊<strong>灰色按鈕</strong>：明確授權由系統直接在原聊天室發出留言與假單卡片。</p>
           <p><strong>3️⃣ 修改或取消已送出的假單（時效保護）：</strong><br>
@@ -407,7 +407,7 @@
 
       <div id="adminLoadingBanner" class="banner hidden">⏳ 正在從後端 Google Sheet 資料庫同步最新數據...</div>
 
-      <!-- 子導航列：管理員與超級管理員皆可使用「🔐 帳號與綁定」管理同仁 LINE UserID 與個別功能開關 -->
+      <!-- 子導航列 -->
       <div class="admin-subtabs">
         <button class="admin-subbtn active" id="admBtn_standby" onclick="switchAdminPanel('standby')">🌐 備援與群組</button>
         <button class="admin-subbtn" id="admBtn_admins" onclick="switchAdminPanel('admins')">🔐 帳號與綁定</button>
@@ -538,7 +538,6 @@
 
       <!-- ==================== 管理模組 0：請假同仁 LINE 綁定與個別功能管理 (userMapping) ＋ 角色權限設定 (adminUsers) ==================== -->
       <div id="admPanel_admins" class="card hidden">
-        <!-- 區塊 A：請假同仁 LINE UserID 綁定管理與單一同仁個別功能開關 (管理員與超級管理員皆可操作) -->
         <div class="section-title">
           <span>🪪 請假同仁 LINE 綁定與個別功能授權 (userMapping)</span>
           <button class="btn sm" style="background:#D97706;" onclick="cleanDuplicateMappingsFromAdmin()">🧹 一鍵修復重複ID與測試資料</button>
@@ -613,7 +612,7 @@
         <h4 style="margin:10px 0 8px 0; font-size:14px;">🪪 userMapping 同仁綁定與個別功能清單 (<span id="admMappingCount">0</span> 筆)</h4>
         <div id="admUserMappingListBox" style="max-height:380px; overflow-y:auto; margin-bottom:18px;"></div>
 
-        <!-- 區塊 B：管理員角色權限設定 (adminUsers，僅超級管理員可變更管理員角色) -->
+        <!-- 區塊 B：管理員角色權限設定 -->
         <div id="superAdminRoleSection">
           <hr style="border:none; border-top:2px dashed var(--border); margin:20px 0;">
           <div class="section-title"><span>👑 系統管理員角色權限指派 (adminUsers - 超級管理員專屬)</span></div>
@@ -1033,10 +1032,10 @@
   <script>
     // ============================================================
     // 🌐 三棲熱備援環境核心連線設定
-    // 版本: v25.1.0 (Pre-Launch Final Audit Edition - 含 IS_EXTERNAL_HOST 跨網域橋接與自動重連)
+    // 版本: v25.2.0 (Pre-Launch Final Release - 自帶上次假單文字與完整防呆版)
     // ============================================================
     const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyuW_4_sWHWUq0lc4QOe1amHl7ipGXr0wGNoVQFJl7leq6JYGWVR7CUoPOZkPMqprnX/exec";
-    const CACHE_KEY_INIT  = "leave_sys_init_cache_v25_1_final";
+    const CACHE_KEY_INIT  = "leave_sys_init_cache_v25_2_final";
 
     const GAS_SSR_PAYLOAD = "/*__GAS_SSR_INJECTION__*/";
 
@@ -1102,7 +1101,6 @@
         const controller = typeof AbortController !== "undefined" ? new AbortController() : null;
         const timeoutId  = controller ? setTimeout(() => controller.abort(), 25000) : null;
 
-        // 針對讀取與驗證類 API，若遇偶發網路閃斷自動在背景重試 1 次
         const isRetryableMethod = [
           "getWebFormInitData", "validateLeaveTextFromWeb",
           "previewLeaveHoursFromWeb", "getPrivateUserDashboardData",
@@ -1211,6 +1209,7 @@
       isAdmin: false,
       isSuperAdmin: false,
       boundName: "",
+      lastApproval: "已報請主管核准",
       userCustomPerms: {
         allowToday:    false,
         allowSchedule: false,
@@ -1451,6 +1450,23 @@
       }
     }
 
+    /**
+     * 將自帶或記憶的核准狀態同步設定至「📝 填寫請假」下拉選單
+     */
+    function syncApprovalSelectOption(approvalVal) {
+      if (!approvalVal) return;
+      const sel = document.getElementById('selApproval');
+      if (!sel) return;
+      const exists = Array.from(sel.options).some(o => o.value === approvalVal);
+      if (!exists) {
+        const opt = document.createElement('option');
+        opt.value = approvalVal;
+        opt.text  = approvalVal;
+        sel.appendChild(opt);
+      }
+      sel.value = approvalVal;
+    }
+
     window.onload = function() {
       parseClientUrlParams();
       STATE.liffId = resolveCurrentNodeLiffId();
@@ -1471,10 +1487,13 @@
       }
 
       let savedName = localStorage.getItem('leave_sys_user_name') || '';
-      if (savedName === '系統管理員') {
+      if (savedName === '系統管理員' || savedName === '王小明') {
         savedName = '';
         localStorage.removeItem('leave_sys_user_name');
       }
+      const savedApproval = localStorage.getItem('leave_sys_last_approval') || '已報請主管核准';
+      STATE.lastApproval  = savedApproval;
+      syncApprovalSelectOption(savedApproval);
 
       document.getElementById('inpStartDate').value = todayLocal.iso;
       document.getElementById('inpEndDate').value   = todayLocal.iso;
@@ -1482,7 +1501,7 @@
       if (savedName) {
         document.getElementById('inpName').value = savedName;
       }
-      initTextTemplate(savedName, todayLocal.slash);
+      initTextTemplate(savedName, todayLocal.slash, savedApproval);
       applyTabAndRolePermissions();
       renderStandbyNodesCard(STATE.standbyStatus);
 
@@ -1619,12 +1638,21 @@
         document.getElementById('inpEndDate').value   = res.todayStr;
       }
 
-      const serverName   = (res.boundName && res.boundName !== '系統管理員')
+      const serverName   = (res.boundName && res.boundName !== '系統管理員' && res.boundName !== '王小明')
         ? res.boundName
-        : ((res.currentName && res.currentName !== '系統管理員') ? res.currentName : '');
+        : ((res.currentName && res.currentName !== '系統管理員' && res.currentName !== '王小明') ? res.currentName : '');
       const resolvedName = serverName || savedName || '';
       if (resolvedName) {
         document.getElementById('inpName').value = resolvedName;
+        try { localStorage.setItem('leave_sys_user_name', resolvedName); } catch (_) {}
+      }
+
+      // ✅ 自動記憶並同步上次假單的「核准」狀態文字
+      const savedApproval    = localStorage.getItem('leave_sys_last_approval') || '';
+      const resolvedApproval = savedApproval || res.lastApproval || '已報請主管核准';
+      STATE.lastApproval     = resolvedApproval;
+      if (!STATE.editRow) {
+        syncApprovalSelectOption(resolvedApproval);
       }
 
       if (STATE.boundName) {
@@ -1633,7 +1661,7 @@
         if (resolvedName) document.getElementById('inpQueryName').value = resolvedName;
       }
 
-      initTextTemplate(resolvedName, res.todaySlashStr || getLocalTodayStrings().slash);
+      initTextTemplate(resolvedName, res.todaySlashStr || getLocalTodayStrings().slash, resolvedApproval);
       applyTabAndRolePermissions();
 
       if (!isFromLocalCache && res.editRecord) {
@@ -1961,12 +1989,39 @@
       try { window.top.location.replace(targetUrl); } catch (_) { window.location.href = targetUrl; }
     }
 
-    // ==================== 文字範本快填（單一智慧綠色按鈕 ＋ 斷線重連機制） ====================
-    function initTextTemplate(name, dateSlashStr) {
+    // ==================== ✅ 文字範本快填（自帶上次假單之姓名與核准狀態） ====================
+    function saveLastUsedFieldsFromText(rawText) {
+      try {
+        if (!rawText) return;
+        const nameMatch = rawText.match(/^請假人\s*[：:]\s*(.+)$/m);
+        const appMatch  = rawText.match(/^核准\s*[：:]\s*(.+)$/m);
+        if (nameMatch && nameMatch[1]) {
+          const n = nameMatch[1].trim();
+          if (n && n !== '王小明' && n !== '系統管理員') {
+            localStorage.setItem('leave_sys_user_name', n);
+            const inpN = document.getElementById('inpName');
+            if (inpN && !STATE.editRow) inpN.value = n;
+          }
+        }
+        if (appMatch && appMatch[1]) {
+          const ap = appMatch[1].trim();
+          if (ap) {
+            localStorage.setItem('leave_sys_last_approval', ap);
+            STATE.lastApproval = ap;
+            if (!STATE.editRow) syncApprovalSelectOption(ap);
+          }
+        }
+      } catch (_) {}
+    }
+
+    function initTextTemplate(name, dateSlashStr, approvalStr) {
       const txt = document.getElementById('txtRawLeave');
       if (!txt) return;
 
-      const cleanInitName = (name && name !== '系統管理員') ? name : '王小明';
+      const cleanInitName     = (name && name !== '系統管理員') ? name : '王小明';
+      const cleanInitApproval = (approvalStr && approvalStr.trim())
+        ? approvalStr.trim()
+        : (localStorage.getItem('leave_sys_last_approval') || STATE.lastApproval || '已報請主管核准');
 
       if (!txt.value) {
         txt.value = [
@@ -1976,14 +2031,24 @@
           `假別：特休`,
           `事由：個人事務`,
           `職務代理：李大華`,
-          `核准：已報請主管核准`
+          `核准：${cleanInitApproval}`
         ].join('\n');
         lockPasteButtonForVerification('🔍 正在驗證假單格式與是否重複請假...');
         if (STATE.tab === 'textform') runBackendTextValidation(txt.value.trim(), false);
-      } else if (cleanInitName !== '王小明' && (txt.value.includes('請假人：王小明') || txt.value.includes('請假人：系統管理員'))) {
-        txt.value = txt.value.replace(/^請假人\s*[：:].*$/m, `請假人：${cleanInitName}`);
-        lockPasteButtonForVerification('🔍 正在驗證假單格式與是否重複請假...');
-        if (STATE.tab === 'textform') runBackendTextValidation(txt.value.trim(), false);
+      } else {
+        let modified = false;
+        if (cleanInitName !== '王小明' && (txt.value.includes('請假人：王小明') || txt.value.includes('請假人：系統管理員'))) {
+          txt.value = txt.value.replace(/^請假人\s*[：:].*$/m, `請假人：${cleanInitName}`);
+          modified = true;
+        }
+        if (cleanInitApproval && txt.value.includes('核准：已報請主管核准') && cleanInitApproval !== '已報請主管核准') {
+          txt.value = txt.value.replace(/^核准\s*[：:].*$/m, `核准：${cleanInitApproval}`);
+          modified = true;
+        }
+        if (modified) {
+          lockPasteButtonForVerification('🔍 正在驗證假單格式與是否重複請假...');
+          if (STATE.tab === 'textform') runBackendTextValidation(txt.value.trim(), false);
+        }
       }
     }
 
@@ -2134,6 +2199,7 @@
 
     function executeVerifiedPasteAction(rawText) {
       if (isSubmitting) return;
+      saveLastUsedFieldsFromText(rawText);
       copyToClipboardSafe(rawText);
 
       if (isMobileClient() && !STATE.gid && STATE.botBasicId && !(typeof liff !== 'undefined' && liff.isInClient && liff.isInClient())) {
@@ -2182,6 +2248,7 @@
         showStatusBanner('textFormResultBox', 'err', STATE.verifyErrorMsg);
         return;
       }
+      saveLastUsedFieldsFromText(rawText);
       copyToClipboardSafe(rawText);
       lockPasteButtonForVerification('📋 已複製文字，正在返回原群組...');
       showStatusBanner(
@@ -2211,6 +2278,7 @@
         return false;
       }
 
+      saveLastUsedFieldsFromText(rawText);
       copyToClipboardSafe(rawText);
 
       if (STATE.verifyStatus === 'valid' && STATE.verifiedText === rawText) {
@@ -2530,7 +2598,7 @@
       document.getElementById('selLeaveType').value = rec.leaveType || '特休';
       document.getElementById('inpDeputy').value    = rec.deputy || '';
       document.getElementById('inpReason').value    = rec.reason || '';
-      document.getElementById('selApproval').value  = rec.approval || '已報請主管核准';
+      syncApprovalSelectOption(rec.approval || '已報請主管核准');
 
       const existAttBox = document.getElementById('existingAttachmentBox');
       if (rec.attachmentUrl && existAttBox) {
@@ -2570,9 +2638,12 @@
       applyTabAndRolePermissions();
     }
 
+    /**
+     * 當使用者在表單修改「請假人員」時，自動記憶並同步更新文字範本快填的「請假人：」
+     */
     function onNameChange() {
       const name = document.getElementById('inpName').value.trim();
-      if (name && name !== '系統管理員') {
+      if (name && name !== '系統管理員' && name !== '王小明') {
         localStorage.setItem('leave_sys_user_name', name);
 
         const txt = document.getElementById('txtRawLeave');
@@ -2586,6 +2657,23 @@
         if (canQueryAny || (STATE.boundName && name === STATE.boundName)) {
           document.getElementById('inpQueryName').value = name;
           loadPersonalDashboard(name);
+        }
+      }
+    }
+
+    /**
+     * 當使用者在表單切換「主管核准狀態」時，自動記憶並同步更新文字範本快填的「核准：」
+     */
+    function onApprovalChange() {
+      const appVal = document.getElementById('selApproval').value;
+      if (appVal) {
+        localStorage.setItem('leave_sys_last_approval', appVal);
+        STATE.lastApproval = appVal;
+        const txt = document.getElementById('txtRawLeave');
+        if (txt && txt.value) {
+          txt.value = txt.value.replace(/^核准\s*[：:].*$/m, `核准：${appVal}`);
+          STATE.verifiedText = '';
+          STATE.verifyStatus = 'idle';
         }
       }
     }
@@ -2908,9 +2996,14 @@
       btn.innerText = '🔒 安全寫入資料庫中...';
       showStatusBanner('formResultBox', 'info', '⏳ 正在驗證並送出假單，請稍候...');
 
-      if (!STATE.editRow && name !== '系統管理員') {
+      if (!STATE.editRow && name !== '系統管理員' && name !== '王小明') {
         localStorage.setItem('leave_sys_user_name', name);
       }
+      if (approval) {
+        localStorage.setItem('leave_sys_last_approval', approval);
+        STATE.lastApproval = approval;
+      }
+
       const timeBucket = Math.floor(Date.now() / 15000);
       const reqToken   = `WEB_${STATE.editRow || 'NEW'}_${name}_${startDate}_${endDate}_${STATE.periodMode}_${leaveType}_${timeBucket}`;
 
@@ -2928,6 +3021,11 @@
             if (res.boundName) {
               STATE.boundName = res.boundName;
               document.getElementById('inpQueryName').value = res.boundName;
+              localStorage.setItem('leave_sys_user_name', res.boundName);
+            }
+            if (res.lastApproval) {
+              STATE.lastApproval = res.lastApproval;
+              localStorage.setItem('leave_sys_last_approval', res.lastApproval);
             }
             if (res.dashboard) {
               STATE.dashboard = res.dashboard;
@@ -2972,6 +3070,8 @@
         return;
       }
 
+      saveLastUsedFieldsFromText(rawText);
+
       if (!STATE.gid && typeof liff !== 'undefined' && liff.getContext) {
         try {
           const ctx = liff.getContext();
@@ -3005,6 +3105,11 @@
             if (res.boundName) {
               STATE.boundName = res.boundName;
               document.getElementById('inpQueryName').value = res.boundName;
+              localStorage.setItem('leave_sys_user_name', res.boundName);
+            }
+            if (res.lastApproval) {
+              STATE.lastApproval = res.lastApproval;
+              localStorage.setItem('leave_sys_last_approval', res.lastApproval);
             }
             if (res.dashboard) {
               STATE.dashboard = res.dashboard;
@@ -3078,7 +3183,6 @@
       });
     }
 
-    // ==================== userMapping 同仁綁定與個別功能管理前端控制器 ====================
     function renderUserMappingList(mapList) {
       const box     = document.getElementById('admUserMappingListBox');
       const countEl = document.getElementById('admMappingCount');
