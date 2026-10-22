@@ -2072,19 +2072,25 @@
       btn.classList.remove('locked');
 
       const isLiffEnv = (typeof liff !== 'undefined' && liff.isInClient && liff.isInClient());
+      const isMobile  = isMobileClient();
 
-      if (STATE.gid || isLiffEnv) {
-        btn.innerText = '✅ 驗證通過！點此以本人帳號發送（或自動複製返回）';
+      if (isLiffEnv) {
+        btn.innerText = '✅ 驗證通過！點此以本人帳號直接發送（或複製返回）';
         btn.href = 'javascript:void(0)';
         btn.removeAttribute('target');
-      } else if (isMobileClient() && STATE.botBasicId && rawText) {
+      } else if (isMobile && STATE.gid) {
+        btn.innerText = '✅ 驗證通過！點此自動複製假單並返回原群組貼上';
+        btn.href = 'javascript:void(0)';
+        btn.removeAttribute('target');
+      } else if (isMobile && STATE.botBasicId && rawText) {
         btn.innerText = '📲 驗證通過！點此將文字貼回 LINE 輸入框';
         const rawBasicId   = STATE.botBasicId.trim();
         const cleanBasicId = rawBasicId.startsWith('@') ? rawBasicId : ('@' + rawBasicId);
         btn.href   = 'line://oaMessage/' + cleanBasicId + '/?' + encodeURIComponent(rawText);
         btn.target = '_top';
       } else {
-        btn.innerText = '✅ 驗證通過！點此複製請假單文字並返回';
+        // 💻 電腦版（Windows / Mac 外部瀏覽器）專屬按鈕提示
+        btn.innerText = '💻 驗證通過！點此複製假單文字（回 LINE 按 Ctrl+V 貼上）';
         btn.href = 'javascript:void(0)';
         btn.removeAttribute('target');
       }
@@ -2203,11 +2209,12 @@
         });
     }
 
-    function executeVerifiedPasteAction(rawText) {
+function executeVerifiedPasteAction(rawText) {
       if (isSubmitting) return;
       saveLastUsedFieldsFromText(rawText);
       copyToClipboardSafe(rawText);
 
+      // A. 手機版 1對1 外部瀏覽器：透過 line://oaMessage 自動塞入輸入框
       if (isMobileClient() && !STATE.gid && STATE.botBasicId && !(typeof liff !== 'undefined' && liff.isInClient && liff.isInClient())) {
         const btn = document.getElementById('btnPasteToLine');
         unlockPasteButtonWithVerifiedText(rawText);
@@ -2218,10 +2225,11 @@
         return;
       }
 
+      // B. 手機版 LINE 內建 LIFF 容器：直接以本人 LINE 帳號發送至群組/聊天室並關閉視窗
       if (typeof liff !== 'undefined' && liff.isInClient && liff.isInClient()) {
         isSubmitting = true;
-        lockPasteButtonForVerification('🚀 正在處理假單文字...');
-        showStatusBanner('textFormResultBox', 'info', '🚀 正在嘗試以您的 LINE 帳號發送假單文字至原群組...');
+        lockPasteButtonForVerification('🚀 正在以您的 LINE 帳號發送假單文字...');
+        showStatusBanner('textFormResultBox', 'info', '🚀 正在以您的 LINE 帳號發送假單文字至聊天室...');
 
         liff.sendMessages([{ type: 'text', text: rawText }])
           .then(() => {
@@ -2230,7 +2238,7 @@
             STATE.verifiedText = '';
             STATE.verifyStatus = 'invalid';
             lockPasteButtonForVerification('🎉 假單文字已發送！');
-            showStatusBanner('textFormResultBox', 'ok', `🎉 假單文字已成功以您的帳號發送至原群組！（${STATE.verifySummary}）正在關閉視窗...`);
+            showStatusBanner('textFormResultBox', 'ok', `🎉 假單文字已成功以您的帳號發送！（${STATE.verifySummary}）正在關閉視窗...`);
             setTimeout(() => { safeCloseLiffWindow(); }, 250);
           })
           .catch(() => {
@@ -2240,11 +2248,13 @@
         return;
       }
 
+      // C. 電腦版（Windows / Mac）或手機外部瀏覽器：執行剪貼簿複製與分流提示
       copyTextAndCloseDrawer();
     }
-
-    function copyTextAndCloseDrawer() {
-      const rawText   = document.getElementById('txtRawLeave').value.trim();
+    
+function copyTextAndCloseDrawer() {
+      const txtEl   = document.getElementById('txtRawLeave');
+      const rawText = txtEl ? txtEl.value.trim() : '';
       const syncCheck = validateLeaveTextClientSide(rawText);
       if (!syncCheck.valid) {
         showStatusBanner('textFormResultBox', 'err', syncCheck.errorMessage);
@@ -2254,23 +2264,47 @@
         showStatusBanner('textFormResultBox', 'err', STATE.verifyErrorMsg);
         return;
       }
+
       saveLastUsedFieldsFromText(rawText);
       copyToClipboardSafe(rawText);
-      lockPasteButtonForVerification('📋 已複製文字，正在返回原群組...');
+
+      // 📱 手機版：自動關閉視窗並跳回原群組聊天室
+      if (isMobileClient()) {
+        lockPasteButtonForVerification('📋 已複製文字，正在返回原群組...');
+        showStatusBanner(
+          'textFormResultBox',
+          'ok',
+          `📋 驗證通過的假單文字已自動複製到剪貼簿！\n正在自動關閉視窗返回原群組（請直接在群組輸入框「長按 ➔ 貼上」即可發送）...`
+        );
+        setTimeout(() => {
+          safeCloseLiffWindow();
+          if (!(typeof liff !== 'undefined' && liff.isInClient && liff.isInClient())) {
+            try { window.top.location.href = 'line://nv/chat'; } catch (_) {}
+          }
+        }, 450);
+        return;
+      }
+
+      // 💻 電腦版（Windows / Mac）：反白選取文字框、保持綠色按鈕可重複點擊，並提示按 Ctrl+V 或點下方灰色按鈕直接送出
+      if (txtEl) {
+        try { txtEl.focus(); txtEl.select(); } catch (_) {}
+      }
+      const btn = document.getElementById('btnPasteToLine');
+      if (btn) {
+        btn.classList.remove('locked');
+        btn.innerText = '✅ 已成功複製到電腦剪貼簿！（點此可再次複製）';
+      }
       showStatusBanner(
         'textFormResultBox',
         'ok',
-        `📋 驗證通過的假單文字已自動複製到剪貼簿！\n正在自動關閉視窗返回原群組（請直接在群組輸入框「長按 ➔ 貼上」即可發送）...`
+        `✅ 【驗證 100% 通過！假單文字已複製到電腦剪貼簿】\n` +
+        `📋 試算摘要：${STATE.verifySummary || '格式正確'}\n\n` +
+        `👉 方式 1（用本人帳號發送）：請直接切回電腦版 LINE 聊天室輸入框，按鍵盤【Ctrl + V】（Mac 按 Cmd + V）貼上並按 Enter 發送！\n` +
+        `👉 方式 2（免貼上一鍵送出）：您也可以直接點擊下方灰色按鈕「🚀 直接由系統留言並送出假單」直接完成請假！`
       );
-      setTimeout(() => {
-        safeCloseLiffWindow();
-        if (isMobileClient() && !(typeof liff !== 'undefined' && liff.isInClient && liff.isInClient())) {
-          try { window.top.location.href = 'line://nv/chat'; } catch (_) {}
-        }
-      }, 450);
     }
 
-    function handlePasteToLineClick(event) {
+function handlePasteToLineClick(event) {
       const rawText = document.getElementById('txtRawLeave').value.trim();
 
       const syncCheck = validateLeaveTextClientSide(rawText);
@@ -2284,6 +2318,7 @@
         return false;
       }
 
+      // ✅ 在使用者點擊瞬間（具備瀏覽器最高剪貼簿權限）立即同步寫入剪貼簿！
       saveLastUsedFieldsFromText(rawText);
       copyToClipboardSafe(rawText);
 
@@ -2488,22 +2523,42 @@
     }
 
     function copyToClipboardSafe(text) {
+      if (!text) return false;
+      let copied = false;
+
+      // 1. 優先執行同步 textarea + focus + setSelectionRange + execCommand('copy')
       try {
-        if (navigator.clipboard && navigator.clipboard.writeText) {
-          navigator.clipboard.writeText(text).catch(() => {});
-        }
         const ta = document.createElement('textarea');
         ta.value = text;
-        ta.style.position = 'fixed';
-        ta.style.opacity  = '0';
+        ta.setAttribute('readonly', '');
+        ta.style.position   = 'fixed';
+        ta.style.top        = '0';
+        ta.style.left       = '0';
+        ta.style.width      = '2em';
+        ta.style.height     = '2em';
+        ta.style.padding    = '0';
+        ta.style.border     = 'none';
+        ta.style.outline    = 'none';
+        ta.style.boxShadow  = 'none';
+        ta.style.background = 'transparent';
+        ta.style.opacity    = '0.01';
         document.body.appendChild(ta);
+        ta.focus({ preventScroll: true });
         ta.select();
-        document.execCommand('copy');
+        ta.setSelectionRange(0, ta.value.length);
+        copied = document.execCommand('copy');
         document.body.removeChild(ta);
-        return true;
-      } catch (e) {
-        return false;
-      }
+      } catch (e) {}
+
+      // 2. 雙重保險：呼叫現代瀏覽器 Clipboard API
+      try {
+        if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+          navigator.clipboard.writeText(text).catch(() => {});
+          copied = true;
+        }
+      } catch (e) {}
+
+      return copied;
     }
 
     function switchTab(tab) {
