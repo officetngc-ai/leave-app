@@ -322,8 +322,8 @@
       <div class="card">
         <h3 class="section-title">✍️ 文字版範本修改（100% 事前驗證防呆）</h3>
         <div class="banner">
-          💡 請在下方修改您的請假內容。系統會先<strong>自動執行前端與後端 11 道完整驗證（包含攔截重複請假與檢查特休/補休額度）</strong>，驗證通過後：<br>
-          👉 點擊綠色按鈕將<strong>以您的本人帳號直接在原群組發出請假文字並自動收起視窗</strong>（在您明確點擊送出前，系統絕不會在背景自動提交任何假單）！
+          💡 請在下方修改您的請假內容。系統會先<strong>自動執行前端與後端 11 道完整驗證（含攔截重複請假與檢查特休/補休額度）</strong>，驗證通過後：<br>
+          👉 點擊下方<strong>綠色按鈕</strong>：若已授權將<strong>直接以本人帳號發送至群組</strong>；若未授權則<strong>自動複製文字並返回原群組</strong>讓您貼上！
         </div>
 
         <div class="form-group">
@@ -333,14 +333,12 @@
 
         <div id="textFormResultBox" class="status-box hidden"></div>
 
+        <!-- ✅ 整合版單一智慧按鈕：自動判斷本人發送或複製返回原群組 -->
         <a id="btnPasteToLine" href="javascript:void(0)" class="btn locked" onclick="return handlePasteToLineClick(event)">
           🔍 正在驗證假單格式與是否重複請假...
         </a>
 
-        <button class="btn blue" id="btnCopyAndClose" onclick="copyTextAndCloseDrawer()">
-          📋 僅複製驗證通過文字並返回原群組手動貼上
-        </button>
-
+        <!-- 副按鈕：明確授權由系統直接寫入假單並推播 -->
         <button class="btn secondary" id="btnSubmitText" onclick="submitTextForm()">
           🚀 直接由系統留言並送出假單
         </button>
@@ -2001,7 +1999,7 @@
       const isLiffEnv = (typeof liff !== 'undefined' && liff.isInClient && liff.isInClient());
 
       if (STATE.gid || isLiffEnv) {
-        btn.innerText = '✅ 驗證通過！點此以本人帳號發送文字至群組';
+        btn.innerText = '✅ 驗證通過！點此以本人帳號發送（或自動複製返回）';
         btn.href = 'javascript:void(0)';
         btn.removeAttribute('target');
       } else if (isMobileClient() && STATE.botBasicId && rawText) {
@@ -2011,7 +2009,7 @@
         btn.href   = 'line://oaMessage/' + cleanBasicId + '/?' + encodeURIComponent(rawText);
         btn.target = '_top';
       } else {
-        btn.innerText = '✅ 驗證通過！點此複製請假單文字';
+        btn.innerText = '✅ 驗證通過！點此複製請假單文字並返回';
         btn.href = 'javascript:void(0)';
         btn.removeAttribute('target');
       }
@@ -2084,7 +2082,7 @@
             showStatusBanner(
               'textFormResultBox',
               'ok',
-              `✅ 資料庫驗證通過！（${STATE.verifySummary}）\n請點擊下方綠色按鈕將文字發送至原群組（或點藍色按鈕複製後手動貼上）。`
+              `✅ 資料庫驗證通過！（${STATE.verifySummary}）\n請點擊下方綠色按鈕送出（若無直接發話權限，系統將自動為您複製文字並返回原群組）。`
             );
             return;
           }
@@ -2106,10 +2104,18 @@
         });
     }
 
+    /**
+     * ✅ 整合版智慧動作執行器（綠＋藍二合一）：
+     * 1. 先同步將驗證通過的文字寫入剪貼簿保底
+     * 2. 若在 LIFF 內嵌環境：嘗試呼叫 liff.sendMessages 直接以本人帳號發送（綠色路徑）
+     * 3. 若無權限或非 LIFF 環境：自動無縫轉走「複製文字並關閉視窗返回原群組」（藍色路徑）
+     */
     function executeVerifiedPasteAction(rawText) {
       if (isSubmitting) return;
+      // 步驟 1：於點擊當下立即同步複製文字至剪貼簿（確保 iOS / Android 100% 複製成功）
       copyToClipboardSafe(rawText);
 
+      // 情況 A：1對1私訊且非 LIFF 內嵌環境 -> 透過 oaMessage 將文字帶入聊天輸入框
       if (isMobileClient() && !STATE.gid && STATE.botBasicId && !(typeof liff !== 'undefined' && liff.isInClient && liff.isInClient())) {
         const btn = document.getElementById('btnPasteToLine');
         unlockPasteButtonWithVerifiedText(rawText);
@@ -2120,40 +2126,40 @@
         return;
       }
 
+      // 情況 B：LINE 群組或 LIFF 內嵌環境 -> 先嘗試綠色路徑 (liff.sendMessages)，失敗或無權限時自動執行藍色路徑 (複製並返回原群組)
       if (typeof liff !== 'undefined' && liff.isInClient && liff.isInClient()) {
         isSubmitting = true;
-        lockPasteButtonForVerification('🚀 正在將文字發送至原群組...');
-        showStatusBanner('textFormResultBox', 'info', '🚀 正在以您的 LINE 帳號將假單文字發送至原群組...');
+        lockPasteButtonForVerification('🚀 正在處理假單文字...');
+        showStatusBanner('textFormResultBox', 'info', '🚀 正在嘗試以您的 LINE 帳號發送假單文字至原群組...');
 
         liff.sendMessages([{ type: 'text', text: rawText }])
           .then(() => {
+            // 🟢 綠色路徑成功：使用者已授權 chat_message.write，直接以本人帳號發出文字並收起視窗
             isSubmitting = false;
             try { localStorage.removeItem(CACHE_KEY_INIT); } catch (_) {}
-            STATE.verifiedText   = '';
-            STATE.verifyStatus   = 'invalid';
+            STATE.verifiedText = '';
+            STATE.verifyStatus = 'invalid';
             lockPasteButtonForVerification('🎉 假單文字已發送！');
             showStatusBanner('textFormResultBox', 'ok', `🎉 假單文字已成功以您的帳號發送至原群組！（${STATE.verifySummary}）正在關閉視窗...`);
             setTimeout(() => { safeCloseLiffWindow(); }, 250);
           })
-          .catch(err => {
+          .catch(() => {
+            // 🔵 自動轉走藍色路徑：未授權或未開通 chat_message.write 時，直接提示已複製並自動關閉視窗返回原群組！
             isSubmitting = false;
-            unlockPasteButtonWithVerifiedText(rawText);
-            showStatusBanner(
-              'textFormResultBox',
-              'info',
-              `📋 假單文字已自動複製到剪貼簿！\n` +
-              `（因目前 LIFF 尚未開通 chat_message.write 權限，系統不會自動代交假單）\n` +
-              `👉 請點擊下方「📋 藍色按鈕」關閉視窗並在群組輸入框長按貼上，或明確點擊下方「🚀 灰色按鈕」由系統送出！`
-            );
+            copyTextAndCloseDrawer();
           });
         return;
       }
 
+      // 情況 C：外部瀏覽器環境 -> 直接走藍色路徑（複製文字並返回 LINE 聊天室）
       copyTextAndCloseDrawer();
     }
 
+    /**
+     * 🔵 藍色路徑備援：複製驗證通過文字並自動關閉視窗返回原群組
+     */
     function copyTextAndCloseDrawer() {
-      const rawText = document.getElementById('txtRawLeave').value.trim();
+      const rawText   = document.getElementById('txtRawLeave').value.trim();
       const syncCheck = validateLeaveTextClientSide(rawText);
       if (!syncCheck.valid) {
         showStatusBanner('textFormResultBox', 'err', syncCheck.errorMessage);
@@ -2164,12 +2170,18 @@
         return;
       }
       copyToClipboardSafe(rawText);
+      lockPasteButtonForVerification('📋 已複製文字，正在返回原群組...');
       showStatusBanner(
         'textFormResultBox',
         'ok',
-        `📋 驗證通過的假單文字已複製到剪貼簿！\n正在關閉視窗返回原群組（直接在群組輸入框長按貼上即可發送）...`
+        `📋 驗證通過的假單文字已自動複製到剪貼簿！\n正在自動關閉視窗返回原群組（請直接在群組輸入框「長按 ➔ 貼上」即可發送）...`
       );
-      setTimeout(() => { safeCloseLiffWindow(); }, 300);
+      setTimeout(() => {
+        safeCloseLiffWindow();
+        if (isMobileClient() && !(typeof liff !== 'undefined' && liff.isInClient && liff.isInClient())) {
+          try { window.top.location.href = 'line://nv/chat'; } catch (_) {}
+        }
+      }, 450);
     }
 
     function handlePasteToLineClick(event) {
@@ -2194,6 +2206,7 @@
       }
 
       if (STATE.verifyStatus === 'valid' && STATE.verifiedText === rawText) {
+        // 點擊瞬間同步寫入剪貼簿
         copyToClipboardSafe(rawText);
 
         if (isMobileClient() && !STATE.gid && STATE.botBasicId && !(typeof liff !== 'undefined' && liff.isInClient && liff.isInClient())) {
