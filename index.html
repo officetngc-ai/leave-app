@@ -322,8 +322,8 @@
       <div class="card">
         <h3 class="section-title">✍️ 文字版範本修改（100% 事前驗證防呆）</h3>
         <div class="banner">
-          💡 請在下方修改您的請假內容。系統會先<strong>自動執行請假驗證</strong>。<br>
-          👉 驗證通過後請點擊下方<strong>綠色按鈕</strong>：<strong>直接以本人帳號發送至群組</strong>；或<strong>自動複製文字並返回原群組</strong>讓您貼上！
+          💡 請在下方修改您的請假內容。系統會先<strong>自動執行請假驗證（含攔截重複請假與檢查特休/補休額度）</strong>。<br>
+          👉 驗證通過後請點擊下方<strong>綠色按鈕</strong>：若已授權將<strong>直接以本人帳號發送至群組</strong>；若未授權則<strong>自動複製文字並返回原群組</strong>讓您貼上！
         </div>
 
         <div class="form-group">
@@ -333,7 +333,7 @@
 
         <div id="textFormResultBox" class="status-box hidden"></div>
 
-        <!-- ✅ 整合版單一智慧按鈕：自動判斷本人發送或複製返回原群組 -->
+        <!-- 整合版單一智慧按鈕：自動判斷本人發送或複製返回原群組，若遇斷線點擊可立即重連 -->
         <a id="btnPasteToLine" href="javascript:void(0)" class="btn locked" onclick="return handlePasteToLineClick(event)">
           🔍 正在驗證假單格式與是否重複請假...
         </a>
@@ -384,8 +384,7 @@
           於「📝 填寫請假」分頁選擇日期、時段與假別，系統會自動扣除午休並試算總時數，核准欄位預設為「已報請主管核准」，按送出即完成請假。</p>
           <p><strong>2️⃣ 文字範本快填：</strong><br>
           點擊下方「✍️ 文字範本快填」浮動按鈕，修改文字後系統會先與後端資料庫核對格式與是否重複請假，確認無誤後：<br>
-          • 點擊<strong>綠色按鈕</strong>：以您的 LINE 帳號直接在原群組發出 7 行請假文字並收起視窗。<br>
-          • 點擊<strong>藍色按鈕</strong>：僅複製驗證通過的文字並收起視窗，讓您在原群組輸入框手動貼上發送。<br>
+          • 點擊<strong>綠色按鈕</strong>：若已授權將以您的 LINE 帳號直接在原群組發出 7 行請假文字並收起視窗；若未授權則自動將文字複製到剪貼簿並收起視窗返回原群組，讓您直接在輸入框貼上發送。<br>
           • 點擊<strong>灰色按鈕</strong>：明確授權由系統直接在原聊天室發出留言與假單卡片。</p>
           <p><strong>3️⃣ 修改或取消已送出的假單（時效保護）：</strong><br>
           • <strong>今日及未來假單：</strong>申請人本人可直接點擊假單卡片上的 <strong>「✏️ 修改假單」</strong> 或 <strong>「🗑️ 取消假單」</strong> 按鈕進行調整。<br>
@@ -539,7 +538,7 @@
 
       <!-- ==================== 管理模組 0：請假同仁 LINE 綁定與個別功能管理 (userMapping) ＋ 角色權限設定 (adminUsers) ==================== -->
       <div id="admPanel_admins" class="card hidden">
-        <!-- ✅ [v25.0.0 新增] 區塊 A：請假同仁 LINE UserID 綁定管理與單一同仁個別功能開關 (管理員與超級管理員皆可操作) -->
+        <!-- 區塊 A：請假同仁 LINE UserID 綁定管理與單一同仁個別功能開關 (管理員與超級管理員皆可操作) -->
         <div class="section-title">
           <span>🪪 請假同仁 LINE 綁定與個別功能授權 (userMapping)</span>
           <button class="btn sm" style="background:#D97706;" onclick="cleanDuplicateMappingsFromAdmin()">🧹 一鍵修復重複ID與測試資料</button>
@@ -1034,10 +1033,10 @@
   <script>
     // ============================================================
     // 🌐 三棲熱備援環境核心連線設定
-    // 版本: v25.0.0 (Granular Per-User Feature Permissions & UserMapping CRUD Edition)
+    // 版本: v25.1.0 (Pre-Launch Final Audit Edition - 含 IS_EXTERNAL_HOST 跨網域橋接與自動重連)
     // ============================================================
     const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyuW_4_sWHWUq0lc4QOe1amHl7ipGXr0wGNoVQFJl7leq6JYGWVR7CUoPOZkPMqprnX/exec";
-    const CACHE_KEY_INIT  = "leave_sys_init_cache_v25_0_umap";
+    const CACHE_KEY_INIT  = "leave_sys_init_cache_v25_1_final";
 
     const GAS_SSR_PAYLOAD = "/*__GAS_SSR_INJECTION__*/";
 
@@ -1098,7 +1097,7 @@
       tab_today:    false
     };
 
-function createExternalGasRunner(successCb, failureCb) {
+    function createExternalGasRunner(successCb, failureCb) {
       const callBackend = (methodName, args, retryCount = 0) => {
         const controller = typeof AbortController !== "undefined" ? new AbortController() : null;
         const timeoutId  = controller ? setTimeout(() => controller.abort(), 25000) : null;
@@ -1135,7 +1134,6 @@ function createExternalGasRunner(successCb, failureCb) {
           })
           .catch(err => {
             if (timeoutId) clearTimeout(timeoutId);
-            // ✅ 背景自動重試機制：若為偶發網路失敗且尚未重試過，0.8 秒後自動重新連線
             if (isRetryableMethod && retryCount < 1) {
               setTimeout(() => callBackend(methodName, args, retryCount + 1), 800);
               return;
@@ -1173,12 +1171,12 @@ function createExternalGasRunner(successCb, failureCb) {
       return runner;
     }
 
-    // ✅ 【P0 關鍵必補】當部署於 GitHub Pages 或 Bloon.io 時，自動掛載 google.script.run 跨網域橋接器！
+    // ✅ 【P0 關鍵必備】當部署於 GitHub Pages 或 Bloon.io 外部節點時，自動掛載 google.script.run 跨網域橋接器
     const IS_EXTERNAL_HOST = (typeof window.google === "undefined" || !window.google.script || !window.google.script.run);
     if (IS_EXTERNAL_HOST) {
       window.google = { script: { run: createExternalGasRunner() } };
     }
-    
+
     function getLocalTodayStrings() {
       const now  = new Date();
       const yyyy = now.getFullYear();
@@ -1213,7 +1211,6 @@ function createExternalGasRunner(successCb, failureCb) {
       isAdmin: false,
       isSuperAdmin: false,
       boundName: "",
-      // ✅ 個別同仁功能授權狀態 (allowToday / allowSchedule / allowQueryAll)
       userCustomPerms: {
         allowToday:    false,
         allowSchedule: false,
@@ -1335,9 +1332,6 @@ function createExternalGasRunner(successCb, failureCb) {
       switchTab('admin');
     }
 
-    /**
-     * ✅ 核心權限、群組顯示與「單一同仁個別功能授權 (userCustomPerms)」路由控制器
-     */
     function applyTabAndRolePermissions() {
       const isGroup        = !!(STATE.gid && String(STATE.gid).trim());
       const gCfg           = STATE.groupUiConfig || DEFAULT_GROUP_UI_CONFIG;
@@ -1360,7 +1354,6 @@ function createExternalGasRunner(successCb, failureCb) {
       const btnAdmin    = document.getElementById('tabBtn_admin');
       const escAdminBtn = document.getElementById('btnGasEscapeAdmin');
 
-      // ✅ 判斷是否顯示「📋 今日請假」與「⚙️ 班表設定」（結合群組設定、管理員角色、以及單一同仁個別功能授權 uPerms）
       const showTodayTab = isGroup
         ? Boolean(gCfg.tab_today || uPerms.allowToday)
         : Boolean(isAdminPrivate || uPerms.allowToday);
@@ -1433,7 +1426,6 @@ function createExternalGasRunner(successCb, failureCb) {
         if (btnSendDmEl) btnSendDmEl.innerText = '📩 私訊傳送本人特休與紀錄至個人LINE';
       }
 
-      // 後台子分頁權限：管理員(ADMIN)與超級管理員(SUPER_ADMIN)皆可進入「🔐 帳號與綁定 (admBtn_admins)」管理 userMapping！
       const admBtnStandby = document.getElementById('admBtn_standby');
       const admBtnAdmins  = document.getElementById('admBtn_admins');
       const superRoleSec  = document.getElementById('superAdminRoleSection');
@@ -1442,7 +1434,7 @@ function createExternalGasRunner(successCb, failureCb) {
 
       if (isAdminPrivate) {
         if (admBtnStandby) admBtnStandby.classList.toggle('hidden', !isSuperPrivate);
-        if (admBtnAdmins)  admBtnAdmins.classList.remove('hidden'); // ADMIN 與 SUPER_ADMIN 皆可管理 userMapping
+        if (admBtnAdmins)  admBtnAdmins.classList.remove('hidden');
         if (superRoleSec)  superRoleSec.classList.toggle('hidden', !isSuperPrivate);
 
         if (isSuperPrivate) {
@@ -1969,7 +1961,7 @@ function createExternalGasRunner(successCb, failureCb) {
       try { window.top.location.replace(targetUrl); } catch (_) { window.location.href = targetUrl; }
     }
 
-    // ==================== 文字範本快填（嚴格明確意圖：絕不自動提交假單） ====================
+    // ==================== 文字範本快填（單一智慧綠色按鈕 ＋ 斷線重連機制） ====================
     function initTextTemplate(name, dateSlashStr) {
       const txt = document.getElementById('txtRawLeave');
       if (!txt) return;
@@ -2054,7 +2046,7 @@ function createExternalGasRunner(successCb, failureCb) {
       }, 350);
     }
 
-function runBackendTextValidation(rawText, autoJumpOnSuccess) {
+    function runBackendTextValidation(rawText, autoJumpOnSuccess) {
       const clientCheck = validateLeaveTextClientSide(rawText);
       if (!clientCheck.valid) {
         STATE.verifiedText   = '';
@@ -2111,7 +2103,6 @@ function runBackendTextValidation(rawText, autoJumpOnSuccess) {
         .withFailureHandler(err => {
           if (currentSeq !== STATE.verifySeq) return;
           STATE.verifiedText   = '';
-          // ✅ 關鍵修正：將連線失敗標記為 'net_error'（而非 'invalid'），並保持綠色與灰色按鈕可點擊重連！
           STATE.verifyStatus   = 'net_error';
           STATE.verifyErrorMsg = '❌ 無法連接後端驗證伺服器：' + err.message;
 
@@ -2141,15 +2132,6 @@ function runBackendTextValidation(rawText, autoJumpOnSuccess) {
         });
     }
 
-    /**
-     * ✅ 整合版智慧動作執行器（綠＋藍二合一）：
-     * 1. 先同步將驗證通過的文字寫入剪貼簿保底
-     * 2. 若在 LIFF 內嵌環境：嘗試呼叫 liff.sendMessages 直接以本人帳號發送（綠色路徑）
-     * 3. 若無權限或非 LIFF 環境：自動無縫轉走「複製文字並關閉視窗返回原群組」（藍色路徑）
-     */
-/**
-     * 整合版智慧動作執行器（綠＋藍二合一）
-     */
     function executeVerifiedPasteAction(rawText) {
       if (isSubmitting) return;
       copyToClipboardSafe(rawText);
@@ -2189,10 +2171,7 @@ function runBackendTextValidation(rawText, autoJumpOnSuccess) {
       copyTextAndCloseDrawer();
     }
 
-    /**
-     * 🔵 藍色路徑備援：複製驗證通過文字並自動關閉視窗返回原群組
-     */
-function copyTextAndCloseDrawer() {
+    function copyTextAndCloseDrawer() {
       const rawText   = document.getElementById('txtRawLeave').value.trim();
       const syncCheck = validateLeaveTextClientSide(rawText);
       if (!syncCheck.valid) {
@@ -2218,12 +2197,6 @@ function copyTextAndCloseDrawer() {
       }, 450);
     }
 
-/**
-     * ✅ 綠色按鈕點擊處理器：
-     * - 點擊瞬間先將文字同步寫入剪貼簿（確保 iOS 剪貼簿權限不流失）
-     * - 若已驗證通過 (valid)：立即執行發送或複製返回
-     * - 若先前連線失敗 (net_error) 或尚未完成驗證：點擊立即重新發起後端連線，通過後自動發送！
-     */
     function handlePasteToLineClick(event) {
       const rawText = document.getElementById('txtRawLeave').value.trim();
 
@@ -2238,10 +2211,8 @@ function copyTextAndCloseDrawer() {
         return false;
       }
 
-      // 點擊瞬間先同步寫入剪貼簿保底
       copyToClipboardSafe(rawText);
 
-      // 若已驗證通過，直接執行發送動作
       if (STATE.verifyStatus === 'valid' && STATE.verifiedText === rawText) {
         if (isMobileClient() && !STATE.gid && STATE.botBasicId && !(typeof liff !== 'undefined' && liff.isInClient && liff.isInClient())) {
           return true;
@@ -2251,13 +2222,12 @@ function copyTextAndCloseDrawer() {
         return false;
       }
 
-      // ✅ 無論先前是網路連線失敗 (net_error)、驗證中或已修改內容，點擊綠色按鈕立即重新連線後端驗證並自動送出！
       event.preventDefault();
       if (rawTextDebounceTimer) clearTimeout(rawTextDebounceTimer);
       runBackendTextValidation(rawText, true);
       return false;
     }
-    
+
     function validateLeaveTextClientSide(rawText) {
       if (!rawText || !rawText.trim()) {
         return { valid: false, errorMessage: '⚠️ 請假單內容為空，請輸入請假單內容' };
@@ -2293,7 +2263,7 @@ function copyTextAndCloseDrawer() {
       }
 
       const dateRaw = parsed['請假日期'].replace(/[（(][一二三四五六日][)）]/g, '').trim();
-      const parts   = dateRaw.split(/[～~\-–—]/).map(s => s.trim()).filter(Boolean);
+      const parts   = dateRaw.split(/[～~\-–—〜]/).map(s => s.trim()).filter(Boolean);
       const parseOneDate = (s, refY, refM) => {
         let m = s.match(/^(\d{4})[\/\-\.年](\d{1,2})[\/\-\.月](\d{1,2})[日號]?$/);
         if (m) return new Date(parseInt(m[1], 10), parseInt(m[2], 10) - 1, parseInt(m[3], 10));
@@ -2992,11 +2962,6 @@ function copyTextAndCloseDrawer() {
       }
     }
 
-/**
-     * ✅ 灰色按鈕點擊處理器（直接由系統留言並送出假單）：
-     * - 若先前遇到連線失敗，點擊灰色按鈕會立即重新連線至後端進行完整驗證與寫入
-     * - 若送出過程發生網路斷線，按鈕會顯示「🔄 連線失敗，點此重新連線並送出假單」，可隨時點擊重試
-     */
     function submitTextForm() {
       if (isSubmitting) return;
       const rawText = document.getElementById('txtRawLeave').value.trim();
@@ -3064,7 +3029,6 @@ function copyTextAndCloseDrawer() {
             setTimeout(() => { safeCloseLiffWindow(); }, 500);
           })
           .withFailureHandler(err => {
-            // ✅ 當連線失敗時，立即解鎖灰色與綠色按鈕，讓使用者可隨時再次點擊重新連線！
             isSubmitting = false;
             STATE.verifyStatus = 'net_error';
 
@@ -3103,7 +3067,6 @@ function copyTextAndCloseDrawer() {
     // ==================== 管理員與超級管理員後台資料庫管理系統 ====================
     function switchAdminPanel(panel) {
       let targetPanel = panel;
-      // 一般管理員 (ADMIN) 可進入 'admins' (管理 userMapping)，但 'standby' 僅限超級管理員
       if (!STATE.isSuperAdmin && targetPanel === 'standby') {
         targetPanel = 'admins';
       }
@@ -3115,7 +3078,7 @@ function copyTextAndCloseDrawer() {
       });
     }
 
-    // ==================== ✅ [v25.0.0] userMapping 同仁綁定與個別功能管理前端控制器 ====================
+    // ==================== userMapping 同仁綁定與個別功能管理前端控制器 ====================
     function renderUserMappingList(mapList) {
       const box     = document.getElementById('admUserMappingListBox');
       const countEl = document.getElementById('admMappingCount');
@@ -3263,9 +3226,6 @@ function copyTextAndCloseDrawer() {
         .adminSaveUserMapping(STATE.uid, payload);
     }
 
-    /**
-     * 一鍵為單一同仁開啟或關閉「📋 今日請假」檢視權限
-     */
     function quickToggleUserTodayPerm(rowNumber) {
       const all = (STATE.adminData && STATE.adminData.userMappingList) || [];
       const m   = all.find(item => item.rowNumber === rowNumber);
@@ -3294,9 +3254,6 @@ function copyTextAndCloseDrawer() {
         .adminSaveUserMapping(STATE.uid, payload);
     }
 
-    /**
-     * 清空單一同仁被誤綁的 LINE UserID（保留姓名與個別功能設定，待本人下次請假自動綁回自己的 LINE）
-     */
     function clearSingleUserUid(rowNumber, name) {
       if (!confirm(`確定要清空「${name}」目前已綁定的 LINE UserID 嗎？\n（清空後將保留其姓名與功能設定，待 ${name} 本人下次送出假單時會自動綁回他自己的 LINE 帳號）`)) {
         return;
@@ -3822,7 +3779,6 @@ function copyTextAndCloseDrawer() {
       const mapList = adm.userMappingList || [];
       const qList   = adm.quotaList       || [];
 
-      // 渲染 userMapping 同仁綁定與個別功能清單
       renderUserMappingList(mapList);
 
       const empNameSet = new Set();
