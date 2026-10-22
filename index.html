@@ -1098,10 +1098,17 @@
       tab_today:    false
     };
 
-    function createExternalGasRunner(successCb, failureCb) {
-      const callBackend = (methodName, args) => {
+function createExternalGasRunner(successCb, failureCb) {
+      const callBackend = (methodName, args, retryCount = 0) => {
         const controller = typeof AbortController !== "undefined" ? new AbortController() : null;
-        const timeoutId  = controller ? setTimeout(() => controller.abort(), 28000) : null;
+        const timeoutId  = controller ? setTimeout(() => controller.abort(), 25000) : null;
+
+        // 針對讀取與驗證類 API，若遇偶發網路閃斷自動在背景重試 1 次
+        const isRetryableMethod = [
+          "getWebFormInitData", "validateLeaveTextFromWeb",
+          "previewLeaveHoursFromWeb", "getPrivateUserDashboardData",
+          "getLeaveRecordByRowForWeb", "adminGetBackendData"
+        ].includes(methodName);
 
         fetch(GAS_WEB_APP_URL, {
           method:  "POST",
@@ -1117,7 +1124,7 @@
           .then(rawText => {
             let payload = null;
             try { payload = JSON.parse(rawText); } catch (e) {
-              throw new Error("無法解析後端回應，請確認 GAS 已建立新版本部署");
+              throw new Error("無法解析後端回應，請確認網路穩定或點擊按鈕重試");
             }
             if (payload && payload.ok) {
               if (typeof successCb === "function") successCb(payload.result);
@@ -1128,8 +1135,13 @@
           })
           .catch(err => {
             if (timeoutId) clearTimeout(timeoutId);
+            // ✅ 背景自動重試機制：若為偶發網路失敗且尚未重試過，0.8 秒後自動重新連線
+            if (isRetryableMethod && retryCount < 1) {
+              setTimeout(() => callBackend(methodName, args, retryCount + 1), 800);
+              return;
+            }
             const friendlyErr = err.name === "AbortError"
-              ? new Error("連線後端逾時（超過 28 秒），請檢查網路連線並重試")
+              ? new Error("連線後端逾時，請點擊下方按鈕重新連線")
               : err;
             if (typeof failureCb === "function") failureCb(friendlyErr);
           });
@@ -1156,16 +1168,11 @@
       ];
 
       apiMethods.forEach(m => {
-        runner[m] = function(...args) { callBackend(m, args); };
+        runner[m] = function(...args) { callBackend(m, args, 0); };
       });
       return runner;
     }
-
-    const IS_EXTERNAL_HOST = (typeof window.google === "undefined" || !window.google.script || !window.google.script.run);
-    if (IS_EXTERNAL_HOST) {
-      window.google = { script: { run: createExternalGasRunner() } };
-    }
-
+    
     function getLocalTodayStrings() {
       const now  = new Date();
       const yyyy = now.getFullYear();
@@ -2041,7 +2048,7 @@
       }, 350);
     }
 
-    function runBackendTextValidation(rawText, autoJumpOnSuccess) {
+function runBackendTextValidation(rawText, autoJumpOnSuccess) {
       const clientCheck = validateLeaveTextClientSide(rawText);
       if (!clientCheck.valid) {
         STATE.verifiedText   = '';
@@ -2054,18 +2061,24 @@
 
       const currentSeq   = ++STATE.verifySeq;
       STATE.verifyStatus = 'verifying';
-      lockPasteButtonForVerification('⏳ 正在與資料庫核對（檢查重複請假）...');
+      lockPasteButtonForVerification('⏳ 正在連線至後端資料庫比對假單...');
       showStatusBanner('textFormResultBox', 'info', '⏳ 正在與 Google Sheet 資料庫核對（檢查是否重複請假、休假日與特休/補休餘額）...');
 
       google.script.run
         .withSuccessHandler(res => {
           if (currentSeq !== STATE.verifySeq) return;
 
+          const btnSubmit = document.getElementById('btnSubmitText');
+          if (btnSubmit && !isSubmitting) {
+            btnSubmit.disabled = false;
+            btnSubmit.innerText = '🚀 直接由系統留言並送出假單';
+          }
+
           if (!res || !res.valid) {
             STATE.verifiedText   = '';
             STATE.verifyStatus   = 'invalid';
             STATE.verifyErrorMsg = (res && res.errorMessage) ? res.errorMessage : '❌ 假單驗證未通過';
-            lockPasteButtonForVerification('⛔ 假單驗證未通過（請先修正上方錯誤）');
+            lockPasteButtonForVerification('⛔ 假單驗證未通過（請修正上方錯誤後點此重試）');
             showStatusBanner('textFormResultBox', 'err', STATE.verifyErrorMsg);
             return;
           }
@@ -2092,10 +2105,28 @@
         .withFailureHandler(err => {
           if (currentSeq !== STATE.verifySeq) return;
           STATE.verifiedText   = '';
-          STATE.verifyStatus   = 'invalid';
+          // ✅ 關鍵修正：將連線失敗標記為 'net_error'（而非 'invalid'），並保持綠色與灰色按鈕可點擊重連！
+          STATE.verifyStatus   = 'net_error';
           STATE.verifyErrorMsg = '❌ 無法連接後端驗證伺服器：' + err.message;
-          lockPasteButtonForVerification('⚠️ 驗證連線失敗，請點擊重試');
-          showStatusBanner('textFormResultBox', 'err', STATE.verifyErrorMsg);
+
+          const btnGreen = document.getElementById('btnPasteToLine');
+          if (btnGreen) {
+            btnGreen.classList.remove('locked');
+            btnGreen.href = 'javascript:void(0)';
+            btnGreen.innerText = '🔄 連線中斷！點此重新連線比對並發送';
+          }
+
+          const btnSubmit = document.getElementById('btnSubmitText');
+          if (btnSubmit) {
+            btnSubmit.disabled = false;
+            btnSubmit.innerText = '🔄 重新連線並直接由系統送出假單';
+          }
+
+          showStatusBanner(
+            'textFormResultBox',
+            'err',
+            `${STATE.verifyErrorMsg}\n👉 請直接點擊下方「綠色按鈕」或「灰色按鈕」再次提送連線！`
+          );
         })
         .validateLeaveTextFromWeb({
           text:    rawText,
@@ -2110,12 +2141,13 @@
      * 2. 若在 LIFF 內嵌環境：嘗試呼叫 liff.sendMessages 直接以本人帳號發送（綠色路徑）
      * 3. 若無權限或非 LIFF 環境：自動無縫轉走「複製文字並關閉視窗返回原群組」（藍色路徑）
      */
+/**
+     * 整合版智慧動作執行器（綠＋藍二合一）
+     */
     function executeVerifiedPasteAction(rawText) {
       if (isSubmitting) return;
-      // 步驟 1：於點擊當下立即同步複製文字至剪貼簿（確保 iOS / Android 100% 複製成功）
       copyToClipboardSafe(rawText);
 
-      // 情況 A：1對1私訊且非 LIFF 內嵌環境 -> 透過 oaMessage 將文字帶入聊天輸入框
       if (isMobileClient() && !STATE.gid && STATE.botBasicId && !(typeof liff !== 'undefined' && liff.isInClient && liff.isInClient())) {
         const btn = document.getElementById('btnPasteToLine');
         unlockPasteButtonWithVerifiedText(rawText);
@@ -2126,7 +2158,6 @@
         return;
       }
 
-      // 情況 B：LINE 群組或 LIFF 內嵌環境 -> 先嘗試綠色路徑 (liff.sendMessages)，失敗或無權限時自動執行藍色路徑 (複製並返回原群組)
       if (typeof liff !== 'undefined' && liff.isInClient && liff.isInClient()) {
         isSubmitting = true;
         lockPasteButtonForVerification('🚀 正在處理假單文字...');
@@ -2134,7 +2165,6 @@
 
         liff.sendMessages([{ type: 'text', text: rawText }])
           .then(() => {
-            // 🟢 綠色路徑成功：使用者已授權 chat_message.write，直接以本人帳號發出文字並收起視窗
             isSubmitting = false;
             try { localStorage.removeItem(CACHE_KEY_INIT); } catch (_) {}
             STATE.verifiedText = '';
@@ -2144,21 +2174,19 @@
             setTimeout(() => { safeCloseLiffWindow(); }, 250);
           })
           .catch(() => {
-            // 🔵 自動轉走藍色路徑：未授權或未開通 chat_message.write 時，直接提示已複製並自動關閉視窗返回原群組！
             isSubmitting = false;
             copyTextAndCloseDrawer();
           });
         return;
       }
 
-      // 情況 C：外部瀏覽器環境 -> 直接走藍色路徑（複製文字並返回 LINE 聊天室）
       copyTextAndCloseDrawer();
     }
 
     /**
      * 🔵 藍色路徑備援：複製驗證通過文字並自動關閉視窗返回原群組
      */
-    function copyTextAndCloseDrawer() {
+function copyTextAndCloseDrawer() {
       const rawText   = document.getElementById('txtRawLeave').value.trim();
       const syncCheck = validateLeaveTextClientSide(rawText);
       if (!syncCheck.valid) {
@@ -2184,6 +2212,12 @@
       }, 450);
     }
 
+/**
+     * ✅ 綠色按鈕點擊處理器：
+     * - 點擊瞬間先將文字同步寫入剪貼簿（確保 iOS 剪貼簿權限不流失）
+     * - 若已驗證通過 (valid)：立即執行發送或複製返回
+     * - 若先前連線失敗 (net_error) 或尚未完成驗證：點擊立即重新發起後端連線，通過後自動發送！
+     */
     function handlePasteToLineClick(event) {
       const rawText = document.getElementById('txtRawLeave').value.trim();
 
@@ -2198,32 +2232,26 @@
         return false;
       }
 
-      if (STATE.verifyStatus === 'invalid' && STATE.verifyErrorMsg) {
-        event.preventDefault();
-        lockPasteButtonForVerification('⛔ 假單驗證未通過（請先修正上方錯誤）');
-        showStatusBanner('textFormResultBox', 'err', STATE.verifyErrorMsg);
-        return false;
-      }
+      // 點擊瞬間先同步寫入剪貼簿保底
+      copyToClipboardSafe(rawText);
 
+      // 若已驗證通過，直接執行發送動作
       if (STATE.verifyStatus === 'valid' && STATE.verifiedText === rawText) {
-        // 點擊瞬間同步寫入剪貼簿
-        copyToClipboardSafe(rawText);
-
         if (isMobileClient() && !STATE.gid && STATE.botBasicId && !(typeof liff !== 'undefined' && liff.isInClient && liff.isInClient())) {
           return true;
         }
-
         event.preventDefault();
         executeVerifiedPasteAction(rawText);
         return false;
       }
 
+      // ✅ 無論先前是網路連線失敗 (net_error)、驗證中或已修改內容，點擊綠色按鈕立即重新連線後端驗證並自動送出！
       event.preventDefault();
       if (rawTextDebounceTimer) clearTimeout(rawTextDebounceTimer);
       runBackendTextValidation(rawText, true);
       return false;
     }
-
+    
     function validateLeaveTextClientSide(rawText) {
       if (!rawText || !rawText.trim()) {
         return { valid: false, errorMessage: '⚠️ 請假單內容為空，請輸入請假單內容' };
@@ -2958,6 +2986,11 @@
       }
     }
 
+/**
+     * ✅ 灰色按鈕點擊處理器（直接由系統留言並送出假單）：
+     * - 若先前遇到連線失敗，點擊灰色按鈕會立即重新連線至後端進行完整驗證與寫入
+     * - 若送出過程發生網路斷線，按鈕會顯示「🔄 連線失敗，點此重新連線並送出假單」，可隨時點擊重試
+     */
     function submitTextForm() {
       if (isSubmitting) return;
       const rawText = document.getElementById('txtRawLeave').value.trim();
@@ -2979,9 +3012,9 @@
       const btnSubmit = document.getElementById('btnSubmitText');
       if (btnSubmit) {
         btnSubmit.disabled = true;
-        btnSubmit.innerText = '🚀 正在送出假單...';
+        btnSubmit.innerText = '⏳ 正在連線後端資料庫並送出假單...';
       }
-      showStatusBanner('textFormResultBox', 'info', '⏳ 正在將請假單寫入資料庫並發送至原群組聊天室，請稍候...');
+      showStatusBanner('textFormResultBox', 'info', '⏳ 正在連線至後端資料庫進行驗證並發送假單至原群組聊天室，請稍候...');
 
       try {
         google.script.run
@@ -2993,7 +3026,7 @@
                 btnSubmit.disabled = false;
                 btnSubmit.innerText = '🚀 直接由系統留言並送出假單';
               }
-              showStatusBanner('textFormResultBox', 'err', res ? res.errorMessage : '❌ 格式驗證失敗，請檢查欄位');
+              showStatusBanner('textFormResultBox', 'err', res ? res.errorMessage : '❌ 假單驗證未通過，請檢查欄位');
               return;
             }
 
@@ -3011,6 +3044,10 @@
             STATE.verifyStatus   = 'invalid';
             STATE.verifyErrorMsg = `⚠️ 此筆假單（#${res.rowNumber}）剛剛已成功建檔送出！`;
             lockPasteButtonForVerification('🎉 假單已成功送出！');
+            if (btnSubmit) {
+              btnSubmit.disabled = true;
+              btnSubmit.innerText = '🎉 假單已成功送出！';
+            }
 
             showStatusBanner(
               'textFormResultBox',
@@ -3021,12 +3058,25 @@
             setTimeout(() => { safeCloseLiffWindow(); }, 500);
           })
           .withFailureHandler(err => {
+            // ✅ 當連線失敗時，立即解鎖灰色與綠色按鈕，讓使用者可隨時再次點擊重新連線！
             isSubmitting = false;
+            STATE.verifyStatus = 'net_error';
+
             if (btnSubmit) {
               btnSubmit.disabled = false;
-              btnSubmit.innerText = '🚀 直接由系統留言並送出假單';
+              btnSubmit.innerText = '🔄 連線失敗，點此重新連線並送出假單';
             }
-            showStatusBanner('textFormResultBox', 'err', '❌ 系統執行錯誤：' + err.message);
+            const btnGreen = document.getElementById('btnPasteToLine');
+            if (btnGreen) {
+              btnGreen.classList.remove('locked');
+              btnGreen.innerText = '🔄 點此重新連線比對並以本人發送';
+            }
+
+            showStatusBanner(
+              'textFormResultBox',
+              'err',
+              `❌ 後端連線中斷：${err.message}\n👉 請確認網路訊號後，直接再次點擊下方「綠色按鈕」或「灰色按鈕」重新連線！`
+            );
           })
           .submitRawTextLeaveFromWeb({
             text:    rawText,
@@ -3035,11 +3085,12 @@
           });
       } catch (syncErr) {
         isSubmitting = false;
+        STATE.verifyStatus = 'net_error';
         if (btnSubmit) {
           btnSubmit.disabled = false;
-          btnSubmit.innerText = '🚀 直接由系統留言並送出假單';
+          btnSubmit.innerText = '🔄 連線失敗，點此重新連線並送出假單';
         }
-        showStatusBanner('textFormResultBox', 'err', '❌ 無法連接後端函式：' + syncErr.message);
+        showStatusBanner('textFormResultBox', 'err', '❌ 無法連接後端函式：' + syncErr.message + '\n👉 請再次點擊下方按鈕重新連線！');
       }
     }
 
