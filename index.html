@@ -1032,10 +1032,10 @@
   <script>
     // ============================================================
     // 🌐 三棲熱備援環境核心連線設定
-    // 版本: v25.2.0 (Pre-Launch Final Release - 自帶上次假單文字與完整防呆版)
+    // 版本: v25.3.0 (Production Final Verified Release)
     // ============================================================
     const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyuW_4_sWHWUq0lc4QOe1amHl7ipGXr0wGNoVQFJl7leq6JYGWVR7CUoPOZkPMqprnX/exec";
-    const CACHE_KEY_INIT  = "leave_sys_init_cache_v25_2_final";
+    const CACHE_KEY_INIT  = "leave_sys_init_cache_v25_3_final";
 
     const GAS_SSR_PAYLOAD = "/*__GAS_SSR_INJECTION__*/";
 
@@ -1169,7 +1169,7 @@
       return runner;
     }
 
-    // ✅ 【P0 關鍵必備】當部署於 GitHub Pages 或 Bloon.io 外部節點時，自動掛載 google.script.run 跨網域橋接器
+    // ✅ 當部署於 GitHub Pages 或 Bloon.io 外部節點時，自動掛載 google.script.run 跨網域橋接器
     const IS_EXTERNAL_HOST = (typeof window.google === "undefined" || !window.google.script || !window.google.script.run);
     if (IS_EXTERNAL_HOST) {
       window.google = { script: { run: createExternalGasRunner() } };
@@ -1210,6 +1210,7 @@
       isSuperAdmin: false,
       boundName: "",
       lastApproval: "已報請主管核准",
+      userEditedRawText: false,
       userCustomPerms: {
         allowToday:    false,
         allowSchedule: false,
@@ -1450,9 +1451,6 @@
       }
     }
 
-    /**
-     * 將自帶或記憶的核准狀態同步設定至「📝 填寫請假」下拉選單
-     */
     function syncApprovalSelectOption(approvalVal) {
       if (!approvalVal) return;
       const sel = document.getElementById('selApproval');
@@ -1647,10 +1645,15 @@
         try { localStorage.setItem('leave_sys_user_name', resolvedName); } catch (_) {}
       }
 
-      // ✅ 自動記憶並同步上次假單的「核准」狀態文字
+      // ✅ 優先採用後端回傳之該同仁最近一筆假單的「核准」狀態文字（若無則取本機記憶）
       const savedApproval    = localStorage.getItem('leave_sys_last_approval') || '';
-      const resolvedApproval = savedApproval || res.lastApproval || '已報請主管核准';
+      const resolvedApproval = (res.lastApproval && res.lastApproval !== '已報請主管核准')
+        ? res.lastApproval
+        : (savedApproval || res.lastApproval || '已報請主管核准');
       STATE.lastApproval     = resolvedApproval;
+      if (resolvedApproval) {
+        try { localStorage.setItem('leave_sys_last_approval', resolvedApproval); } catch (_) {}
+      }
       if (!STATE.editRow) {
         syncApprovalSelectOption(resolvedApproval);
       }
@@ -1989,7 +1992,7 @@
       try { window.top.location.replace(targetUrl); } catch (_) { window.location.href = targetUrl; }
     }
 
-    // ==================== ✅ 文字範本快填（自帶上次假單之姓名與核准狀態） ====================
+    // ==================== ✅ 文字範本快填（自帶上次假單之姓名與核准狀態，含競態保護） ====================
     function saveLastUsedFieldsFromText(rawText) {
       try {
         if (!rawText) return;
@@ -2018,7 +2021,7 @@
       const txt = document.getElementById('txtRawLeave');
       if (!txt) return;
 
-      const cleanInitName     = (name && name !== '系統管理員') ? name : '王小明';
+      const cleanInitName     = (name && name !== '系統管理員' && name !== '王小明') ? name : '王小明';
       const cleanInitApproval = (approvalStr && approvalStr.trim())
         ? approvalStr.trim()
         : (localStorage.getItem('leave_sys_last_approval') || STATE.lastApproval || '已報請主管核准');
@@ -2035,17 +2038,19 @@
         ].join('\n');
         lockPasteButtonForVerification('🔍 正在驗證假單格式與是否重複請假...');
         if (STATE.tab === 'textform') runBackendTextValidation(txt.value.trim(), false);
-      } else {
-        let modified = false;
-        if (cleanInitName !== '王小明' && (txt.value.includes('請假人：王小明') || txt.value.includes('請假人：系統管理員'))) {
-          txt.value = txt.value.replace(/^請假人\s*[：:].*$/m, `請假人：${cleanInitName}`);
-          modified = true;
+      } else if (!STATE.userEditedRawText) {
+        // ✅ 只要使用者尚未手動編輯過文字框，當 LIFF 載入完成並從後端拉回真實綁定姓名與上次核准文字時，自動替換更新！
+        let updatedText = txt.value;
+        if (cleanInitName !== '王小明') {
+          updatedText = updatedText.replace(/^請假人\s*[：:].*$/m, `請假人：${cleanInitName}`);
         }
-        if (cleanInitApproval && txt.value.includes('核准：已報請主管核准') && cleanInitApproval !== '已報請主管核准') {
-          txt.value = txt.value.replace(/^核准\s*[：:].*$/m, `核准：${cleanInitApproval}`);
-          modified = true;
+        if (cleanInitApproval) {
+          updatedText = updatedText.replace(/^核准\s*[：:].*$/m, `核准：${cleanInitApproval}`);
         }
-        if (modified) {
+        if (updatedText !== txt.value) {
+          txt.value = updatedText;
+          STATE.verifiedText = '';
+          STATE.verifyStatus = 'idle';
           lockPasteButtonForVerification('🔍 正在驗證假單格式與是否重複請假...');
           if (STATE.tab === 'textform') runBackendTextValidation(txt.value.trim(), false);
         }
@@ -2086,6 +2091,7 @@
     }
 
     function onRawTextInput() {
+      STATE.userEditedRawText = true;
       const txt     = document.getElementById('txtRawLeave');
       const rawText = txt ? txt.value.trim() : '';
 
@@ -2638,9 +2644,6 @@
       applyTabAndRolePermissions();
     }
 
-    /**
-     * 當使用者在表單修改「請假人員」時，自動記憶並同步更新文字範本快填的「請假人：」
-     */
     function onNameChange() {
       const name = document.getElementById('inpName').value.trim();
       if (name && name !== '系統管理員' && name !== '王小明') {
@@ -2661,9 +2664,6 @@
       }
     }
 
-    /**
-     * 當使用者在表單切換「主管核准狀態」時，自動記憶並同步更新文字範本快填的「核准：」
-     */
     function onApprovalChange() {
       const appVal = document.getElementById('selApproval').value;
       if (appVal) {
