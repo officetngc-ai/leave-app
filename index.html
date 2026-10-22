@@ -322,8 +322,8 @@
       <div class="card">
         <h3 class="section-title">✍️ 文字版範本修改（100% 事前驗證防呆）</h3>
         <div class="banner">
-          💡 請在下方修改您的請假內容。系統會先<strong>自動執行前端與後端 11 道完整驗證（含攔截重複請假與檢查特休/補休額度）</strong>，驗證通過後：<br>
-          👉 點擊下方<strong>綠色按鈕</strong>：若已授權將<strong>直接以本人帳號發送至群組</strong>；若未授權則<strong>自動複製文字並返回原群組</strong>讓您貼上！
+          💡 請在下方修改您的請假內容。系統會先<strong>自動執行請假驗證</strong>。<br>
+          👉 驗證通過後請點擊下方<strong>綠色按鈕</strong>：<strong>直接以本人帳號發送至群組</strong>；或<strong>自動複製文字並返回原群組</strong>讓您貼上！
         </div>
 
         <div class="form-group">
@@ -2095,7 +2095,7 @@ function runBackendTextValidation(rawText, autoJumpOnSuccess) {
             showStatusBanner(
               'textFormResultBox',
               'ok',
-              `✅ 資料庫驗證通過！（${STATE.verifySummary}）\n請點擊下方綠色按鈕送出（若無直接發話權限，系統將自動為您複製文字並返回原群組）。`
+              `✅ 資料庫驗證通過！（${STATE.verifySummary}）\n請點擊下方綠色按鈕送出。`
             );
             return;
           }
