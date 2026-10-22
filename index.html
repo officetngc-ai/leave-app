@@ -1172,6 +1172,12 @@ function createExternalGasRunner(successCb, failureCb) {
       });
       return runner;
     }
+
+    // ✅ 【P0 關鍵必補】當部署於 GitHub Pages 或 Bloon.io 時，自動掛載 google.script.run 跨網域橋接器！
+    const IS_EXTERNAL_HOST = (typeof window.google === "undefined" || !window.google.script || !window.google.script.run);
+    if (IS_EXTERNAL_HOST) {
+      window.google = { script: { run: createExternalGasRunner() } };
+    }
     
     function getLocalTodayStrings() {
       const now  = new Date();
@@ -2351,7 +2357,7 @@ function copyTextAndCloseDrawer() {
       else if (/^下午$/.test(hRaw)) hoursPerDay = Number(dayCfg.afternoonHours || 5);
       else if (/^(半天|上半天|下半天)$/.test(hRaw)) hoursPerDay = Number(dayCfg.halfDayHours || 4);
       else {
-        const tr = hRaw.match(/^(\d{1,2})[：:](\d{2})[～~\-–—](\d{1,2})[：:](\d{2})$/);
+        const tr = hRaw.match(/^(\d{1,2})[：:](\d{2})[～~\-–—〜](\d{1,2})[：:](\d{2})$/);
         if (tr) {
           const sh = parseInt(tr[1], 10), sm = parseInt(tr[2], 10);
           const eh = parseInt(tr[3], 10), em = parseInt(tr[4], 10);
