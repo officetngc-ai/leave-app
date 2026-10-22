@@ -186,14 +186,14 @@
     </div>
   </div>
 
-  <!-- 頂部多功能切換導航列（依群組設定與 1對1 身分角色動態控制顯示） -->
+  <!-- 頂部多功能切換導航列（依群組設定、1對1角色與個別同仁功能授權動態顯示） -->
   <div class="tabs" id="topTabsBar">
     <button class="tab-btn active" id="tabBtn_form" onclick="switchTab('form')">📝 填寫請假</button>
     <button class="tab-btn" id="tabBtn_my" onclick="switchTab('my')">🔒 查特休/紀錄</button>
     <button class="tab-btn hidden" id="tabBtn_textform" onclick="switchTab('textform')">✍️ 文字快填</button>
+    <button class="tab-btn hidden" id="tabBtn_today" onclick="switchTab('today')">📋 今日請假</button>
     <button class="tab-btn hidden" id="tabBtn_schedule" onclick="switchTab('schedule')">⚙️ 班表設定</button>
     <button class="tab-btn" id="tabBtn_help" onclick="switchTab('help')">📖 說明</button>
-    <button class="tab-btn hidden" id="tabBtn_today" onclick="switchTab('today')">📋 今日請假</button>
     <button class="tab-btn admin-tab hidden" id="tabBtn_admin" onclick="switchTab('admin')">🛠️ 系統管理</button>
   </div>
 
@@ -281,7 +281,7 @@
           </select>
         </div>
 
-        <!-- ✅ [商用升級 3] 請假證明附件照片上傳（依後台 ENABLE_ATTACHMENT_UPLOAD 開關顯示，內建 Canvas 自動壓縮） -->
+        <!-- 請假證明附件照片上傳（依後台 ENABLE_ATTACHMENT_UPLOAD 開關顯示，內建 Canvas 自動壓縮） -->
         <div id="attachmentUploadGroup" class="form-group hidden" style="background:#F8FAFC; padding:12px; border-radius:10px; border:1px dashed var(--blue);">
           <label style="color:var(--blue);">📎 請假證明附件照片（選填：病假診斷書 / 公假 / 婚喪假證明）</label>
           <input type="file" id="inpAttachmentFile" accept="image/*" onchange="onSelectAttachmentFile(this)">
@@ -403,17 +403,17 @@
       <div class="admin-header-card">
         <div>
           <div style="font-size:16px; font-weight:800;" id="lblAdminHeaderTitle">🛠️ 後台資料庫管理系統</div>
-          <div style="font-size:12px; color:#CBD5E1; margin-top:3px;" id="lblAdminRoleSubtitle">直接新增、修改、查閱 Google Sheet 資料庫與商用自動化控制</div>
+          <div style="font-size:12px; color:#CBD5E1; margin-top:3px;" id="lblAdminRoleSubtitle">直接管理員工 LINE 綁定、個別功能授權與四大資料庫</div>
         </div>
         <button class="btn sm" style="background:#3B82F6;" onclick="reloadAdminDatabase()">🔄 重新整理</button>
       </div>
 
       <div id="adminLoadingBanner" class="banner hidden">⏳ 正在從後端 Google Sheet 資料庫同步最新數據...</div>
 
-      <!-- 子導航列 -->
+      <!-- 子導航列：管理員與超級管理員皆可使用「🔐 帳號與綁定」管理同仁 LINE UserID 與個別功能開關 -->
       <div class="admin-subtabs">
         <button class="admin-subbtn active" id="admBtn_standby" onclick="switchAdminPanel('standby')">🌐 備援與群組</button>
-        <button class="admin-subbtn" id="admBtn_admins" onclick="switchAdminPanel('admins')">🔐 帳號權限</button>
+        <button class="admin-subbtn" id="admBtn_admins" onclick="switchAdminPanel('admins')">🔐 帳號與綁定</button>
         <button class="admin-subbtn" id="admBtn_quota" onclick="switchAdminPanel('quota')">👥 特休/補休庫</button>
         <button class="admin-subbtn" id="admBtn_recs" onclick="switchAdminPanel('recs')">📋 假單/月結庫</button>
         <button class="admin-subbtn" id="admBtn_sched" onclick="switchAdminPanel('sched')">⚙️ 班表庫</button>
@@ -539,61 +539,137 @@
         <button class="btn teal" onclick="saveLiffSyncConfiguration()">💾 儲存並校準三組專屬 LIFF ID 設定</button>
       </div>
 
-      <!-- 管理模組 0：帳號權限資料庫 (adminUsers，僅限超級管理員 SUPER_ADMIN) -->
+      <!-- ==================== 管理模組 0：請假同仁 LINE 綁定與個別功能管理 (userMapping) ＋ 角色權限設定 (adminUsers) ==================== -->
       <div id="admPanel_admins" class="card hidden">
-        <div class="section-title"><span>🔐 成員與管理員帳號權限設定（超級管理員專屬）</span></div>
-        <div class="banner">
-          💡 所有設定將直接儲存於 Google Sheet 的 <strong>「adminUsers」</strong> 資料庫分頁：<br>
-          • <strong>👑 超級管理員 (SUPER_ADMIN)</strong>：於 1對1 聊天室擁有所有系統管理功能（含備援切換、群組顯示控制、帳號權限管理）。<br>
-          • <strong>🛡️ 管理員 (ADMIN)</strong>：於 1對1 聊天室擁有一般管理功能（特休/補休庫、假單/月結庫、班表庫、假別與擴充、今日請假）。<br>
-          • <strong>👤 一般成員 (USER)</strong>：僅能查詢本人綁定之特休與紀錄，且僅限修改今日及未來的本人假單。
+        <!-- ✅ [v25.0.0 新增] 區塊 A：請假同仁 LINE UserID 綁定管理與單一同仁個別功能開關 (管理員與超級管理員皆可操作) -->
+        <div class="section-title">
+          <span>🪪 請假同仁 LINE 綁定與個別功能授權 (userMapping)</span>
+          <button class="btn sm" style="background:#D97706;" onclick="cleanDuplicateMappingsFromAdmin()">🧹 一鍵修復重複ID與測試資料</button>
+        </div>
+        <div class="banner" style="font-size:12.5px;">
+          💡 <strong>管理說明（對應 Google Sheet「userMapping」分頁）：</strong><br>
+          1️⃣ <strong>修改或重設綁定：</strong>可在此修改同仁姓名、修正或清空誤綁的 <code>LINE UserID</code>（清空後，該同仁下次送出假單時會自動綁回他本人的 LINE 帳號）。<br>
+          2️⃣ <strong>單一同仁個別功能授權：</strong>即使同仁只是「一般成員」，只要為他打勾 <strong>「📋 開放看今日請假」</strong>，他的畫面就會額外顯示「📋 今日請假」分頁與膠囊按鈕來判斷當日工作量，但不會擁有後台管理權限！
         </div>
 
+        <input type="hidden" id="inpMapRowNumber" value="">
+
         <div class="form-group">
-          <label>快速選取現有員工（或直接於下方輸入姓名）</label>
-          <select id="admSelAdminEmp" onchange="onAdminSelectAdminEmp(this.value)">
-            <option value="">-- ➕ 手動輸入或選擇現有員工 --</option>
+          <label>選擇要編輯綁定或授權的同仁（或維持空白以新增）</label>
+          <select id="admSelMappingEmp" onchange="onSelectMappingEmployee(this.value)">
+            <option value="">-- ➕ 新增或從下方清單點選「編輯」 --</option>
           </select>
         </div>
 
         <div class="row-2">
           <div class="form-group">
-            <label>員工姓名 <span class="req">*</span></label>
-            <input type="text" id="admAdminName" list="employeeList" placeholder="例如：林主管">
+            <label>同仁姓名 <span class="req">*</span></label>
+            <input type="text" id="inpMapName" list="employeeList" placeholder="例如：李欣柔">
           </div>
           <div class="form-group">
-            <label>LINE UserID (選填/自動對應)</label>
-            <input type="text" id="admAdminUid" placeholder="留空時由系統依姓名自動綁定">
+            <label>綁定之 LINE UserID（留空則待本人首次請假自動綁定）</label>
+            <input type="text" id="inpMapUid" placeholder="U開頭之33碼ID，清空可讓本人重綁">
           </div>
         </div>
 
-        <div class="row-2">
+        <label style="color:var(--teal); margin-bottom:6px;">🎯 針對此同仁單獨啟動之擴充功能（一般成員角色適用）：</label>
+        <div class="ent-toggle-row">
+          <div>
+            <div style="font-weight:800; font-size:13.5px; color:var(--blue);">📋 開放查看「今日請假與本週名單」 (TODAY)</div>
+            <div style="font-size:12px; color:var(--muted);">讓此同仁於群組及 1對1 皆可查看今日請假人數以評估當日工作量（僅檢視，無管理權）</div>
+          </div>
+          <input type="checkbox" id="chkMap_allowToday">
+        </div>
+
+        <div class="ent-toggle-row">
+          <div>
+            <div style="font-weight:800; font-size:13.5px;">⚙️ 開放於 1對1 聊天室查看「班表與休假設定」 (SCHEDULE)</div>
+            <div style="font-size:12px; color:var(--muted);">讓此同仁在個人 1對1 視窗也能檢視每週開放工時與特定國定假日</div>
+          </div>
+          <input type="checkbox" id="chkMap_allowSchedule">
+        </div>
+
+        <div class="ent-toggle-row">
+          <div>
+            <div style="font-weight:800; font-size:13.5px;">🔍 開放於查特休頁「唯讀查詢其他成員休假紀錄」 (QUERY_ALL)</div>
+            <div style="font-size:12px; color:var(--muted);">適合排班協調人員：可查詢其他同事請假明細，但無修改他人假單按鈕</div>
+          </div>
+          <input type="checkbox" id="chkMap_allowQueryAll">
+        </div>
+
+        <div class="form-group" style="margin-top:8px;">
+          <label>綁定備註說明（選填）</label>
+          <input type="text" id="inpMapRemarks" placeholder="例如：排班協調員（開放看今日請假）">
+        </div>
+
+        <div id="userMappingStatusBox" class="status-box hidden"></div>
+
+        <div class="row-2" style="margin-bottom:14px;">
+          <button class="btn teal" onclick="saveUserMappingFromAdmin()">💾 儲存同仁綁定與個別功能設定</button>
+          <button class="btn secondary" style="margin-top:0;" onclick="resetUserMappingForm()">🔄 清空表單 / 切換新增</button>
+        </div>
+
+        <div class="form-group" style="margin-bottom:8px;">
+          <input type="text" id="inpSearchUserMapping" placeholder="🔍 輸入姓名或 LINE UserID 即時篩選綁定名單..." oninput="filterUserMappingList()">
+        </div>
+
+        <h4 style="margin:10px 0 8px 0; font-size:14px;">🪪 userMapping 同仁綁定與個別功能清單 (<span id="admMappingCount">0</span> 筆)</h4>
+        <div id="admUserMappingListBox" style="max-height:380px; overflow-y:auto; margin-bottom:18px;"></div>
+
+        <!-- 區塊 B：管理員角色權限設定 (adminUsers，僅超級管理員可變更管理員角色) -->
+        <div id="superAdminRoleSection">
+          <hr style="border:none; border-top:2px dashed var(--border); margin:20px 0;">
+          <div class="section-title"><span>👑 系統管理員角色權限指派 (adminUsers - 超級管理員專屬)</span></div>
+          <div class="banner" style="font-size:12.5px;">
+            💡 此區用於指派誰是 <strong>「🛡️ 管理員 (ADMIN)」</strong> 或 <strong>「👑 超級管理員 (SUPER_ADMIN)」</strong>（管理員可進入後台管理特休庫、假單庫與班表庫）：
+          </div>
+
           <div class="form-group">
-            <label>帳號身分權限 <span class="req">*</span></label>
-            <select id="admAdminRole">
-              <option value="ADMIN" selected>🛡️ 管理員 (ADMIN - 一般管理功能)</option>
-              <option value="SUPER_ADMIN">👑 超級管理員 (SUPER_ADMIN - 所有系統功能)</option>
-              <option value="USER">👤 一般成員 (USER)</option>
+            <label>快速選取現有員工（或直接於下方輸入姓名）</label>
+            <select id="admSelAdminEmp" onchange="onAdminSelectAdminEmp(this.value)">
+              <option value="">-- ➕ 手動輸入或選擇現有員工 --</option>
             </select>
           </div>
-          <div class="form-group">
-            <label>帳號啟用狀態</label>
-            <select id="admAdminEnabled">
-              <option value="true" selected>✅ 啟用中 (TRUE)</option>
-              <option value="false">⛔ 停用權限 (FALSE)</option>
-            </select>
+
+          <div class="row-2">
+            <div class="form-group">
+              <label>員工姓名 <span class="req">*</span></label>
+              <input type="text" id="admAdminName" list="employeeList" placeholder="例如：林主管">
+            </div>
+            <div class="form-group">
+              <label>LINE UserID (選填/自動對應)</label>
+              <input type="text" id="admAdminUid" placeholder="留空時由系統依姓名自動綁定">
+            </div>
           </div>
+
+          <div class="row-2">
+            <div class="form-group">
+              <label>帳號身分權限 <span class="req">*</span></label>
+              <select id="admAdminRole">
+                <option value="ADMIN" selected>🛡️ 管理員 (ADMIN - 一般管理功能)</option>
+                <option value="SUPER_ADMIN">👑 超級管理員 (SUPER_ADMIN - 所有系統功能)</option>
+                <option value="USER">👤 一般成員 (USER)</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>帳號啟用狀態</label>
+              <select id="admAdminEnabled">
+                <option value="true" selected>✅ 啟用中 (TRUE)</option>
+                <option value="false">⛔ 停用權限 (FALSE)</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>職務 / 權限備註說明</label>
+            <input type="text" id="admAdminRemarks" placeholder="例如：店務主管、人事管理員">
+          </div>
+
+          <button class="btn blue" style="margin-top:0;" onclick="saveAdminUserRecord()">💾 儲存管理員角色權限 (adminUsers)</button>
+
+          <h4 style="margin:18px 0 8px 0; font-size:14px;">📊 管理員角色資料庫清單 (<span id="admAdminCount">0</span> 筆)</h4>
+          <div id="admAdminListBox"></div>
         </div>
-
-        <div class="form-group">
-          <label>職務 / 權限備註說明</label>
-          <input type="text" id="admAdminRemarks" placeholder="例如：店務主管、人事管理員、一般員工">
-        </div>
-
-        <button class="btn teal" onclick="saveAdminUserRecord()">💾 儲存帳號權限至 Google Sheet 資料庫</button>
-
-        <h4 style="margin:18px 0 8px 0; font-size:14px;">📊 帳號權限資料庫清單 (<span id="admAdminCount">0</span> 筆)</h4>
-        <div id="admAdminListBox"></div>
       </div>
 
       <!-- ==================== 管理模組 1：員工特休與補休池資料庫 + 未休遞延/折現結算 + 加班補休審核 ==================== -->
@@ -609,7 +685,7 @@
           </div>
         </div>
 
-        <!-- ✅ [商用升級 1] 年底未休特休結算（一鍵轉入次年遞延額度 / 匯出未休折現工資表）面板 -->
+        <!-- 年底未休特休結算面板 -->
         <div id="admSettleDrawer" class="sub-drawer-box hidden" style="border-color:#F59E0B; background:#FFFBEB;">
           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
             <strong style="color:#B45309; font-size:14px;">💰 未休完特休結算中心（轉入次年遞延 / 匯出折現工資表）</strong>
@@ -623,7 +699,7 @@
           <div id="admSettlePreviewBox" style="max-height:240px; overflow-y:auto;"></div>
         </div>
 
-        <!-- ✅ [商用升級 2] 加班申請審核與補休時數直接登錄面板 -->
+        <!-- 加班申請審核與補休時數直接登錄面板 -->
         <div id="admOvertimeDrawer" class="sub-drawer-box hidden" style="border-color:#00695C;">
           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
             <strong style="color:var(--teal); font-size:14px;">⏱️ 加班申請審核與補休池直接登錄</strong>
@@ -700,7 +776,6 @@
           </div>
         </div>
 
-        <!-- ✅ 新增：上期遞延特休時數 & 個人補休池時數設定欄 -->
         <div class="row-3">
           <div class="form-group">
             <label style="color:#B45309;">上期遞延特休(h)</label>
@@ -739,14 +814,14 @@
         <div id="admQuotaListBox"></div>
       </div>
 
-      <!-- ==================== 管理模組 2：請假記錄資料庫 + [商用升級 4A] 月底薪資扣款匯出 + 舊假單歸檔 ==================== -->
+      <!-- ==================== 管理模組 2：請假記錄資料庫 + 月底薪資扣款匯出 + 舊假單歸檔 ==================== -->
       <div id="admPanel_recs" class="card hidden">
         <div class="section-title">
           <span>📋 請假記錄與月底考勤結算管理</span>
           <button class="btn sm" onclick="exitEditMode(); switchTab('form');">➕ 代客新增假單</button>
         </div>
 
-        <!-- ✅ [商用升級 4A] 月底考勤與薪資扣款統計表 (CSV / Google Sheet) 匯出中心 -->
+        <!-- 月底考勤與薪資扣款統計表匯出中心 -->
         <div id="admPayrollExportBar" style="background:#EFF6FF; border:1px solid #BFDBFE; border-radius:10px; padding:10px 12px; margin-bottom:12px;">
           <div style="font-size:13px; font-weight:800; color:var(--blue); margin-bottom:6px;">
             📥 月底考勤與薪資扣款結算匯出（事假扣100% / 病假扣50% / 特休與補休不扣薪）
@@ -808,14 +883,13 @@
         <div id="admSpecialDatesManageBox"></div>
       </div>
 
-      <!-- ==================== 管理模組 4：假別資料庫 ＋ [v24.0.0] 四大商用與企業擴充開關中心 ==================== -->
+      <!-- ==================== 管理模組 4：假別資料庫 ＋ 四大商用與企業擴充開關中心 ==================== -->
       <div id="admPanel_types" class="card hidden">
         <h3 class="section-title">⚙️ 商用人事與企業自動化擴充開關中心</h3>
         <div class="banner" style="font-size:12.5px;">
           💡 所有商用級 HR 模組與自動化功能皆可在此一鍵啟用或關閉，點擊儲存後全系統立即生效：
         </div>
 
-        <!-- 商用升級 1：特休雙軌制與未休遞延 -->
         <div class="form-group" style="background:#F8FAFC; padding:10px 12px; border-radius:10px; border:1px solid var(--border); margin-bottom:8px;">
           <label style="color:var(--blue); margin-bottom:4px;">1️⃣ 特休計算制度切換（曆年制 vs. 到職週年制）</label>
           <select id="selEnt_annualMode">
@@ -832,7 +906,6 @@
           <input type="checkbox" id="chkEnt_deferredLeave" checked>
         </div>
 
-        <!-- 商用升級 2：加班申請與補休時數池連動 -->
         <div class="ent-toggle-row">
           <div>
             <div style="font-weight:800; font-size:13.5px;">⚡ 啟用「加班申請與補休時數池」自動檢查與扣減</div>
@@ -841,7 +914,6 @@
           <input type="checkbox" id="chkEnt_compPool">
         </div>
 
-        <!-- 商用升級 3：請假證明附件照片上傳 -->
         <div class="ent-toggle-row">
           <div>
             <div style="font-weight:800; font-size:13.5px;">📎 啟用「請假證明附件照片上傳 (Google Drive 歸檔)」</div>
@@ -855,7 +927,6 @@
           <input type="text" id="inpEnt_attachFolderId" placeholder="留空即自動建立「請假系統_證明附件庫」資料夾">
         </div>
 
-        <!-- 商用升級 4：多層級簽核狀態機與月底薪資扣款匯出 -->
         <div class="ent-toggle-row">
           <div>
             <div style="font-weight:800; font-size:13.5px;">🤝 第一關簽核：職務代理人確認（🤝 職代同意）</div>
@@ -882,7 +953,6 @@
 
         <hr style="border:none; border-top:1px dashed var(--border); margin:12px 0;">
 
-        <!-- 原有企業級自動化開關 -->
         <div class="ent-toggle-row">
           <div>
             <div style="font-weight:800; font-size:13.5px;">🚨 系統嚴重異常自動 LINE 警報 (P0 推薦啟用)</div>
@@ -966,10 +1036,10 @@
   <script>
     // ============================================================
     // 🌐 三棲熱備援環境核心連線設定
-    // 版本: v24.0.0 (Commercial Enterprise HR Edition - 四大商用功能與後台開關完整版)
+    // 版本: v25.0.0 (Granular Per-User Feature Permissions & UserMapping CRUD Edition)
     // ============================================================
     const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyuW_4_sWHWUq0lc4QOe1amHl7ipGXr0wGNoVQFJl7leq6JYGWVR7CUoPOZkPMqprnX/exec";
-    const CACHE_KEY_INIT  = "leave_sys_init_cache_v24_0_comm";
+    const CACHE_KEY_INIT  = "leave_sys_init_cache_v25_0_umap";
 
     const GAS_SSR_PAYLOAD = "/*__GAS_SSR_INJECTION__*/";
 
@@ -1083,7 +1153,8 @@
         "adminSaveGroupUiConfig", "adminGenerateAnnualReport", "adminGetAdjustmentLogs",
         "adminArchiveOldRecords", "adminSaveEnterpriseConfig", "adminTestMorningDigest",
         "adminSettleUnusedAnnualLeave", "submitOvertimeFromWeb", "adminReviewOvertime",
-        "adminExportMonthlyPayroll", "adminReviewLeaveRow"
+        "adminExportMonthlyPayroll", "adminReviewLeaveRow",
+        "adminSaveUserMapping", "adminDeleteUserMapping", "adminCleanDuplicateMappings"
       ];
 
       apiMethods.forEach(m => {
@@ -1131,6 +1202,12 @@
       isAdmin: false,
       isSuperAdmin: false,
       boundName: "",
+      // ✅ 個別同仁功能授權狀態 (allowToday / allowSchedule / allowQueryAll)
+      userCustomPerms: {
+        allowToday:    false,
+        allowSchedule: false,
+        allowQueryAll: false
+      },
       periodMode: "全天",
       attachmentBase64: "",
       settleCsvCache: "",
@@ -1184,9 +1261,6 @@
       box.classList.remove('hidden');
     }
 
-    /**
-     * 通用 CSV 檔案下載輔助器（支援 Excel UTF-8 BOM 中文顯示）
-     */
     function triggerCsvDownload(csvContent, fileName) {
       if (!csvContent) {
         alert('⚠️ 尚無可下載的報表內容，請先點擊結算按鈕！');
@@ -1251,24 +1325,21 @@
     }
 
     /**
-     * 核心權限、群組顯示與商用開關介面連動控制器
+     * ✅ 核心權限、群組顯示與「單一同仁個別功能授權 (userCustomPerms)」路由控制器
      */
     function applyTabAndRolePermissions() {
       const isGroup        = !!(STATE.gid && String(STATE.gid).trim());
       const gCfg           = STATE.groupUiConfig || DEFAULT_GROUP_UI_CONFIG;
       const entCfg         = STATE.enterpriseConfig || {};
+      const uPerms         = STATE.userCustomPerms  || {};
       const isAdminPrivate = (!isGroup && STATE.isAdmin);
       const isSuperPrivate = (!isGroup && STATE.isSuperAdmin);
 
-      // 依後台開關顯示/隱藏請假表單的「📎 證明附件照片上傳」區塊與「📥 月底薪資匯出」工具列
       const attGroup = document.getElementById('attachmentUploadGroup');
-      if (attGroup) {
-        attGroup.classList.toggle('hidden', !entCfg.ENABLE_ATTACHMENT_UPLOAD);
-      }
+      if (attGroup) attGroup.classList.toggle('hidden', !entCfg.ENABLE_ATTACHMENT_UPLOAD);
+
       const payrollBar = document.getElementById('admPayrollExportBar');
-      if (payrollBar) {
-        payrollBar.classList.toggle('hidden', entCfg.ENABLE_PAYROLL_EXPORT === false);
-      }
+      if (payrollBar) payrollBar.classList.toggle('hidden', entCfg.ENABLE_PAYROLL_EXPORT === false);
 
       const btnForm     = document.getElementById('tabBtn_form');
       const btnMy       = document.getElementById('tabBtn_my');
@@ -1278,45 +1349,67 @@
       const btnAdmin    = document.getElementById('tabBtn_admin');
       const escAdminBtn = document.getElementById('btnGasEscapeAdmin');
 
+      // ✅ 判斷是否顯示「📋 今日請假」與「⚙️ 班表設定」（結合群組設定、管理員角色、以及單一同仁個別功能授權 uPerms）
+      const showTodayTab = isGroup
+        ? Boolean(gCfg.tab_today || uPerms.allowToday)
+        : Boolean(isAdminPrivate || uPerms.allowToday);
+
+      const showScheduleTab = isGroup
+        ? Boolean(gCfg.tab_schedule !== false || uPerms.allowSchedule)
+        : Boolean(isAdminPrivate || uPerms.allowSchedule);
+
       if (isGroup) {
         if (btnForm)     btnForm.classList.toggle('hidden',     gCfg.tab_form === false);
         if (btnMy)       btnMy.classList.toggle('hidden',       gCfg.tab_my === false);
-        if (btnSchedule) btnSchedule.classList.toggle('hidden', gCfg.tab_schedule === false);
+        if (btnSchedule) btnSchedule.classList.toggle('hidden', !showScheduleTab);
         if (btnHelp)     btnHelp.classList.toggle('hidden',     gCfg.tab_help === false);
-        if (btnToday)    btnToday.classList.toggle('hidden',    !gCfg.tab_today);
+        if (btnToday)    btnToday.classList.toggle('hidden',    !showTodayTab);
         if (btnAdmin)    btnAdmin.classList.add('hidden');
         if (escAdminBtn) escAdminBtn.classList.add('hidden');
 
-        if (STATE.tab === 'admin' || (STATE.tab === 'today' && !gCfg.tab_today)) {
+        if (STATE.tab === 'admin' ||
+            (STATE.tab === 'today'    && !showTodayTab) ||
+            (STATE.tab === 'schedule' && !showScheduleTab)) {
           switchTab('form');
         }
       } else {
         if (btnForm)     btnForm.classList.remove('hidden');
         if (btnMy)       btnMy.classList.remove('hidden');
         if (btnHelp)     btnHelp.classList.remove('hidden');
-        if (btnSchedule) btnSchedule.classList.toggle('hidden', !isAdminPrivate);
-        if (btnToday)    btnToday.classList.toggle('hidden',    !isAdminPrivate);
+        if (btnToday)    btnToday.classList.toggle('hidden',    !showTodayTab);
+        if (btnSchedule) btnSchedule.classList.toggle('hidden', !showScheduleTab);
         if (btnAdmin)    btnAdmin.classList.toggle('hidden',    !isAdminPrivate);
         if (escAdminBtn) escAdminBtn.classList.toggle('hidden', !isAdminPrivate);
 
-        if (!isAdminPrivate && ['today', 'schedule', 'admin'].includes(STATE.tab)) {
+        if ((STATE.tab === 'admin'    && !isAdminPrivate) ||
+            (STATE.tab === 'today'    && !showTodayTab)   ||
+            (STATE.tab === 'schedule' && !showScheduleTab)) {
           switchTab('form');
         }
       }
 
+      const canQueryAll = Boolean(isAdminPrivate || uPerms.allowQueryAll);
       const inpQuery    = document.getElementById('inpQueryName');
       const lblQuery    = document.getElementById('lblQueryNameTitle');
       const bannerMy    = document.getElementById('myTabPrivacyBanner');
       const btnSendDmEl = document.getElementById('btnSendDm');
 
-      if (isAdminPrivate) {
+      if (canQueryAll) {
         if (inpQuery) {
           inpQuery.setAttribute('list', 'employeeList');
-          inpQuery.placeholder = '管理員模式：可點選或輸入任何員工姓名查詢';
+          inpQuery.placeholder = '可點選或輸入任何員工姓名查詢';
         }
-        if (lblQuery)    lblQuery.innerText = '查詢員工姓名（管理員模式：可查詢全體成員）';
-        if (bannerMy)    bannerMy.innerHTML = '🛡️ <strong>管理員 1對1 查詢模式：</strong>您可查詢全體同仁之特休/補休餘額與請假明細，並可直接點擊「✏️ 修改」調整任何假單。';
-        if (btnSendDmEl) btnSendDmEl.innerText = '📩 私訊傳送此員工特休與紀錄至您的LINE';
+        if (lblQuery) {
+          lblQuery.innerText = isAdminPrivate
+            ? '查詢員工姓名（管理員模式：可查詢全體成員）'
+            : '查詢員工姓名（已授權唯讀查詢全體成員紀錄）';
+        }
+        if (bannerMy) {
+          bannerMy.innerHTML = isAdminPrivate
+            ? '🛡️ <strong>管理員 1對1 查詢模式：</strong>您可查詢全體同仁之特休/補休餘額與請假明細，並可直接點擊「✏️ 修改」調整任何假單。'
+            : '🔍 <strong>全體紀錄唯讀查詢授權：</strong>您已被授權可查詢其他同仁之請假紀錄（僅本人今日及未來假單可修改，查詢他人為唯讀）。';
+        }
+        if (btnSendDmEl) btnSendDmEl.innerText = '📩 私訊傳送特休與紀錄至您的LINE';
       } else {
         if (inpQuery) {
           inpQuery.removeAttribute('list');
@@ -1329,26 +1422,27 @@
         if (btnSendDmEl) btnSendDmEl.innerText = '📩 私訊傳送本人特休與紀錄至個人LINE';
       }
 
+      // 後台子分頁權限：管理員(ADMIN)與超級管理員(SUPER_ADMIN)皆可進入「🔐 帳號與綁定 (admBtn_admins)」管理 userMapping！
       const admBtnStandby = document.getElementById('admBtn_standby');
       const admBtnAdmins  = document.getElementById('admBtn_admins');
+      const superRoleSec  = document.getElementById('superAdminRoleSection');
       const lblHeader     = document.getElementById('lblAdminHeaderTitle');
       const lblSub        = document.getElementById('lblAdminRoleSubtitle');
 
       if (isAdminPrivate) {
         if (admBtnStandby) admBtnStandby.classList.toggle('hidden', !isSuperPrivate);
-        if (admBtnAdmins)  admBtnAdmins.classList.toggle('hidden',  !isSuperPrivate);
+        if (admBtnAdmins)  admBtnAdmins.classList.remove('hidden'); // ADMIN 與 SUPER_ADMIN 皆可管理 userMapping
+        if (superRoleSec)  superRoleSec.classList.toggle('hidden', !isSuperPrivate);
 
         if (isSuperPrivate) {
           if (lblHeader) lblHeader.innerText = '👑 超級管理員系統管理中心';
-          if (lblSub)    lblSub.innerText    = '具備所有系統管理權限（含備援、群組控制、帳號權限、月結扣薪與商用擴充開關）';
+          if (lblSub)    lblSub.innerText    = '具備所有系統管理權限（含備援、同仁綁定、個別功能授權、管理員指派與四大資料庫）';
         } else {
           if (lblHeader) lblHeader.innerText = '🛡️ 管理員資料庫管理系統';
-          if (lblSub)    lblSub.innerText    = '具備一般管理權限（特休/補休庫、假單/月結庫、班表庫、假別與擴充）';
+          if (lblSub)    lblSub.innerText    = '具備管理權限（同仁 LINE 綁定與個別功能授權、特休/補休庫、假單/月結庫、班表庫、假別與擴充）';
           const curPanelStandby = document.getElementById('admPanel_standby');
-          const curPanelAdmins  = document.getElementById('admPanel_admins');
-          if ((curPanelStandby && !curPanelStandby.classList.contains('hidden')) ||
-              (curPanelAdmins  && !curPanelAdmins.classList.contains('hidden'))) {
-            switchAdminPanel('quota');
+          if (curPanelStandby && !curPanelStandby.classList.contains('hidden')) {
+            switchAdminPanel('admins');
           }
         }
       }
@@ -1469,6 +1563,14 @@
       STATE.isSuperAdmin = !!res.isSuperAdmin;
       if (res.boundName !== undefined) STATE.boundName = res.boundName || '';
 
+      if (res.userCustomPerms) {
+        STATE.userCustomPerms = {
+          allowToday:    !!res.userCustomPerms.allowToday,
+          allowSchedule: !!res.userCustomPerms.allowSchedule,
+          allowQueryAll: !!res.userCustomPerms.allowQueryAll
+        };
+      }
+
       if (res.enterpriseConfig) {
         STATE.enterpriseConfig = { ...STATE.enterpriseConfig, ...res.enterpriseConfig };
       }
@@ -1505,7 +1607,7 @@
       }
 
       if (Array.isArray(res.employees)) {
-        const cleanEmpList = res.employees.filter(n => n && n !== '系統管理員');
+        const cleanEmpList = res.employees.filter(n => n && n !== '系統管理員' && n !== '王小明');
         document.getElementById('employeeList').innerHTML = cleanEmpList.map(n => `<option value="${n}">`).join('');
       }
 
@@ -1524,8 +1626,8 @@
 
       if (STATE.boundName) {
         document.getElementById('inpQueryName').value = STATE.boundName;
-      } else if (!STATE.gid && STATE.isAdmin && resolvedName) {
-        document.getElementById('inpQueryName').value = resolvedName;
+      } else if ((!STATE.gid && STATE.isAdmin) || (STATE.userCustomPerms && STATE.userCustomPerms.allowQueryAll)) {
+        if (resolvedName) document.getElementById('inpQueryName').value = resolvedName;
       }
 
       initTextTemplate(resolvedName, res.todaySlashStr || getLocalTodayStrings().slash);
@@ -1560,7 +1662,7 @@
       }
     }
 
-    // ==================== ✅ [商用升級 3] 客戶端 HTML5 Canvas 圖片自動壓縮器 ====================
+    // ==================== 客戶端 HTML5 Canvas 圖片自動壓縮器 ====================
     function onSelectAttachmentFile(fileInput) {
       const file = fileInput && fileInput.files && fileInput.files[0];
       if (!file) {
@@ -2463,7 +2565,8 @@
           STATE.verifyStatus = 'idle';
         }
 
-        if ((!STATE.gid && STATE.isAdmin) || (STATE.boundName && name === STATE.boundName)) {
+        const canQueryAny = (!STATE.gid && STATE.isAdmin) || (STATE.userCustomPerms && STATE.userCustomPerms.allowQueryAll);
+        if (canQueryAny || (STATE.boundName && name === STATE.boundName)) {
           document.getElementById('inpQueryName').value = name;
           loadPersonalDashboard(name);
         }
@@ -2557,9 +2660,6 @@
       }).sendPrivateLeaveReportToUser(STATE.uid, name, STATE.gid);
     }
 
-    /**
-     * ✅ 渲染個人特休、雙軌制週期、上期遞延時數與「⚡ 個人補休時數池 + 線上申請加班」
-     */
     function renderDashboard(d) {
       const container = document.getElementById('dashboardContent');
       if (!d || !d.found) {
@@ -2597,7 +2697,6 @@
         </div>
       ` : `<div class="banner">ℹ️ ${d.name} 目前尚未設定特休額度 ${verifiedTag}</div>`;
 
-      // ✅ [商用升級 2] 若開啟「補休時數池 (ENABLE_COMP_LEAVE_POOL)」，顯示個人補休池與「⏱️ 申請加班轉補休」表單
       let compHtml = '';
       if (d.compPool && d.compPool.enabled) {
         const cp = d.compPool;
@@ -2642,7 +2741,7 @@
         recHtml += d.records.map(r => {
           const actionHtml = r.canEditRow
             ? `<button class="btn sm blue" style="margin-top:4px;" onclick="loadRecordForEdit(${r.rowNumber})">✏️ 修改</button>`
-            : `<span class="badge" style="background:#F1F5F9; color:#64748B; margin-top:4px; display:inline-block;">🔒 已過期鎖定</span>`;
+            : `<span class="badge" style="background:#F1F5F9; color:#64748B; margin-top:4px; display:inline-block;">🔒 已鎖定/唯讀</span>`;
 
           return `
             <div class="record-item">
@@ -2934,8 +3033,9 @@
     // ==================== 管理員與超級管理員後台資料庫管理系統 ====================
     function switchAdminPanel(panel) {
       let targetPanel = panel;
-      if (!STATE.isSuperAdmin && ['standby', 'admins'].includes(targetPanel)) {
-        targetPanel = 'quota';
+      // 一般管理員 (ADMIN) 可進入 'admins' (管理 userMapping)，但 'standby' 僅限超級管理員
+      if (!STATE.isSuperAdmin && targetPanel === 'standby') {
+        targetPanel = 'admins';
       }
       ['standby', 'admins', 'quota', 'recs', 'sched', 'types'].forEach(p => {
         const btn = document.getElementById('admBtn_' + p);
@@ -2943,6 +3043,241 @@
         if (btn) btn.classList.toggle('active', p === targetPanel);
         if (sec) sec.classList.toggle('hidden', p !== targetPanel);
       });
+    }
+
+    // ==================== ✅ [v25.0.0] userMapping 同仁綁定與個別功能管理前端控制器 ====================
+    function renderUserMappingList(mapList) {
+      const box     = document.getElementById('admUserMappingListBox');
+      const countEl = document.getElementById('admMappingCount');
+      if (countEl) countEl.innerText = Array.isArray(mapList) ? mapList.length : 0;
+      if (!box) return;
+
+      if (!Array.isArray(mapList) || mapList.length === 0) {
+        box.innerHTML = `<p style="color:var(--muted); font-size:13px;">找不到符合條件的同仁綁定紀錄</p>`;
+        return;
+      }
+
+      box.innerHTML = mapList.map(m => {
+        const uidDisplay = m.userId
+          ? `<code>${m.userId.substring(0, 14)}...</code>`
+          : `<span class="badge">⚪ 待本人首次請假自動綁定</span>`;
+        const dupBadge = m.isDuplicateUid
+          ? `<span class="badge off" style="margin-left:4px;">⚠️ ID重複綁定 (${m.duplicateCount}筆共用)</span>`
+          : (m.userId ? `<span class="badge on" style="margin-left:4px;">🟢 已綁定</span>` : '');
+
+        const permBadges = [];
+        if (m.allowToday)    permBadges.push('<span class="badge admin-role">📋 可看今日請假</span>');
+        if (m.allowSchedule) permBadges.push('<span class="badge">⚙️ 可看班表設定</span>');
+        if (m.allowQueryAll) permBadges.push('<span class="badge">🔍 可查全體紀錄</span>');
+
+        return `
+          <div class="record-item">
+            <div>
+              <strong>#${m.rowNumber} ${m.name || '(未填姓名)'}</strong>${dupBadge}
+              <div style="margin-top:3px; display:flex; gap:4px; flex-wrap:wrap;">
+                ${permBadges.length > 0 ? permBadges.join('') : '<span style="font-size:11.5px; color:var(--muted);">標準一般成員權限</span>'}
+              </div>
+              <div style="font-size:11.5px; color:var(--muted); margin-top:3px;">
+                LINE ID：${uidDisplay}｜更新：${m.updatedAt || '-'}${m.remarks ? `｜備註：${m.remarks}` : ''}
+              </div>
+            </div>
+            <div style="display:flex; gap:4px; flex-wrap:wrap; justify-content:flex-end;">
+              <button class="btn sm ${m.allowToday ? 'secondary' : 'teal'}" onclick="quickToggleUserTodayPerm(${m.rowNumber})">
+                ${m.allowToday ? '關閉今日請假' : '➕開放今日請假'}
+              </button>
+              <button class="btn sm blue" onclick="editUserMappingByRow(${m.rowNumber})">✏️ 編輯</button>
+              ${m.userId ? `<button class="btn sm" style="background:#D97706;" onclick="clearSingleUserUid(${m.rowNumber}, '${m.name}')">🔄 重設ID</button>` : ''}
+              <button class="btn sm danger" onclick="deleteUserMappingFromAdmin(${m.rowNumber}, '${m.name}')">🗑️ 刪除</button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function filterUserMappingList() {
+      const kw  = (document.getElementById('inpSearchUserMapping').value || '').trim().toLowerCase();
+      const all = (STATE.adminData && STATE.adminData.userMappingList) || [];
+      if (!kw) {
+        renderUserMappingList(all);
+        return;
+      }
+      const filtered = all.filter(m =>
+        (m.name && m.name.toLowerCase().includes(kw)) ||
+        (m.userId && m.userId.toLowerCase().includes(kw)) ||
+        (m.remarks && m.remarks.toLowerCase().includes(kw))
+      );
+      renderUserMappingList(filtered);
+    }
+
+    function onSelectMappingEmployee(empName) {
+      if (!empName) {
+        resetUserMappingForm();
+        return;
+      }
+      const all      = (STATE.adminData && STATE.adminData.userMappingList) || [];
+      const existing = all.find(m => m.name === empName);
+      if (existing) {
+        editUserMappingByRow(existing.rowNumber);
+      } else {
+        document.getElementById('inpMapRowNumber').value         = '';
+        document.getElementById('inpMapName').value              = empName;
+        document.getElementById('inpMapUid').value               = '';
+        document.getElementById('chkMap_allowToday').checked     = false;
+        document.getElementById('chkMap_allowSchedule').checked  = false;
+        document.getElementById('chkMap_allowQueryAll').checked  = false;
+        document.getElementById('inpMapRemarks').value           = '';
+      }
+    }
+
+    function editUserMappingByRow(rowNumber) {
+      const all = (STATE.adminData && STATE.adminData.userMappingList) || [];
+      const m   = all.find(item => item.rowNumber === rowNumber);
+      if (!m) return;
+
+      document.getElementById('inpMapRowNumber').value         = m.rowNumber;
+      document.getElementById('inpMapName').value              = m.name || '';
+      document.getElementById('inpMapUid').value               = m.userId || '';
+      document.getElementById('chkMap_allowToday').checked     = !!m.allowToday;
+      document.getElementById('chkMap_allowSchedule').checked  = !!m.allowSchedule;
+      document.getElementById('chkMap_allowQueryAll').checked  = !!m.allowQueryAll;
+      document.getElementById('inpMapRemarks').value           = m.remarks || '';
+      try {
+        document.getElementById('admPanel_admins').scrollIntoView({ behavior: 'smooth', block: 'start' });
+      } catch (_) {}
+    }
+
+    function resetUserMappingForm() {
+      document.getElementById('admSelMappingEmp').value        = '';
+      document.getElementById('inpMapRowNumber').value         = '';
+      document.getElementById('inpMapName').value              = '';
+      document.getElementById('inpMapUid').value               = '';
+      document.getElementById('chkMap_allowToday').checked     = false;
+      document.getElementById('chkMap_allowSchedule').checked  = false;
+      document.getElementById('chkMap_allowQueryAll').checked  = false;
+      document.getElementById('inpMapRemarks').value           = '';
+    }
+
+    function saveUserMappingFromAdmin() {
+      const payload = {
+        rowNumber:     document.getElementById('inpMapRowNumber').value,
+        name:          document.getElementById('inpMapName').value.trim(),
+        userId:        document.getElementById('inpMapUid').value.trim(),
+        allowToday:    document.getElementById('chkMap_allowToday').checked,
+        allowSchedule: document.getElementById('chkMap_allowSchedule').checked,
+        allowQueryAll: document.getElementById('chkMap_allowQueryAll').checked,
+        remarks:       document.getElementById('inpMapRemarks').value.trim()
+      };
+      if (!payload.name) {
+        alert('⚠️ 請輸入同仁姓名');
+        return;
+      }
+
+      showStatusBanner('userMappingStatusBox', 'info', `⏳ 正在儲存「${payload.name}」的綁定與個別功能設定...`);
+      google.script.run
+        .withSuccessHandler(res => {
+          if (!res || !res.success) {
+            showStatusBanner('userMappingStatusBox', 'err', (res && res.message) || '❌ 儲存失敗');
+            return;
+          }
+          try { localStorage.removeItem(CACHE_KEY_INIT); } catch (_) {}
+          showStatusBanner('userMappingStatusBox', 'ok', res.message);
+          resetUserMappingForm();
+          if (res.adminData) {
+            STATE.adminData = res.adminData;
+            renderAdminConsole(res.adminData);
+          }
+        })
+        .withFailureHandler(err => {
+          showStatusBanner('userMappingStatusBox', 'err', '❌ 呼叫失敗：' + err.message);
+        })
+        .adminSaveUserMapping(STATE.uid, payload);
+    }
+
+    /**
+     * 一鍵為單一同仁開啟或關閉「📋 今日請假」檢視權限
+     */
+    function quickToggleUserTodayPerm(rowNumber) {
+      const all = (STATE.adminData && STATE.adminData.userMappingList) || [];
+      const m   = all.find(item => item.rowNumber === rowNumber);
+      if (!m) return;
+
+      const payload = {
+        rowNumber:     m.rowNumber,
+        name:          m.name,
+        userId:        m.userId,
+        allowToday:    !m.allowToday,
+        allowSchedule: m.allowSchedule,
+        allowQueryAll: m.allowQueryAll,
+        remarks:       m.remarks
+      };
+
+      showStatusBanner('userMappingStatusBox', 'info', `⏳ 正在為「${m.name}」${payload.allowToday ? '開啟' : '關閉'}【📋 今日請假】檢視功能...`);
+      google.script.run
+        .withSuccessHandler(res => {
+          try { localStorage.removeItem(CACHE_KEY_INIT); } catch (_) {}
+          if (res && res.adminData) {
+            STATE.adminData = res.adminData;
+            renderAdminConsole(res.adminData);
+          }
+          showStatusBanner('userMappingStatusBox', 'ok', (res && res.message) || '✅ 已更新功能權限');
+        })
+        .adminSaveUserMapping(STATE.uid, payload);
+    }
+
+    /**
+     * 清空單一同仁被誤綁的 LINE UserID（保留姓名與個別功能設定，待本人下次請假自動綁回自己的 LINE）
+     */
+    function clearSingleUserUid(rowNumber, name) {
+      if (!confirm(`確定要清空「${name}」目前已綁定的 LINE UserID 嗎？\n（清空後將保留其姓名與功能設定，待 ${name} 本人下次送出假單時會自動綁回他自己的 LINE 帳號）`)) {
+        return;
+      }
+      const all = (STATE.adminData && STATE.adminData.userMappingList) || [];
+      const m   = all.find(item => item.rowNumber === rowNumber);
+      if (!m) return;
+
+      google.script.run.withSuccessHandler(res => {
+        try { localStorage.removeItem(CACHE_KEY_INIT); } catch (_) {}
+        showStatusBanner('userMappingStatusBox', 'ok', `🔄 已清空「${name}」的 LINE UserID，待本人下次請假時自動重新綁定！`);
+        if (res && res.adminData) {
+          STATE.adminData = res.adminData;
+          renderAdminConsole(res.adminData);
+        }
+      }).adminSaveUserMapping(STATE.uid, {
+        rowNumber:     m.rowNumber,
+        name:          m.name,
+        userId:        '',
+        allowToday:    m.allowToday,
+        allowSchedule: m.allowSchedule,
+        allowQueryAll: m.allowQueryAll,
+        remarks:       m.remarks || '待本人首次請假自動綁定'
+      });
+    }
+
+    function deleteUserMappingFromAdmin(rowNumber, name) {
+      if (!confirm(`確定要從 userMapping 資料庫刪除「${name}」的綁定記錄嗎？`)) return;
+      google.script.run.withSuccessHandler(res => {
+        try { localStorage.removeItem(CACHE_KEY_INIT); } catch (_) {}
+        showStatusBanner('userMappingStatusBox', 'ok', (res && res.message) || '🗑️ 已刪除');
+        if (res && res.adminData) {
+          STATE.adminData = res.adminData;
+          renderAdminConsole(res.adminData);
+        }
+      }).adminDeleteUserMapping(STATE.uid, rowNumber);
+    }
+
+    function cleanDuplicateMappingsFromAdmin() {
+      if (!confirm('確定要執行「🧹 一鍵修復重複ID與測試資料」嗎？\n系統將自動：\n1. 移除「王小明」、「系統管理員」測試列\n2. 解除誤綁管理員 LINE ID 的其他員工列（保留員工姓名，讓員工本人下次請假自動綁回自己的 LINE）')) {
+        return;
+      }
+      showStatusBanner('userMappingStatusBox', 'info', '⏳ 正在自動清理測試資料與重複綁定的 LINE UserID...');
+      google.script.run.withSuccessHandler(res => {
+        try { localStorage.removeItem(CACHE_KEY_INIT); } catch (_) {}
+        showStatusBanner('userMappingStatusBox', 'ok', (res && res.message) || '✅ 清理完成');
+        if (res && res.adminData) {
+          STATE.adminData = res.adminData;
+          renderAdminConsole(res.adminData);
+        }
+      }).adminCleanDuplicateMappings(STATE.uid);
     }
 
     function renderEnterpriseConfigControls(entCfg) {
@@ -3041,7 +3376,7 @@
         .adminTestMorningDigest(STATE.uid);
     }
 
-    // ==================== ✅ [商用升級 1] 未休特休結算（轉入次年遞延 / 下載折現 CSV） ====================
+    // ==================== 未休特休結算（轉入次年遞延 / 下載折現 CSV） ====================
     function openSettleUnusedDrawer() {
       const drawer = document.getElementById('admSettleDrawer');
       if (!drawer) return;
@@ -3094,7 +3429,7 @@
       triggerCsvDownload(STATE.settleCsvCache, `未休特休折現結算表_${yr}.csv`);
     }
 
-    // ==================== ✅ [商用升級 2] 加班申請審核與補休直接登錄 ====================
+    // ==================== 加班申請審核與補休直接登錄 ====================
     function toggleAdminOvertimeDrawer() {
       const drawer = document.getElementById('admOvertimeDrawer');
       if (!drawer) return;
@@ -3168,7 +3503,7 @@
       }).adminReviewOvertime(STATE.uid, rowNumber, isApprove);
     }
 
-    // ==================== ✅ [商用升級 4A] 月底考勤與薪資扣款結算匯出 ====================
+    // ==================== 月底考勤與薪資扣款結算匯出 ====================
     function exportMonthlyPayrollFromAdmin() {
       const ymVal = document.getElementById('inpPayrollMonth').value || getLocalTodayStrings().ym;
       showStatusBanner('admPayrollStatusBox', 'info', `⏳ 正在結算【${ymVal}】全體員工各假別時數與應扣薪時數...`);
@@ -3413,14 +3748,32 @@
         renderAdminOvertimeList(adm.overtimeList);
       }
 
-      const admList = adm.adminUsersList || [];
-      const qList   = adm.quotaList || [];
-      const countEl = document.getElementById('admAdminCount');
-      if (countEl) countEl.innerText = admList.length;
+      const admList = adm.adminUsersList  || [];
+      const mapList = adm.userMappingList || [];
+      const qList   = adm.quotaList       || [];
+
+      // 渲染 userMapping 同仁綁定與個別功能清單
+      renderUserMappingList(mapList);
 
       const empNameSet = new Set();
-      qList.forEach(q => { if (q.name) empNameSet.add(q.name); });
-      admList.forEach(a => { if (a.name) empNameSet.add(a.name); });
+      qList.forEach(q => { if (q.name && q.name !== '系統管理員') empNameSet.add(q.name); });
+      mapList.forEach(m => { if (m.name && m.name !== '系統管理員') empNameSet.add(m.name); });
+      admList.forEach(a => { if (a.name && a.name !== '系統管理員') empNameSet.add(a.name); });
+
+      const selMapEmp = document.getElementById('admSelMappingEmp');
+      if (selMapEmp) {
+        selMapEmp.innerHTML = `<option value="">-- ➕ 新增或從下方清單點選「編輯」 --</option>` +
+          Array.from(empNameSet).map(n => {
+            const mObj = mapList.find(m => m.name === n);
+            const tag  = mObj
+              ? (mObj.userId ? ` [已綁定ID${mObj.allowToday ? '｜📋可看今日請假' : ''}]` : ` [尚未綁定ID]`)
+              : ` [尚未建立綁定列]`;
+            return `<option value="${n}">${n}${tag}</option>`;
+          }).join('');
+      }
+
+      const countEl = document.getElementById('admAdminCount');
+      if (countEl) countEl.innerText = admList.length;
 
       const selAdminEmp = document.getElementById('admSelAdminEmp');
       if (selAdminEmp) {
@@ -3621,9 +3974,6 @@
       }).adminDeleteAdminUser(STATE.uid, rowNumber);
     }
 
-    /**
-     * ✅ 後台請假記錄清單渲染（支援顯示證明附件連結、簽核狀態，並可直接點擊核准/退回/修改/取消）
-     */
     function renderAdminRecordsList(records) {
       const box = document.getElementById('admRecentRecordsBox');
       if (!records || records.length === 0) {
@@ -3717,7 +4067,7 @@
         try { localStorage.removeItem(CACHE_KEY_INIT); } catch (_) {}
         alert(res ? res.message : '已處理');
         if (res && Array.isArray(res.employees)) {
-          const cleanEmpList = res.employees.filter(n => n && n !== '系統管理員');
+          const cleanEmpList = res.employees.filter(n => n && n !== '系統管理員' && n !== '王小明');
           document.getElementById('employeeList').innerHTML = cleanEmpList.map(n => `<option value="${n}">`).join('');
         }
         if (res && res.adminData) {
@@ -3733,7 +4083,7 @@
         try { localStorage.removeItem(CACHE_KEY_INIT); } catch (_) {}
         alert(res ? res.message : '已刪除');
         if (res && Array.isArray(res.employees)) {
-          const cleanEmpList = res.employees.filter(n => n && n !== '系統管理員');
+          const cleanEmpList = res.employees.filter(n => n && n !== '系統管理員' && n !== '王小明');
           document.getElementById('employeeList').innerHTML = cleanEmpList.map(n => `<option value="${n}">`).join('');
         }
         if (res && res.adminData) {
