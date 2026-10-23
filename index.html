@@ -1033,12 +1033,32 @@
   <script>
     // ============================================================
     // 🌐 三棲熱備援環境核心連線設定
-    // 版本: v25.4.0 (Production Final Release - 電腦剪貼簿修復 + 動態首頁切換 + 自帶上次文字)
+    // 版本: v25.5.0 (Production Final Enterprise Edition)
     // ============================================================
     const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyuW_4_sWHWUq0lc4QOe1amHl7ipGXr0wGNoVQFJl7leq6JYGWVR7CUoPOZkPMqprnX/exec";
-    const CACHE_KEY_INIT  = "leave_sys_init_cache_v25_4_final";
+    const CACHE_KEY_INIT  = "leave_sys_init_cache_v25_5_final";
 
     const GAS_SSR_PAYLOAD = "/*__GAS_SSR_INJECTION__*/";
+
+    // ✅ DOM XSS 與引號跳脫安全輔助函式
+    function escHtml(str) {
+      if (str === null || str === undefined) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function escAttr(str) {
+      if (str === null || str === undefined) return '';
+      return String(str)
+        .replace(/\\/g, '\\\\')
+        .replace(/'/g, "\\'")
+        .replace(/"/g, '&quot;')
+        .replace(/\r?\n/g, ' ');
+    }
 
     function detectCurrentBrowserNodeKey() {
       const host = (window.location.hostname || "").toLowerCase();
@@ -1170,7 +1190,6 @@
       return runner;
     }
 
-    // ✅ 當部署於 GitHub Pages 或 Bloon.io 外部節點時，自動掛載 google.script.run 跨網域橋接器
     const IS_EXTERNAL_HOST = (typeof window.google === "undefined" || !window.google.script || !window.google.script.run);
     if (IS_EXTERNAL_HOST) {
       window.google = { script: { run: createExternalGasRunner() } };
@@ -1341,10 +1360,6 @@
       switchTab('form');
     }
 
-    /**
-     * ✅ 檢查指定分頁目前是否開放顯示
-     * 若後台已將「📝 填寫請假 (tab_form)」關閉，除非正在修改特定假單 (editRow) 或管理員代客新增，否則一律禁止進入 form 首頁
-     */
     function isTabAllowed(tabName) {
       const isGroup        = !!(STATE.gid && String(STATE.gid).trim());
       const gCfg           = STATE.groupUiConfig || DEFAULT_GROUP_UI_CONFIG;
@@ -1379,10 +1394,6 @@
       }
     }
 
-    /**
-     * ✅ 自動取得第一個開放顯示的分頁作為「動態首頁」
-     * 當「📝 填寫請假」被關閉時，首頁會自動切換為「🔒 查特休/紀錄」（或下一個開啟的分頁）
-     */
     function getFirstAvailableTab() {
       const priorityOrder = ['form', 'my', 'today', 'schedule', 'help', 'textform', 'admin'];
       for (const t of priorityOrder) {
@@ -1419,7 +1430,6 @@
       const allowSchedule = isTabAllowed('schedule');
       const allowHelp     = isTabAllowed('help');
 
-      // 無論在群組或 1對1，皆嚴格遵守後台的分頁啟用/關閉設定
       if (btnForm)     btnForm.classList.toggle('hidden',     !allowForm);
       if (btnMy)       btnMy.classList.toggle('hidden',       !allowMy);
       if (btnToday)    btnToday.classList.toggle('hidden',    !allowToday);
@@ -1428,7 +1438,6 @@
       if (btnAdmin)    btnAdmin.classList.toggle('hidden',    !isAdminPrivate);
       if (escAdminBtn) escAdminBtn.classList.toggle('hidden', !isAdminPrivate);
 
-      // ✅ 核心修正：若目前所在分頁（例如預設首頁 'form'）已被後台關閉，立即自動切換至第一個開放的分頁！
       if (!isTabAllowed(STATE.tab)) {
         switchTab(getFirstAvailableTab());
       } else {
@@ -1536,7 +1545,6 @@
       STATE.lastApproval  = savedApproval;
       syncApprovalSelectOption(savedApproval);
 
-      // ✅ 預先載入本機記憶的 groupUiConfig，避免開啟視窗瞬間閃現已關閉的「填寫請假」首頁
       try {
         const savedGrpUi = localStorage.getItem('leave_sys_group_ui_cfg');
         if (savedGrpUi) {
@@ -1681,7 +1689,7 @@
 
       if (Array.isArray(res.employees)) {
         const cleanEmpList = res.employees.filter(n => n && n !== '系統管理員' && n !== '王小明');
-        document.getElementById('employeeList').innerHTML = cleanEmpList.map(n => `<option value="${n}">`).join('');
+        document.getElementById('employeeList').innerHTML = cleanEmpList.map(n => `<option value="${escHtml(n)}">`).join('');
       }
 
       if (res.todayStr && !STATE.editRow) {
@@ -1924,11 +1932,11 @@
       const lblSecret  = document.getElementById('lblLiffSecretStatus');
 
       if (lblBrowser) {
-        lblBrowser.innerHTML = `<span class="badge on">${browserNodeObj.badge}</span> ` +
+        lblBrowser.innerHTML = `<span class="badge on">${escHtml(browserNodeObj.badge)}</span> ` +
           `<span class="badge ${isInLiffClient ? 'on' : ''}">${isInLiffClient ? '🟢 LIFF 群組授權模式' : '🌐 網頁模式'}</span>`;
       }
       if (lblActive) {
-        lblActive.innerHTML = `<span class="badge admin-role">${activeNodeObj.badge}</span> (專屬 LIFF: <code>${activeLiffId}</code>)`;
+        lblActive.innerHTML = `<span class="badge admin-role">${escHtml(activeNodeObj.badge)}</span> (專屬 LIFF: <code>${escHtml(activeLiffId)}</code>)`;
       }
       if (lblSecret) {
         lblSecret.innerHTML = `<span class="badge on">🟢 三節點各自綁定獨立 LIFF ID（切換零延遲）</span>`;
@@ -1944,22 +1952,22 @@
           <div class="standby-card ${isSystemDefault ? 'active-node' : ''} ${isCurrentWindow ? 'current-browser-node' : ''}">
             <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px;">
               <div style="font-weight:800; font-size:14.5px; color:#0F172A;">
-                ${n.badge}｜${n.name}
+                ${escHtml(n.badge)}｜${escHtml(n.name)}
               </div>
               <div style="display:flex; gap:4px;">
                 ${isSystemDefault ? '<span class="badge on">📡 系統預設派發中</span>' : '<span class="badge">⚡ 備援待命</span>'}
                 ${isCurrentWindow ? '<span class="badge admin-role">📍 目前所在視窗</span>' : ''}
               </div>
             </div>
-            <div class="standby-url">Endpoint: ${n.url}<br>專屬授權網址: https://liff.line.me/${nodeLiffId}</div>
-            <div style="font-size:12px; color:var(--muted); line-height:1.4;">${n.desc || ''}</div>
+            <div class="standby-url">Endpoint: ${escHtml(n.url)}<br>專屬授權網址: https://liff.line.me/${escHtml(nodeLiffId)}</div>
+            <div style="font-size:12px; color:var(--muted); line-height:1.4;">${escHtml(n.desc || '')}</div>
             <div class="standby-actions">
               <button class="btn sm ${isSystemDefault ? 'secondary' : 'teal'}"
-                onclick="switchSystemStandbyNode('${n.key}')"
+                onclick="switchSystemStandbyNode('${escAttr(n.key)}')"
                 ${isSystemDefault ? 'disabled' : ''}>
                 ${isSystemDefault ? '✅ 目前已設為預設' : '⚡ 一鍵設為系統預設'}
               </button>
-              <a class="btn sm blue" href="${directJumpHref}" target="_top" style="margin-top:0;">
+              <a class="btn sm blue" href="${escHtml(directJumpHref)}" target="_top" style="margin-top:0;">
                 🔗 立即跳轉此節點開啟
               </a>
             </div>
@@ -2119,9 +2127,6 @@
       if (labelMsg) btn.innerText = labelMsg;
     }
 
-    /**
-     * ✅ 相容 Windows / Mac (Chrome, Edge, Safari) 與 iOS / Android 的雙重剪貼簿複製器
-     */
     function copyToClipboardSafe(text) {
       if (!text) return false;
       let copied = false;
@@ -2159,9 +2164,6 @@
       return copied;
     }
 
-    /**
-     * ✅ 依「手機版 LIFF」與「電腦版瀏覽器」自動切換最精準的綠色按鈕文字
-     */
     function unlockPasteButtonWithVerifiedText(rawText) {
       const btn = document.getElementById('btnPasteToLine');
       if (!btn) return;
@@ -2460,16 +2462,34 @@
       }
 
       const dateRaw = parsed['請假日期'].replace(/[（(][一二三四五六日][)）]/g, '').trim();
-      const parts   = dateRaw.split(/[～~\-–—〜]/).map(s => s.trim()).filter(Boolean);
+      const parts   = dateRaw.split(/[～~\-–—〜－]/).map(s => s.trim()).filter(Boolean);
       const parseOneDate = (s, refY, refM) => {
         let m = s.match(/^(\d{4})[\/\-\.年](\d{1,2})[\/\-\.月](\d{1,2})[日號]?$/);
-        if (m) return new Date(parseInt(m[1], 10), parseInt(m[2], 10) - 1, parseInt(m[3], 10));
+        if (m) {
+          const y = parseInt(m[1], 10), mo = parseInt(m[2], 10), da = parseInt(m[3], 10);
+          const d = new Date(y, mo - 1, da);
+          return (!isNaN(d.getTime()) && d.getMonth() === mo - 1) ? d : null;
+        }
         m = s.match(/^(\d{2,3})[\/\-年](\d{1,2})[\/\-月](\d{1,2})[日號]?$/);
-        if (m) return new Date(parseInt(m[1], 10) + 1911, parseInt(m[2], 10) - 1, parseInt(m[3], 10));
+        if (m) {
+          const y = parseInt(m[1], 10) + 1911, mo = parseInt(m[2], 10), da = parseInt(m[3], 10);
+          const d = new Date(y, mo - 1, da);
+          return (!isNaN(d.getTime()) && d.getMonth() === mo - 1) ? d : null;
+        }
         if (refY) {
           m = s.match(/^(\d{1,2})[\/\-](\d{1,2})$/);
-          if (m) return new Date(refY, parseInt(m[1], 10) - 1, parseInt(m[2], 10));
-          if (/^\d{1,2}$/.test(s) && refM !== undefined) return new Date(refY, refM, parseInt(s, 10));
+          if (m) {
+            const targetM    = parseInt(m[1], 10);
+            const targetD    = parseInt(m[2], 10);
+            const inferredYr = (refM !== undefined && (targetM - 1) < refM) ? (refY + 1) : refY;
+            const d          = new Date(inferredYr, targetM - 1, targetD);
+            return (!isNaN(d.getTime()) && d.getMonth() === targetM - 1) ? d : null;
+          }
+          if (/^\d{1,2}$/.test(s) && refM !== undefined) {
+            const targetD = parseInt(s, 10);
+            const d       = new Date(refY, refM, targetD);
+            return (!isNaN(d.getTime()) && d.getMonth() === refM) ? d : null;
+          }
         }
         return null;
       };
@@ -2524,7 +2544,7 @@
       else if (/^下午$/.test(hRaw)) hoursPerDay = Number(dayCfg.afternoonHours || 5);
       else if (/^(半天|上半天|下半天)$/.test(hRaw)) hoursPerDay = Number(dayCfg.halfDayHours || 4);
       else {
-        const tr = hRaw.match(/^(\d{1,2})[：:](\d{2})[～~\-–—〜](\d{1,2})[：:](\d{2})$/);
+        const tr = hRaw.match(/^(\d{1,2})[：:](\d{2})[～~\-–—〜－](\d{1,2})[：:](\d{2})$/);
         if (tr) {
           const sh = parseInt(tr[1], 10), sm = parseInt(tr[2], 10);
           const eh = parseInt(tr[3], 10), em = parseInt(tr[4], 10);
@@ -2555,8 +2575,14 @@
             const valNum = parseFloat(nm[1]);
             const fullH  = Number(dayCfg.fullDayHours || 8);
             if (nm[3] === '天') {
+              if (valNum <= 0 || valNum > workDayCount) {
+                return { valid: false, errorMessage: `⚠️ 請假天數（${valNum}天）不可超過所選日期區間的有效工作天數（${workDayCount}天）！` };
+              }
               hoursPerDay = (valNum > 1 && workDayCount > 1) ? ((valNum * fullH) / workDayCount) : (valNum * fullH);
             } else {
+              if (valNum <= 0 || valNum > fullH) {
+                return { valid: false, errorMessage: `⚠️ 單日請假時數（${valNum}h）不可超過單日全天工時上限（${fullH}h）！` };
+              }
               hoursPerDay = valNum;
             }
           } else {
@@ -2614,7 +2640,6 @@
       const validTabs = ['form', 'my', 'textform', 'today', 'schedule', 'help', 'admin'];
       let targetTab   = validTabs.includes(tab) ? tab : getFirstAvailableTab();
 
-      // ✅ 若目標分頁已被後台關閉（例如 tab='form' 但後台已關閉填寫請假），自動導向第一個開放的分頁
       if (!isTabAllowed(targetTab)) {
         targetTab = getFirstAvailableTab();
       }
@@ -2684,7 +2709,7 @@
       }
       STATE.editRow = rec.rowNumber;
       const banner = document.getElementById('editModeBanner');
-      banner.innerHTML = `✏️ 正在修改假單編號 <strong>#${rec.rowNumber}</strong>（今日及未來假單允許本人修改，點擊下方按鈕即可覆蓋更新）`;
+      banner.innerHTML = `✏️ 正在修改假單編號 <strong>#${escHtml(rec.rowNumber)}</strong>（今日及未來假單允許本人修改，點擊下方按鈕即可覆蓋更新）`;
       banner.classList.remove('hidden');
 
       const isRestrictedUser = Boolean(STATE.gid || !STATE.isAdmin);
@@ -2716,7 +2741,7 @@
       const existAttBox = document.getElementById('existingAttachmentBox');
       if (rec.attachmentUrl && existAttBox) {
         document.getElementById('attachmentUploadGroup').classList.remove('hidden');
-        existAttBox.innerHTML = `📎 原已附帶證明：<a href="${rec.attachmentUrl}" target="_blank" style="color:var(--blue); font-weight:700;">點此查看原附件</a>（重新選取照片即可覆蓋）`;
+        existAttBox.innerHTML = `📎 原已附帶證明：<a href="${escHtml(rec.attachmentUrl)}" target="_blank" style="color:var(--blue); font-weight:700;">點此查看原附件</a>（重新選取照片即可覆蓋）`;
         existAttBox.classList.remove('hidden');
       } else if (existAttBox) {
         existAttBox.classList.add('hidden');
@@ -2838,7 +2863,7 @@
           box.innerHTML = `⏰ 試算結果：共 <strong>${res.workDays}</strong> 個工作天，合計請假 <strong>${res.totalHours} 小時</strong>`;
         } else {
           box.className = 'preview-box err';
-          box.innerHTML = `⚠️ ${res.message}`;
+          box.innerHTML = `⚠️ ${escHtml(res.message)}`;
         }
       }).previewLeaveHoursFromWeb(sDate, eDate, STATE.periodMode, sTime, eTime);
     }
@@ -2851,7 +2876,7 @@
         return;
       }
 
-      container.innerHTML = `<p style="text-align:center; color:var(--muted);">🔐 正在向後端資料庫驗證 LINE 帳號與「${cleanInput}」是否為本人...</p>`;
+      container.innerHTML = `<p style="text-align:center; color:var(--muted);">🔐 正在向後端資料庫驗證 LINE 帳號與「${escHtml(cleanInput)}」是否為本人...</p>`;
       google.script.run.withSuccessHandler(d => {
         if (d && d.boundName) STATE.boundName = d.boundName;
         STATE.dashboard = (d && d.found) ? d : null;
@@ -2879,9 +2904,9 @@
       if (!d || !d.found) {
         const msgText = (d && d.message) || '請於上方輸入您的姓名並點擊「🔍 驗證查詢」以檢視個人特休與請假紀錄';
         if (d && d.accessDenied) {
-          container.innerHTML = `<div class="status-box err">${msgText}</div>`;
+          container.innerHTML = `<div class="status-box err">${escHtml(msgText)}</div>`;
         } else {
-          container.innerHTML = `<div class="status-box info">${msgText}</div>`;
+          container.innerHTML = `<div class="status-box info">${escHtml(msgText)}</div>`;
         }
         return;
       }
@@ -2890,8 +2915,8 @@
         ? `<span class="badge admin-role">🛡️ 管理員檢視</span>`
         : `<span class="badge on">✅ LINE 帳號本人驗證通過</span>`;
 
-      const modeTag  = d.leaveMode === 'ANNIVERSARY' ? '🎂 到職週年制' : '📅 曆年制';
-      const defLine  = d.deferredHours > 0
+      const modeTag = d.leaveMode === 'ANNIVERSARY' ? '🎂 到職週年制' : '📅 曆年制';
+      const defLine = d.deferredHours > 0
         ? `<div style="font-size:12px; color:#B45309; background:#FFFBEB; padding:6px 10px; border-radius:8px; border:1px solid #FDE68A; margin-bottom:8px;">
              💰 <strong>含上期遞延特休：</strong>${d.deferredHours}h（目前遞延剩餘 <strong>${d.deferredRemainingHours}h</strong>，請假時自動優先扣減）｜本期新增：${d.baseHours}h
            </div>`
@@ -2899,17 +2924,17 @@
 
       let quotaHtml = d.hasQuota ? `
         <div style="font-size:13px; color:var(--muted); margin-bottom:6px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:4px;">
-          <span>👤 <strong>${d.name}</strong>｜年資：${d.seniority}｜<span class="badge">${modeTag}</span></span>
+          <span>👤 <strong>${escHtml(d.name)}</strong>｜年資：${escHtml(d.seniority)}｜<span class="badge">${modeTag}</span></span>
           ${verifiedTag}
         </div>
-        <div style="font-size:11.5px; color:var(--muted); margin-bottom:6px;">🗓️ 特休計算週期：${d.cycleRangeStr || (d.year + ' 年度')}</div>
+        <div style="font-size:11.5px; color:var(--muted); margin-bottom:6px;">🗓️ 特休計算週期：${escHtml(d.cycleRangeStr || (d.year + ' 年度'))}</div>
         ${defLine}
         <div class="quota-grid">
           <div class="quota-item"><div class="quota-num">${d.totalDays}<span style="font-size:12px;">天</span></div><div class="quota-sub">可用總額 (${d.totalHours}h)</div></div>
           <div class="quota-item"><div class="quota-num" style="color:#D97706;">${d.usedDays}<span style="font-size:12px;">天</span></div><div class="quota-sub">已使用 (${d.usedHours}h)</div></div>
           <div class="quota-item"><div class="quota-num" style="color:#059669;">${d.remainingDays}<span style="font-size:12px;">天</span></div><div class="quota-sub">剩餘可用 (${d.remainingHours}h)</div></div>
         </div>
-      ` : `<div class="banner">ℹ️ ${d.name} 目前尚未設定特休額度 ${verifiedTag}</div>`;
+      ` : `<div class="banner">ℹ️ ${escHtml(d.name)} 目前尚未設定特休額度 ${verifiedTag}</div>`;
 
       let compHtml = '';
       if (d.compPool && d.compPool.enabled) {
@@ -2942,7 +2967,7 @@
                 <label>加班時段與事由說明</label>
                 <input type="text" id="inpUserOtReason" placeholder="例如：18:00~20:00 專案趕工或假日出勤">
               </div>
-              <button type="button" class="btn sm teal" style="width:100%; padding:10px;" onclick="submitUserOvertime('${d.name}')">🚀 送出加班補休申請</button>
+              <button type="button" class="btn sm teal" style="width:100%; padding:10px;" onclick="submitUserOvertime('${escAttr(d.name)}')">🚀 送出加班補休申請</button>
             </div>
           </div>
         `;
@@ -2960,11 +2985,11 @@
           return `
             <div class="record-item">
               <div>
-                <div style="font-weight:700;">#${r.rowNumber} ${r.date} <span style="color:var(--muted); font-weight:400;">(${r.period})</span></div>
-                <div style="font-size:12px; color:var(--muted);">事由：${r.reason || '-'}｜職代：${r.deputy || '-'}｜${r.approval || '已提交'}</div>
+                <div style="font-weight:700;">#${r.rowNumber} ${escHtml(r.date)} <span style="color:var(--muted); font-weight:400;">(${escHtml(r.period)})</span></div>
+                <div style="font-size:12px; color:var(--muted);">事由：${escHtml(r.reason || '-')}｜職代：${escHtml(r.deputy || '-')}｜${escHtml(r.approval || '已提交')}</div>
               </div>
               <div style="text-align:right;">
-                <span class="badge">${r.type}</span>
+                <span class="badge">${escHtml(r.type)}</span>
                 <div style="font-size:13px; font-weight:700; margin-top:3px;">${r.hours}h</div>
                 ${actionHtml}
               </div>
@@ -3022,8 +3047,8 @@
         tBox.innerHTML = ov.todayList.map(r => `
           <div class="record-item">
             <div>
-              <div style="font-weight:700;">${r.name} <span class="badge">${r.type}</span></div>
-              <div style="font-size:12px; color:var(--muted);">時段：${r.time}｜職代：${r.deputy}</div>
+              <div style="font-weight:700;">${escHtml(r.name)} <span class="badge">${escHtml(r.type)}</span></div>
+              <div style="font-size:12px; color:var(--muted);">時段：${escHtml(r.time)}｜職代：${escHtml(r.deputy)}</div>
             </div>
             <div style="font-weight:800; color:var(--blue);">${r.hours}h</div>
           </div>
@@ -3037,10 +3062,10 @@
         wBox.innerHTML = ov.weekList.map(r => `
           <div class="record-item">
             <div>
-              <div style="font-weight:700;">${r.name}｜${r.date}</div>
-              <div style="font-size:12px; color:var(--muted);">${r.time}｜職代：${r.deputy}</div>
+              <div style="font-weight:700;">${escHtml(r.name)}｜${escHtml(r.date)}</div>
+              <div style="font-size:12px; color:var(--muted);">${escHtml(r.time)}｜職代：${escHtml(r.deputy)}</div>
             </div>
-            <span class="badge">${r.type} (${r.hours}h)</span>
+            <span class="badge">${escHtml(r.type)} (${r.hours}h)</span>
           </div>
         `).join('');
       }
@@ -3052,11 +3077,11 @@
         dBox.innerHTML = sc.days.map(d => `
           <div class="record-item">
             <div>
-              <strong>${d.dayName}</strong>
+              <strong>${escHtml(d.dayName)}</strong>
               <span class="badge ${d.isWorkDay ? 'on' : 'off'}" style="margin-left:6px;">${d.isWorkDay ? '開放請假' : '固定休假'}</span>
             </div>
             <div style="font-size:12.5px; color:var(--muted); text-align:right;">
-              ${d.isWorkDay ? `全天 ${d.fullDayHours}h (早${d.morningHours}h / 午${d.afternoonHours}h)<br>${d.morningStart}~${d.afternoonEnd}` : '拒絕單日請假 / 區間自動略過'}
+              ${d.isWorkDay ? `全天 ${d.fullDayHours}h (早${d.morningHours}h / 午${d.afternoonHours}h)<br>${escHtml(d.morningStart)}~${escHtml(d.afternoonEnd)}` : '拒絕單日請假 / 區間自動略過'}
             </div>
           </div>
         `).join('');
@@ -3068,8 +3093,8 @@
       } else {
         spBox.innerHTML = sc.specialDates.map(sp => `
           <div class="record-item">
-            <div><strong>${sp.date}</strong>｜${sp.name}</div>
-            <span class="badge ${sp.isWorkDay ? 'on' : 'off'}">${sp.rawType}</span>
+            <div><strong>${escHtml(sp.date)}</strong>｜${escHtml(sp.name)}</div>
+            <span class="badge ${sp.isWorkDay ? 'on' : 'off'}">${escHtml(sp.rawType)}</span>
           </div>
         `).join('');
       }
@@ -3305,7 +3330,7 @@
 
       box.innerHTML = mapList.map(m => {
         const uidDisplay = m.userId
-          ? `<code>${m.userId.substring(0, 14)}...</code>`
+          ? `<code>${escHtml(m.userId.substring(0, 14))}...</code>`
           : `<span class="badge">⚪ 待本人首次請假自動綁定</span>`;
         const dupBadge = m.isDuplicateUid
           ? `<span class="badge off" style="margin-left:4px;">⚠️ ID重複綁定 (${m.duplicateCount}筆共用)</span>`
@@ -3319,12 +3344,12 @@
         return `
           <div class="record-item">
             <div>
-              <strong>#${m.rowNumber} ${m.name || '(未填姓名)'}</strong>${dupBadge}
+              <strong>#${m.rowNumber} ${escHtml(m.name || '(未填姓名)')}</strong>${dupBadge}
               <div style="margin-top:3px; display:flex; gap:4px; flex-wrap:wrap;">
                 ${permBadges.length > 0 ? permBadges.join('') : '<span style="font-size:11.5px; color:var(--muted);">標準一般成員權限</span>'}
               </div>
               <div style="font-size:11.5px; color:var(--muted); margin-top:3px;">
-                LINE ID：${uidDisplay}｜更新：${m.updatedAt || '-'}${m.remarks ? `｜備註：${m.remarks}` : ''}
+                LINE ID：${uidDisplay}｜更新：${escHtml(m.updatedAt || '-')}${m.remarks ? `｜備註：${escHtml(m.remarks)}` : ''}
               </div>
             </div>
             <div style="display:flex; gap:4px; flex-wrap:wrap; justify-content:flex-end;">
@@ -3332,8 +3357,8 @@
                 ${m.allowToday ? '關閉今日請假' : '➕開放今日請假'}
               </button>
               <button class="btn sm blue" onclick="editUserMappingByRow(${m.rowNumber})">✏️ 編輯</button>
-              ${m.userId ? `<button class="btn sm" style="background:#D97706;" onclick="clearSingleUserUid(${m.rowNumber}, '${m.name}')">🔄 重設ID</button>` : ''}
-              <button class="btn sm danger" onclick="deleteUserMappingFromAdmin(${m.rowNumber}, '${m.name}')">🗑️ 刪除</button>
+              ${m.userId ? `<button class="btn sm" style="background:#D97706;" onclick="clearSingleUserUid(${m.rowNumber}, '${escAttr(m.name)}')">🔄 重設ID</button>` : ''}
+              <button class="btn sm danger" onclick="deleteUserMappingFromAdmin(${m.rowNumber}, '${escAttr(m.name)}')">🗑️ 刪除</button>
             </div>
           </div>
         `;
@@ -3648,7 +3673,7 @@
             prevBox.innerHTML = list.map(item => `
               <div class="record-item">
                 <div>
-                  <strong>${item.name}</strong> <span style="font-size:12px; color:var(--muted);">(${item.seniority})</span>
+                  <strong>${escHtml(item.name)}</strong> <span style="font-size:12px; color:var(--muted);">(${escHtml(item.seniority)})</span>
                   <div style="font-size:12px; color:var(--muted);">本期:${item.baseHours}h｜原遞延:${item.oldDeferredHrs}h｜已休:${item.usedHours}h</div>
                 </div>
                 <div style="text-align:right;">
@@ -3692,9 +3717,9 @@
         return `
           <div class="record-item">
             <div>
-              <strong>${ot.name}</strong> <span class="badge ${badgeCls}">${ot.status}</span>
+              <strong>${escHtml(ot.name)}</strong> <span class="badge ${badgeCls}">${escHtml(ot.status)}</span>
               <div style="font-size:12px; color:var(--muted);">
-                📅 ${ot.date}｜時數：<strong>+${ot.hours}h</strong>｜事由：${ot.reason}
+                📅 ${escHtml(ot.date)}｜時數：<strong>+${ot.hours}h</strong>｜事由：${escHtml(ot.reason)}
               </div>
             </div>
             <div style="display:flex; gap:4px;">
@@ -3775,7 +3800,7 @@
             prevBox.innerHTML = rows.map(r => `
               <div class="record-item">
                 <div>
-                  <strong>#${r.seq} ${r.name}</strong>
+                  <strong>#${r.seq} ${escHtml(r.name)}</strong>
                   <div style="font-size:12px; color:var(--muted);">
                     特休:${r.annualHrs}h｜補休:${r.compHrs}h｜事假:${r.personalHrs}h｜病假:${r.sickHrs}h｜公/婚喪:${r.officialHrs + r.specialHrs}h
                   </div>
@@ -3841,13 +3866,13 @@
               return `
                 <div class="record-item">
                   <div>
-                    <strong>#${r.seq} ${r.name}</strong> <span style="font-size:12px; color:var(--muted);">(${r.seniority})</span>
+                    <strong>#${r.seq} ${escHtml(r.name)}</strong> <span style="font-size:12px; color:var(--muted);">(${escHtml(r.seniority)})</span>
                     <div style="font-size:12px; color:var(--muted);">
                       總額:${r.totalDays}天(${r.totalHrs}h)｜已用:${r.usedHrs}h (期初${r.initHrs}h+系統${r.sysHrs}h)
                     </div>
                   </div>
                   <div style="text-align:right;">
-                    <span class="badge ${badgeCls}">${r.status} (${r.usageRate}%)</span>
+                    <span class="badge ${badgeCls}">${escHtml(r.status)} (${r.usageRate}%)</span>
                     <div style="font-size:13px; font-weight:800; color:#059669; margin-top:3px;">剩 ${r.remDays}天 (${r.remHrs}h)</div>
                   </div>
                 </div>
@@ -3887,10 +3912,10 @@
         return `
           <div class="record-item">
             <div>
-              <strong>${l.name}</strong> <span class="badge">${l.type}</span>
+              <strong>${escHtml(l.name)}</strong> <span class="badge">${escHtml(l.type)}</span>
               <div style="font-size:12px; color:var(--muted); margin-top:2px;">
-                🕒 ${l.timestamp}｜操作人：${l.operator}<br>
-                📝 原因：${l.reason || '-'}
+                🕒 ${escHtml(l.timestamp)}｜操作人：${escHtml(l.operator)}<br>
+                📝 原因：${escHtml(l.reason || '-')}
               </div>
             </div>
             <div style="text-align:right; white-space:nowrap;">
@@ -4008,7 +4033,7 @@
             const tag  = mObj
               ? (mObj.userId ? ` [已綁定ID${mObj.allowToday ? '｜📋可看今日請假' : ''}]` : ` [尚未綁定ID]`)
               : ` [尚未建立綁定列]`;
-            return `<option value="${n}">${n}${tag}</option>`;
+            return `<option value="${escHtml(n)}">${escHtml(n + tag)}</option>`;
           }).join('');
       }
 
@@ -4021,7 +4046,7 @@
           Array.from(empNameSet).map(n => {
             const existing = admList.find(a => a.name === n);
             const roleTag  = existing ? ` [目前:${existing.role}]` : ' [一般成員]';
-            return `<option value="${n}">${n}${roleTag}</option>`;
+            return `<option value="${escHtml(n)}">${escHtml(n + roleTag)}</option>`;
           }).join('');
       }
 
@@ -4039,17 +4064,17 @@
             return `
               <div class="record-item">
                 <div>
-                  <strong>${a.name}</strong>
+                  <strong>${escHtml(a.name)}</strong>
                   <span class="badge ${badgeClass}" style="margin-left:4px;">${roleLabel}</span>
                   <span class="badge ${a.enabled ? 'on' : 'off'}" style="margin-left:4px;">${a.enabled ? '啟用' : '停用'}</span>
                   <div style="font-size:12px; color:var(--muted); margin-top:2px;">
-                    LINE ID：${a.userId ? a.userId.substring(0, 10) + '...' : '依姓名自動對應'}｜備註：${a.remarks || '-'}
+                    LINE ID：${a.userId ? escHtml(a.userId.substring(0, 10)) + '...' : '依姓名自動對應'}｜備註：${escHtml(a.remarks || '-')}
                   </div>
                 </div>
                 <div style="display:flex; gap:4px; flex-wrap:wrap; justify-content:flex-end;">
                   <button class="btn sm ${isRoleAdmin ? 'secondary' : 'teal'}" onclick="quickToggleUserRole(${idx}, '${nextRole}')">${toggleText}</button>
                   <button class="btn sm blue" onclick="editAdminUserByIndex(${idx})">編輯</button>
-                  <button class="btn sm danger" onclick="deleteAdminUserRecord(${a.rowNumber}, '${a.name}')">刪除</button>
+                  <button class="btn sm danger" onclick="deleteAdminUserRecord(${a.rowNumber}, '${escAttr(a.name)}')">刪除</button>
                 </div>
               </div>
             `;
@@ -4060,14 +4085,14 @@
       document.getElementById('admQuotaCount').innerText = qList.length;
 
       selEmp.innerHTML = `<option value="">-- ➕ 新增員工資料 --</option>` +
-        qList.map((q, i) => `<option value="${i}">${q.name} (特休剩:${q.remainingHours}h / 補休剩:${q.compRemHours || 0}h)</option>`).join('');
+        qList.map((q, i) => `<option value="${i}">${escHtml(q.name)} (特休剩:${q.remainingHours}h / 補休剩:${q.compRemHours || 0}h)</option>`).join('');
 
       document.getElementById('admQuotaListBox').innerHTML = qList.length === 0
         ? `<p style="color:var(--muted); font-size:13px;">目前尚無員工特休資料</p>`
         : qList.map((q, i) => `
           <div class="record-item">
             <div>
-              <strong>${q.name}</strong> <span style="font-size:12px; color:var(--muted);">(${q.seniority || '未填年資'})</span>
+              <strong>${escHtml(q.name)}</strong> <span style="font-size:12px; color:var(--muted);">(${escHtml(q.seniority || '未填年資')})</span>
               ${q.manualLock ? '<span class="badge off">已鎖定</span>' : ''}
               <div style="font-size:12px; color:var(--muted);">
                 特休：本期${q.hours}h${q.deferredHours > 0 ? `+遞延${q.deferredHours}h` : ''}｜已用:${q.initUsed + q.systemUsedHours}h｜<strong style="color:#059669;">特休剩：${q.remainingHours}h</strong>
@@ -4076,7 +4101,7 @@
             </div>
             <div style="display:flex; gap:4px;">
               <button class="btn sm blue" onclick="onAdminSelectEmployee(${i})">編輯</button>
-              <button class="btn sm danger" onclick="deleteAdminQuota(${q.rowNumber}, '${q.name}')">刪除</button>
+              <button class="btn sm danger" onclick="deleteAdminQuota(${q.rowNumber}, '${escAttr(q.name)}')">刪除</button>
             </div>
           </div>
         `).join('');
@@ -4087,7 +4112,7 @@
         document.getElementById('admScheduleFormBox').innerHTML = adm.scheduleOverview.days.map((d, idx) => `
           <div style="padding:8px 0; border-bottom:1px solid #E2E8F0; font-size:13px;">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
-              <strong>${d.dayName}</strong>
+              <strong>${escHtml(d.dayName)}</strong>
               <label style="margin:0; display:flex; align-items:center; gap:6px;">
                 <input type="checkbox" id="admDayWork_${idx}" ${d.isWorkDay ? 'checked' : ''}> 開放請假
               </label>
@@ -4105,8 +4130,8 @@
           ? `<p style="color:var(--muted); font-size:13px;">無特定國定假日或補班日</p>`
           : spList.map(sp => `
             <div class="record-item">
-              <div><strong>${sp.date}</strong>｜${sp.name} <span class="badge ${sp.isWorkDay ? 'on' : 'off'}">${sp.rawType}</span></div>
-              <button class="btn sm danger" onclick="deleteAdminSpecialDate('${sp.date}')">移除</button>
+              <div><strong>${escHtml(sp.date)}</strong>｜${escHtml(sp.name)} <span class="badge ${sp.isWorkDay ? 'on' : 'off'}">${escHtml(sp.rawType)}</span></div>
+              <button class="btn sm danger" onclick="deleteAdminSpecialDate('${escAttr(sp.date)}')">移除</button>
             </div>
           `).join('');
       }
@@ -4116,9 +4141,9 @@
         ltBox.innerHTML = adm.leaveTypes.map((lt, idx) => `
           <div class="record-item">
             <div>
-              <strong>${lt.name}</strong>
+              <strong>${escHtml(lt.name)}</strong>
               <span class="badge ${lt.enabled ? 'on' : 'off'}" style="margin-left:6px;">${lt.enabled ? '啟用中' : '已停用'}</span>
-              <div style="font-size:12px; color:var(--muted);">別名：${lt.aliases || '無'}</div>
+              <div style="font-size:12px; color:var(--muted);">別名：${escHtml(lt.aliases || '無')}</div>
             </div>
             <button class="btn sm ${lt.enabled ? 'secondary' : 'blue'}"
               onclick="toggleAdminLeaveTypeByIndex(${idx})">
@@ -4222,15 +4247,15 @@
       }
       box.innerHTML = records.map(r => {
         const attLink = r.attachmentUrl
-          ? `<a href="${r.attachmentUrl}" target="_blank" class="badge on" style="text-decoration:none; margin-left:4px;">📎 附件</a>`
+          ? `<a href="${escHtml(r.attachmentUrl)}" target="_blank" class="badge on" style="text-decoration:none; margin-left:4px;">📎 附件</a>`
           : '';
-        const stBadge = r.status ? `<span class="badge ${r.status.includes('待') ? 'admin-role' : 'on'}" style="margin-left:4px;">${r.status}</span>` : '';
+        const stBadge = r.status ? `<span class="badge ${r.status.includes('待') ? 'admin-role' : 'on'}" style="margin-left:4px;">${escHtml(r.status)}</span>` : '';
 
         return `
           <div class="record-item">
             <div>
-              <strong>#${r.rowNumber} ${r.name}</strong> <span class="badge">${r.leaveType} ${r.hoursCalc}h</span>${stBadge}${attLink}
-              <div style="font-size:12px; color:var(--muted); margin-top:2px;">${r.date} (${r.period})｜事由：${r.reason || '-'}｜職代：${r.deputy || '-'}</div>
+              <strong>#${r.rowNumber} ${escHtml(r.name)}</strong> <span class="badge">${escHtml(r.leaveType)} ${r.hoursCalc}h</span>${stBadge}${attLink}
+              <div style="font-size:12px; color:var(--muted); margin-top:2px;">${escHtml(r.date)} (${escHtml(r.period)})｜事由：${escHtml(r.reason || '-')}｜職代：${escHtml(r.deputy || '-')}</div>
             </div>
             <div style="display:flex; gap:4px; flex-wrap:wrap; justify-content:flex-end;">
               <button class="btn sm teal" onclick="adminReviewLeave(${r.rowNumber}, 'approve')">✔️ 核准</button>
@@ -4308,7 +4333,7 @@
         alert(res ? res.message : '已處理');
         if (res && Array.isArray(res.employees)) {
           const cleanEmpList = res.employees.filter(n => n && n !== '系統管理員' && n !== '王小明');
-          document.getElementById('employeeList').innerHTML = cleanEmpList.map(n => `<option value="${n}">`).join('');
+          document.getElementById('employeeList').innerHTML = cleanEmpList.map(n => `<option value="${escHtml(n)}">`).join('');
         }
         if (res && res.adminData) {
           STATE.adminData = res.adminData;
@@ -4324,7 +4349,7 @@
         alert(res ? res.message : '已刪除');
         if (res && Array.isArray(res.employees)) {
           const cleanEmpList = res.employees.filter(n => n && n !== '系統管理員' && n !== '王小明');
-          document.getElementById('employeeList').innerHTML = cleanEmpList.map(n => `<option value="${n}">`).join('');
+          document.getElementById('employeeList').innerHTML = cleanEmpList.map(n => `<option value="${escHtml(n)}">`).join('');
         }
         if (res && res.adminData) {
           STATE.adminData = res.adminData;
