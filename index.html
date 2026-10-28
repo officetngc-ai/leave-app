@@ -1737,11 +1737,14 @@
 
       if (STATE.tab) switchTab(STATE.tab);
 
-      if (CURRENT_BROWSER_NODE !== 'GAS' && STATE.liffId && typeof liff !== 'undefined') {
-        let fetched = false;
+      if (STATE.liffId && typeof liff !== 'undefined') {
+        let fetchedWithUid = false;
+        const waitMs = (STATE.editRow || !STATE.uid) ? 1800 : 600;
         const timer = setTimeout(() => {
-          if (!fetched) { fetched = true; fetchFreshInitData(savedName); }
-        }, 600);
+          if (!fetchedWithUid) {
+            fetchFreshInitData(savedName);
+          }
+        }, waitMs);
 
         liff.init({ liffId: STATE.liffId }).then(() => {
           clearTimeout(timer);
@@ -1756,11 +1759,14 @@
           }
           applyTabAndRolePermissions();
           if (STATE.tab) switchTab(STATE.tab);
-          fetched = true;
+          fetchedWithUid = true;
           fetchFreshInitData(savedName);
         }).catch(() => {
           clearTimeout(timer);
-          if (!fetched) { fetched = true; fetchFreshInitData(savedName); }
+          if (!fetchedWithUid) {
+            fetchedWithUid = true;
+            fetchFreshInitData(savedName);
+          }
         });
       } else {
         fetchFreshInitData(savedName);
@@ -2710,7 +2716,8 @@
       }
 
       // ✅ [維度一前端同步防線 2] 檢查「事後補請假回溯天數上限」開關
-      if (entCfg.ENABLE_BACKDATE_LIMIT && !STATE.isAdmin) {
+      const isAdminPrivate = (!STATE.gid && STATE.isAdmin);
+      if (entCfg.ENABLE_BACKDATE_LIMIT && !isAdminPrivate) {
         const maxDays   = !isNaN(parseInt(entCfg.MAX_BACKDATE_DAYS, 10)) ? parseInt(entCfg.MAX_BACKDATE_DAYS, 10) : 7;
         const now       = new Date();
         const todayZero = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -2833,7 +2840,7 @@
       }
 
       const reqTotal = Math.round(hoursPerDay * workDayCount * 10) / 10;
-      if (matchedType === '特休' && STATE.dashboard && STATE.dashboard.hasQuota && STATE.dashboard.name === parsed['請假人']) {
+      if (matchedType === '特休' && STATE.dashboard && STATE.dashboard.hasQuota && STATE.dashboard.name === cleanApp) {
         if (reqTotal > STATE.dashboard.remainingHours) {
           return {
             valid: false,
@@ -2841,7 +2848,7 @@
           };
         }
       } else if (matchedType === '補休' && entCfg.ENABLE_COMP_LEAVE_POOL &&
-                 STATE.dashboard && STATE.dashboard.compPool && STATE.dashboard.name === parsed['請假人']) {
+                 STATE.dashboard && STATE.dashboard.compPool && STATE.dashboard.name === cleanApp) {
         if (reqTotal > STATE.dashboard.compPool.remainingHours) {
           return {
             valid: false,
@@ -3330,10 +3337,29 @@
         return;
       }
 
+      if (endDate && endDate < startDate) {
+        showStatusBanner('formResultBox', 'err', '⚠️ 請假日期區間錯誤：結束日期不能早於開始日期！');
+        return;
+      }
+
       const entCfg = STATE.enterpriseConfig || {};
       if (entCfg.PREVENT_SELF_DEPUTY !== false && name.replace(/\s+/g, '') === deputy.replace(/\s+/g, '')) {
         showStatusBanner('formResultBox', 'err', `⚠️ 職務代理人設定無效：請假人（${name}）不可將職務代理人填寫為自己！`);
         return;
+      }
+
+      const isAdminPrivate = (!STATE.gid && STATE.isAdmin);
+      if (entCfg.ENABLE_BACKDATE_LIMIT && !STATE.editRow && !isAdminPrivate) {
+        const maxDays   = !isNaN(parseInt(entCfg.MAX_BACKDATE_DAYS, 10)) ? parseInt(entCfg.MAX_BACKDATE_DAYS, 10) : 7;
+        const sParts    = startDate.split('-').map(Number);
+        const sDateObj  = new Date(sParts[0], sParts[1] - 1, sParts[2]);
+        const now       = new Date();
+        const todayZero = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const diffDays  = Math.floor((todayZero.getTime() - sDateObj.getTime()) / (1000 * 60 * 60 * 24));
+        if (diffDays > maxDays) {
+          showStatusBanner('formResultBox', 'err', `⚠️ 超過事後補請假回溯期限：請假開始日距今已過 ${diffDays} 天（系統規定最晚僅能回溯 ${maxDays} 天內）。如需補登請聯絡管理員！`);
+          return;
+        }
       }
 
       if (!STATE.gid && typeof liff !== 'undefined' && liff.getContext) {
