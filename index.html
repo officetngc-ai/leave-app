@@ -202,6 +202,7 @@
     <div id="sec_form" class="tab-sec">
       <div class="card">
         <div id="editModeBanner" class="banner edit-mode hidden"></div>
+        <div id="backdateLimitBanner" class="banner hidden" style="font-size:12.5px;"></div>
 
         <div class="form-group">
           <label>請假人員 <span class="req">*</span></label>
@@ -281,7 +282,7 @@
           </select>
         </div>
 
-        <!-- 請假證明附件照片上傳（依後台 ENABLE_ATTACHMENT_UPLOAD 開關顯示，內建 Canvas 自動壓縮） -->
+        <!-- 請假證明附件照片上傳（依後台 ENABLE_ATTACHMENT_UPLOAD 開關顯示，內建 Canvas 自動壓縮與年份資料夾分流） -->
         <div id="attachmentUploadGroup" class="form-group hidden" style="background:#F8FAFC; padding:12px; border-radius:10px; border:1px dashed var(--blue);">
           <label style="color:var(--blue);">📎 請假證明附件照片（選填：病假診斷書 / 公假 / 婚喪假證明）</label>
           <input type="file" id="inpAttachmentFile" accept="image/*" onchange="onSelectAttachmentFile(this)">
@@ -418,7 +419,7 @@
         <button class="admin-subbtn" id="admBtn_types" onclick="switchAdminPanel('types')">🏷️ 假別與擴充</button>
       </div>
 
-      <!-- ==================== 管理模組 S：群組顯示控制中心 ＋ 3 大熱備援節點切換 ==================== -->
+      <!-- ==================== 管理模組 S：群組顯示控制中心 ＋ 3 大熱備援節點 ＋ 零代碼金鑰管理 ==================== -->
       <div id="admPanel_standby" class="card">
         <div class="section-title">
           <span>💬 群組與視窗分頁顯示控制設定</span>
@@ -535,6 +536,31 @@
         </div>
 
         <button class="btn teal" onclick="saveLiffSyncConfiguration()">💾 儲存並校準三組專屬 LIFF ID 設定</button>
+
+        <!-- ✅ [維度二升級] 零代碼金鑰與試算表 ID 管理中心（超級管理員專屬） -->
+        <div id="superAdminCredentialsBox">
+          <hr style="border:none; border-top:2px dashed var(--border); margin:20px 0;">
+          <h4 style="margin:0 0 6px 0; font-size:14.5px; color:#0F172A;">🔑 核心金鑰與試算表 ID 零代碼管理中心（20年免改代碼移轉）</h4>
+          <div class="banner" style="font-size:12px;">
+            💡 當未來更換 LINE 官方帳號 Token 或遷移 Google Sheet 試算表時，可直接在此更新（留空代表維持系統預設值）：
+          </div>
+          <div class="form-group">
+            <label>Google Sheet 試算表 ID (SHEET_ID)</label>
+            <input type="text" id="inpCred_sheetId" placeholder="目前綁定之 Google Sheet ID">
+          </div>
+          <div class="row-2">
+            <div class="form-group">
+              <label>LINE Channel Access Token（留空不修改）</label>
+              <input type="password" id="inpCred_lineToken" placeholder="留空即維持原 Token">
+            </div>
+            <div class="form-group">
+              <label>LINE Channel Secret（留空不修改）</label>
+              <input type="password" id="inpCred_lineSecret" placeholder="留空即維持原 Secret">
+            </div>
+          </div>
+          <div id="credStatusMsgBox" class="status-box hidden"></div>
+          <button class="btn secondary" style="margin-top:0;" onclick="saveSystemCredentialsFromAdmin()">🔐 儲存核心金鑰與試算表 ID 設定</button>
+        </div>
       </div>
 
       <!-- ==================== 管理模組 0：請假同仁 LINE 綁定與個別功能管理 (userMapping) ＋ 角色權限設定 (adminUsers) ==================== -->
@@ -802,8 +828,8 @@
           </div>
         </div>
         <div class="form-group">
-          <label>調整原因 / 備註</label>
-          <input type="text" id="admRemarks" placeholder="例如：2026年度特休與補休設定">
+          <label>調整原因 / 備註（💡 如曾留職停薪可填「留停6個月」或「扣年資:6月」，重算年資時自動扣除）</label>
+          <input type="text" id="admRemarks" placeholder="例如：2026年度設定 [扣年資:6月]">
         </div>
         <button class="btn teal" onclick="saveAdminQuota()">💾 寫入員工特休與補休池資料庫</button>
 
@@ -880,11 +906,11 @@
         <div id="admSpecialDatesManageBox"></div>
       </div>
 
-      <!-- ==================== 管理模組 4：假別資料庫 ＋ 四大商用與企業擴充開關中心 ==================== -->
+      <!-- ==================== 管理模組 4：假別資料庫 ＋ 四大商用模組 ＋ 20年長效穩定度開關與自癒中心 ==================== -->
       <div id="admPanel_types" class="card hidden">
-        <h3 class="section-title">⚙️ 商用人事與企業自動化擴充開關中心</h3>
+        <h3 class="section-title">⚙️ 商用人事與 20 年長效穩定度開關中心</h3>
         <div class="banner" style="font-size:12.5px;">
-          💡 所有商用級 HR 模組與自動化功能皆可在此一鍵啟用或關閉，點擊儲存後全系統立即生效：
+          💡 所有商用級 HR 模組、<strong>維度一 5 大防呆開關</strong>與自動化排程皆可在此自由啟閉並調整參數，點擊儲存後全系統立即生效：
         </div>
 
         <div class="form-group" style="background:#F8FAFC; padding:10px 12px; border-radius:10px; border:1px solid var(--border); margin-bottom:8px;">
@@ -913,15 +939,15 @@
 
         <div class="ent-toggle-row">
           <div>
-            <div style="font-weight:800; font-size:13.5px;">📎 啟用「請假證明附件照片上傳 (Google Drive 歸檔)」</div>
-            <div style="font-size:12px; color:var(--muted);">開啟後：請假表單可附加診斷書或證明照片（前端自動壓縮），並於假單卡片顯示附件按鈕</div>
+            <div style="font-weight:800; font-size:13.5px;">📎 啟用「請假證明附件照片上傳 (Google Drive 年份分流歸檔)」</div>
+            <div style="font-size:12px; color:var(--muted);">開啟後：請假表單可附加診斷書或證明照片（自動存入 YYYY年度_證明附件 子資料夾）</div>
           </div>
           <input type="checkbox" id="chkEnt_attachment">
         </div>
 
         <div class="form-group" style="margin-top:-2px; margin-bottom:10px; padding-left:6px;">
-          <label style="font-size:12px; color:var(--muted);">證明附件 Google Drive 資料夾 ID（選填，留空時由系統自動建立專屬資料夾）</label>
-          <input type="text" id="inpEnt_attachFolderId" placeholder="留空即自動建立「請假系統_證明附件庫」資料夾">
+          <label style="font-size:12px; color:var(--muted);">證明附件 Google Drive 主資料夾 ID（選填，留空時自動建立「請假系統_證明附件庫」）</label>
+          <input type="text" id="inpEnt_attachFolderId" placeholder="留空即自動建立主資料夾並按年份分流">
         </div>
 
         <div class="ent-toggle-row">
@@ -935,7 +961,7 @@
         <div class="ent-toggle-row">
           <div>
             <div style="font-weight:800; font-size:13.5px;">✔️ 第二關簽核：主管線上「✔️ 核准 / ❌ 退回」按鈕</div>
-            <div style="font-size:12px; color:var(--muted);">開啟後：假單卡片顯示核准與退回按鈕（點擊退回時 0 秒自動返還預扣之特休/補休）</div>
+            <div style="font-size:12px; color:var(--muted);">開啟後：假單卡片顯示核准與退回按鈕（點擊退回時 0 秒自動返還預扣之特休/補休並自癒快照）</div>
           </div>
           <input type="checkbox" id="chkEnt_onlineApproval">
         </div>
@@ -949,6 +975,74 @@
         </div>
 
         <hr style="border:none; border-top:1px dashed var(--border); margin:12px 0;">
+        <h4 style="margin:0 0 8px 0; font-size:14px; color:var(--teal);">🛡️ 【維度一：20 年長效防呆與邊界保護彈性開關】</h4>
+
+        <div class="ent-toggle-row">
+          <div>
+            <div style="font-weight:800; font-size:13.5px; color:var(--blue);">⏳ 啟用「事後補請假回溯天數上限」防呆限制</div>
+            <div style="font-size:12px; color:var(--muted);">開啟後：一般成員事後補請假最晚僅能回溯下方指定天數內（關閉則不限制補請回溯天數）</div>
+          </div>
+          <input type="checkbox" id="chkEnt_backdateLimit">
+        </div>
+
+        <div class="form-group" style="margin-top:-2px; margin-bottom:10px; padding-left:6px;">
+          <label style="font-size:12px; color:var(--muted);">允許事後補請假最晚回溯天數（天，預設 7 天；設 0 代表僅限請今日及未來假單）</label>
+          <input type="number" id="inpEnt_maxBackdateDays" min="0" max="365" value="7">
+        </div>
+
+        <div class="ent-toggle-row">
+          <div>
+            <div style="font-weight:800; font-size:13.5px;">🚫 啟用「禁止請假人將職務代理人填寫為自己」防呆</div>
+            <div style="font-size:12px; color:var(--muted);">開啟後：當「請假人」與「職務代理人」填寫同一人時自動攔截並提示更換</div>
+          </div>
+          <input type="checkbox" id="chkEnt_preventSelfDeputy" checked>
+        </div>
+
+        <div class="ent-toggle-row">
+          <div>
+            <div style="font-weight:800; font-size:13.5px;">⚠️ 啟用「檢查職務代理人於請假時段是否同時休假衝突」防呆</div>
+            <div style="font-size:12px; color:var(--muted);">開啟後：若指定的職務代理人在該請假區間與時段內也正在休假中，自動攔截提醒</div>
+          </div>
+          <input type="checkbox" id="chkEnt_checkDeputyConflict">
+        </div>
+
+        <div class="ent-toggle-row">
+          <div>
+            <div style="font-weight:800; font-size:13.5px;">🎂 啟用「到職週年制跨年歸檔保護與跨歸檔表聯集查詢」</div>
+            <div style="font-size:12px; color:var(--muted);">開啟後：執行舊年度歸檔時自動保護 366 天內假單，且週年制計算特休時自動跨歸檔分頁聯集統計</div>
+          </div>
+          <input type="checkbox" id="chkEnt_protectAnnivArchive" checked>
+        </div>
+
+        <div class="ent-toggle-row">
+          <div>
+            <div style="font-weight:800; font-size:13.5px;">👶 啟用「留職停薪（育嬰／兵役）年資扣除計算」</div>
+            <div style="font-size:12px; color:var(--muted);">開啟後：員工備註填寫「留停6個月」或「扣年資:6月」時，自動重算年資會精準扣除留停月數</div>
+          </div>
+          <input type="checkbox" id="chkEnt_seniorityDeduct" checked>
+        </div>
+
+        <hr style="border:none; border-top:1px dashed var(--border); margin:12px 0;">
+        <h4 style="margin:0 0 8px 0; font-size:14px; color:var(--blue);">🤖 【維度二 & 三：自動化排程與資料保存年限設定】</h4>
+
+        <div class="ent-toggle-row">
+          <div>
+            <div style="font-weight:800; font-size:13.5px;">🛡️ 每月 1 日自動建立 Google Sheet 完整資料庫備份快照與對帳</div>
+            <div style="font-size:12px; color:var(--muted);">自動於雲端硬碟「請假系統_資料庫自動備份庫」建立完整試算表備份（自動保留最新 12 份）</div>
+          </div>
+          <input type="checkbox" id="chkEnt_autoMonthlyBackup" checked>
+        </div>
+
+        <div class="row-2" style="margin-top:-2px; margin-bottom:10px; padding-left:6px;">
+          <div class="form-group" style="margin-bottom:0;">
+            <label style="font-size:12px; color:var(--muted);">日誌滾動保存年限（年，預設 3 年）</label>
+            <input type="number" id="inpEnt_logRetentionYears" min="1" max="20" value="3">
+          </div>
+          <div class="form-group" style="margin-bottom:0;">
+            <label style="font-size:12px; color:var(--muted);">證明附件保存年限（年，勞基法 5 年）</label>
+            <input type="number" id="inpEnt_attRetentionYears" min="1" max="20" value="5">
+          </div>
+        </div>
 
         <div class="ent-toggle-row">
           <div>
@@ -1023,20 +1117,33 @@
         <h4 style="margin:0 0 8px 0; font-size:14px;">📌 假別資料庫清單（點擊可切換啟用/停用）</h4>
         <div id="admLeaveTypeListBox" style="margin-bottom:18px;"></div>
 
-        <hr style="border:none; border-top:1px solid var(--border); margin:16px 0;">
-        <h3 class="section-title">🛠️ 系統快取與資料庫維護</h3>
+        <hr style="border:none; border-top:2px dashed var(--border); margin:18px 0;">
+
+        <!-- ✅ [維度三升級] 20年長效自癒、災難復原備份與收回記錄重建中心 -->
+        <h3 class="section-title">🛠️ 20 年長效自癒、災難復原備份與資料庫維護中心</h3>
+        <div class="banner" style="font-size:12px;">
+          💡 提供總帳與明細帳雙向對帳自癒、全庫災難復原快照備份、過期日誌滾動瘦身與收回記錄分頁重建工具：
+        </div>
+        <div id="longevityMaintStatusBox" class="status-box hidden"></div>
+        <div class="row-2" style="margin-bottom:8px;">
+          <button class="btn teal" onclick="reconcileBalancesFromAdmin()">🔄 雙向對帳自癒 (校正主表剩餘快照)</button>
+          <button class="btn blue" style="margin-top:0;" onclick="createDatabaseBackupFromAdmin()">🛡️ 立即建立全庫備份快照</button>
+        </div>
+        <div class="row-2" style="margin-bottom:8px;">
+          <button class="btn" style="background:#D97706;" onclick="pruneLogsAndAttachmentsFromAdmin()">🧹 滾動瘦身過期日誌與附件</button>
+          <button class="btn" style="background:#7C3AED;" onclick="rebuildUnsendLogFromAdmin()">♻️ 重新生成「收回記錄」分頁</button>
+        </div>
         <button class="btn secondary" onclick="clearSystemCacheFromAdmin()">🧹 清除系統快取並重新載入 Sheet 設定</button>
       </div>
     </div>
   </div>
-
-  <script>
+<script>
     // ============================================================
-    // 🌐 三棲熱備援環境核心連線設定
-    // 版本: v25.5.0 (Production Final Enterprise Edition)
+    // 🌐 三棲熱備援環境核心連線與 20 年長效穩定度前端引擎
+    // 版本: v26.0.0 (20-Year Longevity & Self-Healing Enterprise Edition)
     // ============================================================
     const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyuW_4_sWHWUq0lc4QOe1amHl7ipGXr0wGNoVQFJl7leq6JYGWVR7CUoPOZkPMqprnX/exec";
-    const CACHE_KEY_INIT  = "leave_sys_init_cache_v25_5_final";
+    const CACHE_KEY_INIT  = "leave_sys_init_cache_v26_0_longevity";
 
     const GAS_SSR_PAYLOAD = "/*__GAS_SSR_INJECTION__*/";
 
@@ -1181,7 +1288,9 @@
         "adminArchiveOldRecords", "adminSaveEnterpriseConfig", "adminTestMorningDigest",
         "adminSettleUnusedAnnualLeave", "submitOvertimeFromWeb", "adminReviewOvertime",
         "adminExportMonthlyPayroll", "adminReviewLeaveRow",
-        "adminSaveUserMapping", "adminDeleteUserMapping", "adminCleanDuplicateMappings"
+        "adminSaveUserMapping", "adminDeleteUserMapping", "adminCleanDuplicateMappings",
+        "adminReconcileBalances", "adminCreateDatabaseBackup",
+        "adminPruneLogsAndAttachments", "adminRebuildUnsendLog", "adminSaveSystemCredentials"
       ];
 
       apiMethods.forEach(m => {
@@ -1243,13 +1352,22 @@
       payrollCsvCache: "",
       payrollYmCache: "",
       enterpriseConfig: {
-        ANNUAL_LEAVE_MODE:        "CALENDAR",
-        ENABLE_DEFERRED_LEAVE:    true,
-        ENABLE_COMP_LEAVE_POOL:   false,
-        ENABLE_ATTACHMENT_UPLOAD: false,
-        ENABLE_DEPUTY_APPROVAL:   false,
-        ENABLE_ONLINE_APPROVAL:   false,
-        ENABLE_PAYROLL_EXPORT:    true
+        ANNUAL_LEAVE_MODE:           "CALENDAR",
+        ENABLE_DEFERRED_LEAVE:       true,
+        ENABLE_COMP_LEAVE_POOL:      false,
+        ENABLE_ATTACHMENT_UPLOAD:    false,
+        ENABLE_DEPUTY_APPROVAL:      false,
+        ENABLE_ONLINE_APPROVAL:      false,
+        ENABLE_PAYROLL_EXPORT:       true,
+        ENABLE_BACKDATE_LIMIT:       false,
+        MAX_BACKDATE_DAYS:           7,
+        PROTECT_ANNIVERSARY_ARCHIVE: true,
+        ENABLE_SENIORITY_DEDUCTION:  true,
+        PREVENT_SELF_DEPUTY:         true,
+        CHECK_DEPUTY_CONFLICT:       false,
+        ENABLE_AUTO_MONTHLY_BACKUP:  true,
+        LOG_RETENTION_YEARS:         3,
+        ATTACHMENT_RETENTION_YEARS:  5
       },
       leaveTypes: ["特休", "事假", "病假", "公假", "補休", "婚假", "喪假", "產假", "陪產假"],
       leaveTypesFull: [],
@@ -1360,6 +1478,46 @@
       switchTab('form');
     }
 
+    /**
+     * ✅ [維度一升級] 當後台開啟「事後補請假回溯天數上限 (ENABLE_BACKDATE_LIMIT)」時，
+     * 自動計算允許的最早日期並鎖定前端日曆選擇器的 `min` 屬性（管理員代客新增不限制）
+     */
+    function applyBackdateInputRestriction() {
+      const inpStartEl = document.getElementById('inpStartDate');
+      const inpEndEl   = document.getElementById('inpEndDate');
+      const bdBanner   = document.getElementById('backdateLimitBanner');
+      if (!inpStartEl || !inpEndEl) return;
+
+      if (STATE.editRow) {
+        if (bdBanner) bdBanner.classList.add('hidden');
+        return;
+      }
+
+      const entCfg         = STATE.enterpriseConfig || {};
+      const isGroup        = !!(STATE.gid && String(STATE.gid).trim());
+      const isAdminPrivate = (!isGroup && STATE.isAdmin);
+
+      if (entCfg.ENABLE_BACKDATE_LIMIT && !isAdminPrivate) {
+        const maxDays = !isNaN(parseInt(entCfg.MAX_BACKDATE_DAYS, 10)) ? parseInt(entCfg.MAX_BACKDATE_DAYS, 10) : 7;
+        const minDate = new Date();
+        minDate.setDate(minDate.getDate() - maxDays);
+        const yyyy   = minDate.getFullYear();
+        const mm     = String(minDate.getMonth() + 1).padStart(2, '0');
+        const dd     = String(minDate.getDate()).padStart(2, '0');
+        const minIso = `${yyyy}-${mm}-${dd}`;
+        inpStartEl.setAttribute('min', minIso);
+        inpEndEl.setAttribute('min', minIso);
+        if (bdBanner) {
+          bdBanner.innerHTML = `⏳ <strong>補請回溯期限提示：</strong>事後補請假最晚僅能回溯 <strong>${maxDays} 天內</strong>（最早可選 <code>${yyyy}/${mm}/${dd}</code>）。`;
+          bdBanner.classList.remove('hidden');
+        }
+      } else {
+        inpStartEl.removeAttribute('min');
+        inpEndEl.removeAttribute('min');
+        if (bdBanner) bdBanner.classList.add('hidden');
+      }
+    }
+
     function isTabAllowed(tabName) {
       const isGroup        = !!(STATE.gid && String(STATE.gid).trim());
       const gCfg           = STATE.groupUiConfig || DEFAULT_GROUP_UI_CONFIG;
@@ -1404,7 +1562,6 @@
 
     function applyTabAndRolePermissions() {
       const isGroup        = !!(STATE.gid && String(STATE.gid).trim());
-      const gCfg           = STATE.groupUiConfig || DEFAULT_GROUP_UI_CONFIG;
       const entCfg         = STATE.enterpriseConfig || {};
       const uPerms         = STATE.userCustomPerms  || {};
       const isAdminPrivate = (!isGroup && STATE.isAdmin);
@@ -1415,6 +1572,8 @@
 
       const payrollBar = document.getElementById('admPayrollExportBar');
       if (payrollBar) payrollBar.classList.toggle('hidden', entCfg.ENABLE_PAYROLL_EXPORT === false);
+
+      applyBackdateInputRestriction();
 
       const btnForm     = document.getElementById('tabBtn_form');
       const btnMy       = document.getElementById('tabBtn_my');
@@ -1481,6 +1640,7 @@
       const admBtnStandby = document.getElementById('admBtn_standby');
       const admBtnAdmins  = document.getElementById('admBtn_admins');
       const superRoleSec  = document.getElementById('superAdminRoleSection');
+      const superCredBox  = document.getElementById('superAdminCredentialsBox');
       const lblHeader     = document.getElementById('lblAdminHeaderTitle');
       const lblSub        = document.getElementById('lblAdminRoleSubtitle');
 
@@ -1488,13 +1648,14 @@
         if (admBtnStandby) admBtnStandby.classList.toggle('hidden', !isSuperPrivate);
         if (admBtnAdmins)  admBtnAdmins.classList.remove('hidden');
         if (superRoleSec)  superRoleSec.classList.toggle('hidden', !isSuperPrivate);
+        if (superCredBox)  superCredBox.classList.toggle('hidden', !isSuperPrivate);
 
         if (isSuperPrivate) {
-          if (lblHeader) lblHeader.innerText = '👑 超級管理員系統管理中心';
-          if (lblSub)    lblSub.innerText    = '具備所有系統管理權限（含備援、同仁綁定、個別功能授權、管理員指派與四大資料庫）';
+          if (lblHeader) lblHeader.innerText = '👑 超級管理員系統管理中心 (v26.0.0)';
+          if (lblSub)    lblSub.innerText    = '具備所有系統管理權限（含備援、零代碼金鑰、同仁綁定、管理員指派、四大資料庫與 20年長效自癒中心）';
         } else {
-          if (lblHeader) lblHeader.innerText = '🛡️ 管理員資料庫管理系統';
-          if (lblSub)    lblSub.innerText    = '具備管理權限（同仁 LINE 綁定與個別功能授權、特休/補休庫、假單/月結庫、班表庫、假別與擴充）';
+          if (lblHeader) lblHeader.innerText = '🛡️ 管理員資料庫管理系統 (v26.0.0)';
+          if (lblSub)    lblSub.innerText    = '具備管理權限（同仁 LINE 綁定與個別功能授權、特休/補休庫、假單/月結庫、班表庫、假別與長效自癒）';
           const curPanelStandby = document.getElementById('admPanel_standby');
           if (curPanelStandby && !curPanelStandby.classList.contains('hidden')) {
             switchAdminPanel('admins');
@@ -2010,6 +2171,40 @@
         .adminSaveLiffSyncConfig(STATE.uid, payload);
     }
 
+    function saveSystemCredentialsFromAdmin() {
+      const sheetId    = document.getElementById('inpCred_sheetId').value.trim();
+      const lineToken  = document.getElementById('inpCred_lineToken').value.trim();
+      const lineSecret = document.getElementById('inpCred_lineSecret').value.trim();
+
+      if (!confirm('確定要儲存核心金鑰與試算表 ID 設定嗎？\n（留空的欄位將維持原設定不變）')) return;
+
+      showStatusBanner('credStatusMsgBox', 'info', '⏳ 正在將核心金鑰寫入安全屬性庫...');
+      const payload = {};
+      if (sheetId)    payload.sheetId    = sheetId;
+      if (lineToken)  payload.lineToken  = lineToken;
+      if (lineSecret) payload.lineSecret = lineSecret;
+
+      google.script.run
+        .withSuccessHandler(res => {
+          if (!res || !res.success) {
+            showStatusBanner('credStatusMsgBox', 'err', (res && res.message) || '❌ 儲存失敗');
+            return;
+          }
+          document.getElementById('inpCred_lineToken').value  = '';
+          document.getElementById('inpCred_lineSecret').value = '';
+          try { localStorage.removeItem(CACHE_KEY_INIT); } catch (_) {}
+          if (res.adminData) {
+            STATE.adminData = res.adminData;
+            renderAdminConsole(res.adminData);
+          }
+          showStatusBanner('credStatusMsgBox', 'ok', res.message);
+        })
+        .withFailureHandler(err => {
+          showStatusBanner('credStatusMsgBox', 'err', '❌ 呼叫失敗：' + err.message);
+        })
+        .adminSaveSystemCredentials(STATE.uid, payload);
+    }
+
     function switchSystemStandbyNode(nodeKey) {
       const autoRedirect = document.getElementById('chkStandbyAutoRedirect')
         ? document.getElementById('chkStandbyAutoRedirect').checked
@@ -2054,7 +2249,7 @@
       try { window.top.location.replace(targetUrl); } catch (_) { window.location.href = targetUrl; }
     }
 
-    // ==================== ✅ 文字範本快填（自帶上次假單之姓名與核准狀態，含電腦剪貼簿修復） ====================
+    // ==================== 文字範本快填（自帶上次假單之姓名與核准狀態） ====================
     function saveLastUsedFieldsFromText(rawText) {
       try {
         if (!rawText) return;
@@ -2461,6 +2656,14 @@
         return { valid: false, errorMessage: `⚠️ 請假單填寫不完整（以下欄位未填內容）：\n• ${empty.join('\n• ')}` };
       }
 
+      // ✅ [維度一前端同步防線 1] 檢查「禁止自我代理」開關
+      const entCfg   = STATE.enterpriseConfig || {};
+      const cleanApp = parsed['請假人'].replace(/\s+/g, '');
+      const cleanDep = parsed['職務代理'].replace(/\s+/g, '');
+      if (entCfg.PREVENT_SELF_DEPUTY !== false && cleanApp && cleanDep && cleanApp === cleanDep) {
+        return { valid: false, errorMessage: `⚠️ 職務代理人設定無效：請假人（${cleanApp}）不可將職務代理人填寫為自己！` };
+      }
+
       const dateRaw = parsed['請假日期'].replace(/[（(][一二三四五六日][)）]/g, '').trim();
       const parts   = dateRaw.split(/[～~\-–—〜－]/).map(s => s.trim()).filter(Boolean);
       const parseOneDate = (s, refY, refM) => {
@@ -2504,6 +2707,20 @@
       }
       if (eDate.getTime() < sDate.getTime()) {
         return { valid: false, errorMessage: '⚠️ 請假日期區間錯誤：結束日期不能早於開始日期' };
+      }
+
+      // ✅ [維度一前端同步防線 2] 檢查「事後補請假回溯天數上限」開關
+      if (entCfg.ENABLE_BACKDATE_LIMIT && !STATE.isAdmin) {
+        const maxDays   = !isNaN(parseInt(entCfg.MAX_BACKDATE_DAYS, 10)) ? parseInt(entCfg.MAX_BACKDATE_DAYS, 10) : 7;
+        const now       = new Date();
+        const todayZero = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const diffDays  = Math.floor((todayZero.getTime() - sDate.getTime()) / (1000 * 60 * 60 * 24));
+        if (diffDays > maxDays) {
+          return {
+            valid: false,
+            errorMessage: `⚠️ 超過事後補請假回溯期限：請假開始日距今已過 ${diffDays} 天（系統規定最晚僅能回溯 ${maxDays} 天內）。如需補登請聯絡管理員！`
+          };
+        }
       }
 
       let workDayCount = 0;
@@ -2623,7 +2840,7 @@
             errorMessage: `⚠️ 特休額度不足！\n申請時數：${reqTotal}h｜目前剩餘：${STATE.dashboard.remainingHours}h`
           };
         }
-      } else if (matchedType === '補休' && STATE.enterpriseConfig && STATE.enterpriseConfig.ENABLE_COMP_LEAVE_POOL &&
+      } else if (matchedType === '補休' && entCfg.ENABLE_COMP_LEAVE_POOL &&
                  STATE.dashboard && STATE.dashboard.compPool && STATE.dashboard.name === parsed['請假人']) {
         if (reqTotal > STATE.dashboard.compPool.remainingHours) {
           return {
@@ -2764,12 +2981,8 @@
       const existAttBox = document.getElementById('existingAttachmentBox');
       if (existAttBox) existAttBox.classList.add('hidden');
 
-      const inpNameEl  = document.getElementById('inpName');
-      const inpStartEl = document.getElementById('inpStartDate');
-      const inpEndEl   = document.getElementById('inpEndDate');
-      if (inpNameEl)  inpNameEl.readOnly = false;
-      if (inpStartEl) inpStartEl.removeAttribute('min');
-      if (inpEndEl)   inpEndEl.removeAttribute('min');
+      const inpNameEl = document.getElementById('inpName');
+      if (inpNameEl) inpNameEl.readOnly = false;
 
       document.getElementById('editModeBanner').classList.add('hidden');
       document.getElementById('btnSubmit').innerText = '✅ 送出請假申請';
@@ -3114,6 +3327,12 @@
 
       if (!name || !startDate || !leaveType || !deputy || !reason) {
         showStatusBanner('formResultBox', 'err', '⚠️ 請確認「請假人員、日期、假別、職務代理人、事由」皆已填寫！');
+        return;
+      }
+
+      const entCfg = STATE.enterpriseConfig || {};
+      if (entCfg.PREVENT_SELF_DEPUTY !== false && name.replace(/\s+/g, '') === deputy.replace(/\s+/g, '')) {
+        showStatusBanner('formResultBox', 'err', `⚠️ 職務代理人設定無效：請假人（${name}）不可將職務代理人填寫為自己！`);
         return;
       }
 
@@ -3545,6 +3764,9 @@
       }).adminCleanDuplicateMappings(STATE.uid);
     }
 
+    /**
+     * ✅ 渲染企業級開關與 20 年長效穩定度開關面板
+     */
     function renderEnterpriseConfigControls(entCfg) {
       const cfg = entCfg || (STATE.adminData && STATE.adminData.enterpriseConfig) || STATE.enterpriseConfig || {};
       const setChk = (id, val) => {
@@ -3561,6 +3783,23 @@
       setChk('chkEnt_deputyApproval', cfg.ENABLE_DEPUTY_APPROVAL);
       setChk('chkEnt_onlineApproval', cfg.ENABLE_ONLINE_APPROVAL);
       setChk('chkEnt_payrollExport',  cfg.ENABLE_PAYROLL_EXPORT !== undefined ? cfg.ENABLE_PAYROLL_EXPORT : true);
+
+      // 維度一：5 大防呆開關
+      setChk('chkEnt_backdateLimit',       cfg.ENABLE_BACKDATE_LIMIT);
+      setChk('chkEnt_preventSelfDeputy',   cfg.PREVENT_SELF_DEPUTY !== undefined ? cfg.PREVENT_SELF_DEPUTY : true);
+      setChk('chkEnt_checkDeputyConflict', cfg.CHECK_DEPUTY_CONFLICT);
+      setChk('chkEnt_protectAnnivArchive', cfg.PROTECT_ANNIVERSARY_ARCHIVE !== undefined ? cfg.PROTECT_ANNIVERSARY_ARCHIVE : true);
+      setChk('chkEnt_seniorityDeduct',     cfg.ENABLE_SENIORITY_DEDUCTION !== undefined ? cfg.ENABLE_SENIORITY_DEDUCTION : true);
+
+      const inpMaxBd = document.getElementById('inpEnt_maxBackdateDays');
+      if (inpMaxBd) inpMaxBd.value = cfg.MAX_BACKDATE_DAYS !== undefined ? cfg.MAX_BACKDATE_DAYS : 7;
+
+      // 維度二 & 三：自動備份與保存年限
+      setChk('chkEnt_autoMonthlyBackup', cfg.ENABLE_AUTO_MONTHLY_BACKUP !== undefined ? cfg.ENABLE_AUTO_MONTHLY_BACKUP : true);
+      const inpLogRet = document.getElementById('inpEnt_logRetentionYears');
+      const inpAttRet = document.getElementById('inpEnt_attRetentionYears');
+      if (inpLogRet) inpLogRet.value = cfg.LOG_RETENTION_YEARS !== undefined ? cfg.LOG_RETENTION_YEARS : 3;
+      if (inpAttRet) inpAttRet.value = cfg.ATTACHMENT_RETENTION_YEARS !== undefined ? cfg.ATTACHMENT_RETENTION_YEARS : 5;
 
       setChk('chkEnt_errorAlert',     cfg.ENABLE_ERROR_ALERTS !== undefined ? cfg.ENABLE_ERROR_ALERTS : true);
       setChk('chkEnt_calendar',       cfg.ENABLE_CALENDAR_SYNC);
@@ -3583,24 +3822,36 @@
         return el ? !!el.checked : false;
       };
       const payload = {
-        ANNUAL_LEAVE_MODE:        document.getElementById('selEnt_annualMode').value,
-        ENABLE_DEFERRED_LEAVE:    getChk('chkEnt_deferredLeave'),
-        ENABLE_COMP_LEAVE_POOL:   getChk('chkEnt_compPool'),
-        ENABLE_ATTACHMENT_UPLOAD: getChk('chkEnt_attachment'),
-        ATTACHMENT_FOLDER_ID:     document.getElementById('inpEnt_attachFolderId').value.trim(),
-        ENABLE_DEPUTY_APPROVAL:   getChk('chkEnt_deputyApproval'),
-        ENABLE_ONLINE_APPROVAL:   getChk('chkEnt_onlineApproval'),
-        ENABLE_PAYROLL_EXPORT:    getChk('chkEnt_payrollExport'),
-        ENABLE_ERROR_ALERTS:      getChk('chkEnt_errorAlert'),
-        ENABLE_CALENDAR_SYNC:     getChk('chkEnt_calendar'),
-        ENABLE_MORNING_DIGEST:    getChk('chkEnt_digest'),
-        SHOW_QUOTA_IN_GROUP:      getChk('chkEnt_showQuotaGroup'),
-        CALENDAR_ID:              document.getElementById('inpEnt_calId').value.trim(),
-        DIGEST_TARGET_ID:         document.getElementById('inpEnt_digestTarget').value.trim(),
-        DIGEST_HOUR:              parseInt(document.getElementById('inpEnt_digestHour').value, 10) || 8
+        ANNUAL_LEAVE_MODE:           document.getElementById('selEnt_annualMode').value,
+        ENABLE_DEFERRED_LEAVE:       getChk('chkEnt_deferredLeave'),
+        ENABLE_COMP_LEAVE_POOL:      getChk('chkEnt_compPool'),
+        ENABLE_ATTACHMENT_UPLOAD:    getChk('chkEnt_attachment'),
+        ATTACHMENT_FOLDER_ID:        document.getElementById('inpEnt_attachFolderId').value.trim(),
+        ENABLE_DEPUTY_APPROVAL:      getChk('chkEnt_deputyApproval'),
+        ENABLE_ONLINE_APPROVAL:      getChk('chkEnt_onlineApproval'),
+        ENABLE_PAYROLL_EXPORT:       getChk('chkEnt_payrollExport'),
+
+        ENABLE_BACKDATE_LIMIT:       getChk('chkEnt_backdateLimit'),
+        MAX_BACKDATE_DAYS:           parseInt(document.getElementById('inpEnt_maxBackdateDays').value, 10) || 0,
+        PREVENT_SELF_DEPUTY:         getChk('chkEnt_preventSelfDeputy'),
+        CHECK_DEPUTY_CONFLICT:       getChk('chkEnt_checkDeputyConflict'),
+        PROTECT_ANNIVERSARY_ARCHIVE: getChk('chkEnt_protectAnnivArchive'),
+        ENABLE_SENIORITY_DEDUCTION:  getChk('chkEnt_seniorityDeduct'),
+
+        ENABLE_AUTO_MONTHLY_BACKUP:  getChk('chkEnt_autoMonthlyBackup'),
+        LOG_RETENTION_YEARS:         parseInt(document.getElementById('inpEnt_logRetentionYears').value, 10) || 3,
+        ATTACHMENT_RETENTION_YEARS:  parseInt(document.getElementById('inpEnt_attRetentionYears').value, 10) || 5,
+
+        ENABLE_ERROR_ALERTS:         getChk('chkEnt_errorAlert'),
+        ENABLE_CALENDAR_SYNC:        getChk('chkEnt_calendar'),
+        ENABLE_MORNING_DIGEST:       getChk('chkEnt_digest'),
+        SHOW_QUOTA_IN_GROUP:         getChk('chkEnt_showQuotaGroup'),
+        CALENDAR_ID:                 document.getElementById('inpEnt_calId').value.trim(),
+        DIGEST_TARGET_ID:            document.getElementById('inpEnt_digestTarget').value.trim(),
+        DIGEST_HOUR:                 parseInt(document.getElementById('inpEnt_digestHour').value, 10) || 8
       };
 
-      showStatusBanner('entConfigStatusBox', 'info', '⏳ 正在儲存商用與企業擴充開關設定，並同步更新排程觸發器...');
+      showStatusBanner('entConfigStatusBox', 'info', '⏳ 正在儲存商用與 20 年長效穩定度開關設定，並同步更新排程觸發器...');
 
       google.script.run
         .withSuccessHandler(res => {
@@ -3639,6 +3890,86 @@
           showStatusBanner('entConfigStatusBox', 'err', '❌ 呼叫失敗：' + err.message);
         })
         .adminTestMorningDigest(STATE.uid);
+    }
+
+    // ==================== ✅ [維度三] 20年長效自癒、全庫備份、日誌瘦身與收回記錄重建前端控制 ====================
+    function reconcileBalancesFromAdmin() {
+      showStatusBanner('longevityMaintStatusBox', 'info', '⏳ 正在掃描主表本年度所有有效假單，執行總帳與明細帳雙向對帳自癒...');
+      google.script.run
+        .withSuccessHandler(res => {
+          if (!res || !res.success) {
+            showStatusBanner('longevityMaintStatusBox', 'err', (res && res.message) || '❌ 對帳失敗');
+            return;
+          }
+          try { localStorage.removeItem(CACHE_KEY_INIT); } catch (_) {}
+          if (res.adminData) {
+            STATE.adminData = res.adminData;
+            renderAdminConsole(res.adminData);
+          }
+          showStatusBanner('longevityMaintStatusBox', 'ok', res.message);
+        })
+        .withFailureHandler(err => {
+          showStatusBanner('longevityMaintStatusBox', 'err', '❌ 呼叫失敗：' + err.message);
+        })
+        .adminReconcileBalances(STATE.uid);
+    }
+
+    function createDatabaseBackupFromAdmin() {
+      showStatusBanner('longevityMaintStatusBox', 'info', '⏳ 正在於 Google Drive 建立整份試算表災難復原備份快照...');
+      google.script.run
+        .withSuccessHandler(res => {
+          if (!res || !res.success) {
+            showStatusBanner('longevityMaintStatusBox', 'err', (res && res.message) || '❌ 備份失敗');
+            return;
+          }
+          showStatusBanner('longevityMaintStatusBox', 'ok', res.message);
+        })
+        .withFailureHandler(err => {
+          showStatusBanner('longevityMaintStatusBox', 'err', '❌ 呼叫失敗：' + err.message);
+        })
+        .adminCreateDatabaseBackup(STATE.uid);
+    }
+
+    function pruneLogsAndAttachmentsFromAdmin() {
+      const logYrs = (STATE.enterpriseConfig && STATE.enterpriseConfig.LOG_RETENTION_YEARS) || 3;
+      const attYrs = (STATE.enterpriseConfig && STATE.enterpriseConfig.ATTACHMENT_RETENTION_YEARS) || 5;
+      if (!confirm(`確定要執行「🧹 滾動瘦身過期日誌與附件」嗎？\n系統將自動清理：\n1. 超過 ${logYrs} 年以前之歷史調整日誌與加班紀錄\n2. 超過 ${attYrs} 年以前之過期證明附件子資料夾`)) {
+        return;
+      }
+      showStatusBanner('longevityMaintStatusBox', 'info', '⏳ 正在滾動清理過期日誌與過期證明附件...');
+      google.script.run
+        .withSuccessHandler(res => {
+          if (!res || !res.success) {
+            showStatusBanner('longevityMaintStatusBox', 'err', (res && res.message) || '❌ 清理失敗');
+            return;
+          }
+          if (res.adminData) {
+            STATE.adminData = res.adminData;
+            renderAdminConsole(res.adminData);
+          }
+          showStatusBanner('longevityMaintStatusBox', 'ok', res.message);
+        })
+        .withFailureHandler(err => {
+          showStatusBanner('longevityMaintStatusBox', 'err', '❌ 呼叫失敗：' + err.message);
+        })
+        .adminPruneLogsAndAttachments(STATE.uid);
+    }
+
+    function rebuildUnsendLogFromAdmin() {
+      if (!confirm('確定要掃描「請假記錄」主表與歷年歸檔表，重新生成「收回記錄」分頁的完整內容嗎？')) return;
+      showStatusBanner('longevityMaintStatusBox', 'info', '⏳ 正在從主表與歷年歸檔表掃描並重新生成「收回記錄」分頁...');
+      google.script.run
+        .withSuccessHandler(res => {
+          if (!res || !res.success) {
+            showStatusBanner('longevityMaintStatusBox', 'err', (res && res.message) || '❌ 重建失敗');
+            return;
+          }
+          showStatusBanner('longevityMaintStatusBox', 'ok', res.message);
+        })
+        .withFailureHandler(err => {
+          showStatusBanner('longevityMaintStatusBox', 'err', '❌ 呼叫失敗：' + err.message);
+        })
+        .adminRebuildUnsendLog(STATE.uid);
     }
 
     // ==================== 未休特休結算（轉入次年遞延 / 下載折現 CSV） ====================
@@ -4001,6 +4332,15 @@
       }
       if (adm.enterpriseConfig) {
         STATE.enterpriseConfig = { ...STATE.enterpriseConfig, ...adm.enterpriseConfig };
+      }
+
+      if (adm.credentialsStatus) {
+        const inpS = document.getElementById('inpCred_sheetId');
+        const inpT = document.getElementById('inpCred_lineToken');
+        if (inpS && adm.credentialsStatus.sheetId) inpS.value = adm.credentialsStatus.sheetId;
+        if (inpT && adm.credentialsStatus.maskedLineToken) {
+          inpT.placeholder = `目前生效：${adm.credentialsStatus.maskedLineToken} (留空不修改)`;
+        }
       }
 
       applyTabAndRolePermissions();
@@ -4472,4 +4812,4 @@
     }
   </script>
 </body>
-</html>
+</html>  
