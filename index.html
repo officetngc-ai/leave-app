@@ -3051,9 +3051,10 @@
       triggerPreview();
     }
 
+// ✅ 請替換為（支援特休倒數 8 小時醒目變色與扣假後預估倒數提示）：
     function updateQuotaHint() {
       const type = document.getElementById('selLeaveType').value || '';
-      const name = document.getElementById('inpName').value.trim();
+      const name = document.getElementById('inpName').value.replace(/\u3000/g, '').replace(/\s+/g, '').trim();
       const box  = document.getElementById('quotaHintBox');
       if (!STATE.dashboard || STATE.dashboard.name !== name) {
         box.classList.add('hidden');
@@ -3061,10 +3062,30 @@
       }
 
       if (type.includes('特休') && STATE.dashboard.hasQuota) {
+        const remHrs  = Number(STATE.dashboard.remainingHours || 0);
+        const remDays = Number(STATE.dashboard.remainingDays || 0);
+        const reqHrs  = Number(STATE.lastPreviewHours || 0);
+        const afterHrs = Math.round((remHrs - reqHrs) * 10) / 10;
         const defNote = STATE.dashboard.deferredHours > 0 ? `（含上期遞延剩餘 ${STATE.dashboard.deferredRemainingHours}h，優先扣減）` : '';
-        box.innerHTML = `🔒 您的個人特休剩餘：<strong>${STATE.dashboard.remainingDays} 天 (${STATE.dashboard.remainingHours} 小時)</strong>${defNote}`;
+
+        let countdownHtml = '';
+        if (remHrs > 0 && remHrs <= 8) {
+          box.className = 'banner edit-mode';
+          countdownHtml = `<div style="margin-top:4px; color:#B91C1C; font-weight:800;">⏳ 【特休倒數 8 小時提示】您的特休僅剩最後 ${remHrs} 小時（已進入 8 小時倒數階段），請留意休假安排！</div>`;
+        } else if (remHrs <= 0) {
+          box.className = 'banner edit-mode';
+          countdownHtml = `<div style="margin-top:4px; color:#B91C1C; font-weight:800;">🔴 【特休已用罄】您的特休剩餘 0 小時，請改選其他假別！</div>`;
+        } else if (reqHrs > 0 && afterHrs > 0 && afterHrs <= 8) {
+          box.className = 'banner edit-mode';
+          countdownHtml = `<div style="margin-top:4px; color:#B45309; font-weight:800;">⏳ 【特休倒數 8 小時預警】本次請假 (${reqHrs}h) 扣除後，您的特休將僅剩 ${afterHrs} 小時（進入倒數 8 小時內）！</div>`;
+        } else {
+          box.className = 'banner';
+        }
+
+        box.innerHTML = `🔒 您的個人特休剩餘：<strong>${remDays} 天 (${remHrs} 小時)</strong>${defNote}${countdownHtml}`;
         box.classList.remove('hidden');
       } else if (type.includes('補休') && STATE.enterpriseConfig && STATE.enterpriseConfig.ENABLE_COMP_LEAVE_POOL && STATE.dashboard.compPool) {
+        box.className = 'banner';
         box.innerHTML = `⚡ 您的個人補休池可用餘額：<strong>${STATE.dashboard.compPool.remainingHours} 小時</strong>（累計加班 ${STATE.dashboard.compPool.totalHours}h / 已休 ${STATE.dashboard.compPool.usedHours}h）`;
         box.classList.remove('hidden');
       } else {
@@ -3083,12 +3104,15 @@
       google.script.run.withSuccessHandler(res => {
         if (!res) return;
         if (res.valid) {
+          STATE.lastPreviewHours = Number(res.totalHours || 0);
           box.className = 'preview-box ok';
           box.innerHTML = `⏰ 試算結果：共 <strong>${res.workDays}</strong> 個工作天，合計請假 <strong>${res.totalHours} 小時</strong>`;
         } else {
+          STATE.lastPreviewHours = 0;
           box.className = 'preview-box err';
           box.innerHTML = `⚠️ ${escHtml(res.message)}`;
         }
+        updateQuotaHint();
       }).previewLeaveHoursFromWeb(sDate, eDate, STATE.periodMode, sTime, eTime);
     }
 
@@ -3145,6 +3169,15 @@
              💰 <strong>含上期遞延特休：</strong>${d.deferredHours}h（目前遞延剩餘 <strong>${d.deferredRemainingHours}h</strong>，請假時自動優先扣減）｜本期新增：${d.baseHours}h
            </div>`
         : '';
+      const countdownBanner = (d.hasQuota && d.remainingHours > 0 && d.remainingHours <= 8)
+        ? `<div style="font-size:12.5px; color:#991B1B; background:#FEF2F2; padding:8px 10px; border-radius:8px; border:1px solid #FECACA; margin-bottom:8px; font-weight:800;">
+             ⏳ 【特休倒數 8 小時提示】您的特休目前僅剩最後 <strong>${d.remainingHours} 小時 (${d.remainingDays} 天)</strong>，已進入最後 8 小時倒數階段，請妥善規劃休假！
+           </div>`
+        : ((d.hasQuota && d.totalHours > 0 && d.remainingHours <= 0)
+          ? `<div style="font-size:12.5px; color:#991B1B; background:#FEF2F2; padding:8px 10px; border-radius:8px; border:1px solid #FECACA; margin-bottom:8px; font-weight:800;">
+               🔴 【特休已用罄提示】您的本期特休額度已全部使用完畢（剩餘 0 小時）。
+             </div>`
+          : '');
 
       let quotaHtml = d.hasQuota ? `
         <div style="font-size:13px; color:var(--muted); margin-bottom:6px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:4px;">
@@ -3153,6 +3186,7 @@
         </div>
         <div style="font-size:11.5px; color:var(--muted); margin-bottom:6px;">🗓️ 特休計算週期：${escHtml(d.cycleRangeStr || (d.year + ' 年度'))}</div>
         ${defLine}
+        ${countdownBanner}
         <div class="quota-grid">
           <div class="quota-item"><div class="quota-num">${d.totalDays}<span style="font-size:12px;">天</span></div><div class="quota-sub">可用總額 (${d.totalHours}h)</div></div>
           <div class="quota-item"><div class="quota-num" style="color:#D97706;">${d.usedDays}<span style="font-size:12px;">天</span></div><div class="quota-sub">已使用 (${d.usedHours}h)</div></div>
@@ -3326,13 +3360,13 @@
 
     function submitForm() {
       if (isSubmitting) return;
-      const name      = document.getElementById('inpName').value.trim();
+      const name   = document.getElementById('inpName').value.replace(/\u3000/g, '').replace(/\s+/g, '').trim();
       const startDate = document.getElementById('inpStartDate').value;
       const endDate   = document.getElementById('inpEndDate').value;
       const startTime = document.getElementById('inpStartTime').value;
       const endTime   = document.getElementById('inpEndTime').value;
       const leaveType = document.getElementById('selLeaveType').value;
-      const deputy    = document.getElementById('inpDeputy').value.trim();
+      const deputy = document.getElementById('inpDeputy').value.replace(/\u3000/g, '').replace(/\s+/g, '').trim();
       const reason    = document.getElementById('inpReason').value.trim();
       const approval  = document.getElementById('selApproval').value;
 
