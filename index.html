@@ -110,19 +110,31 @@
     .status-box.err { background: #FEE2E2; color: #991B1B; border: 1px solid #FCA5A5; }
     .status-box.info { background: #E0F2FE; color: #075985; border: 1px solid #7DD3FC; }
 
-    .form-group { margin-bottom: 13px; }
+    .form-group { margin-bottom: 13px; min-width: 0; max-width: 100%; }
     label { display: block; font-size: 13px; font-weight: 700; color: #334155; margin-bottom: 5px; }
     label span.req { color: var(--danger); margin-left: 2px; }
     input[type="text"], input[type="password"], input[type="number"], input[type="date"], input[type="month"], input[type="time"], input[type="file"], select, textarea {
-      width: 100%; padding: 11px 12px; font-size: 15px; border: 1px solid var(--border);
-      border-radius: 10px; background: #FFF; color: var(--text); outline: none;
-      -webkit-appearance: menulist; appearance: auto;
+      display: block; width: 100%; max-width: 100%; min-width: 0; min-height: 44px;
+      padding: 10px 12px; font-size: 14.5px; line-height: 1.3;
+      border: 1px solid var(--border); border-radius: 10px; background-color: #FFF; color: var(--text);
+      outline: none; -webkit-appearance: none; appearance: none;
     }
-    input[readonly] { background: #F1F5F9; color: #475569; cursor: not-allowed; }
-    textarea { font-family: monospace, "Noto Sans TC", sans-serif; line-height: 1.6; resize: vertical; }
+    input[type="date"], input[type="month"], input[type="time"] {
+      height: 44px; padding: 8px 10px; overflow: hidden;
+    }
+    select {
+      height: 44px; padding-right: 30px;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23475569' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+      background-repeat: no-repeat; background-position: right 10px center; background-size: 13px;
+      text-overflow: ellipsis; white-space: nowrap; overflow: hidden;
+    }
+    input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--blue); cursor: pointer; }
+    input[readonly] { background-color: #F1F5F9; color: #475569; cursor: not-allowed; }
+    textarea { min-height: 120px; font-family: monospace, "Noto Sans TC", sans-serif; line-height: 1.6; resize: vertical; }
     input:focus, select:focus, textarea:focus { border-color: var(--blue); box-shadow: 0 0 0 2px rgba(21,101,192,0.12); }
-    .row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-    .row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+    .row-2 { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px; align-items: end; }
+    .row-3 { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr); gap: 8px; align-items: end; }
+    .row-2 > *, .row-3 > * { min-width: 0; max-width: 100%; }
 
     .period-pills { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
     .pill {
@@ -164,7 +176,12 @@
     .badge.admin-role { background: #FEF3C7; color: #92400E; }
 
     /* 後台管理子導航列 */
-    .admin-subtabs { display: flex; overflow-x: auto; gap: 5px; margin-bottom: 12px; padding-bottom: 2px; }
+    .admin-subtabs {
+      display: flex; overflow-x: auto; gap: 5px; margin-bottom: 12px; padding: 8px 2px;
+      position: sticky; top: 46px; z-index: 95; background: var(--bg);
+      -webkit-overflow-scrolling: touch;
+    }
+    .admin-subtabs::-webkit-scrollbar { display: none; }
     .admin-subbtn {
       flex: 1 0 auto; padding: 10px 8px; font-size: 12px; font-weight: 700; border-radius: 9px;
       border: 1px solid var(--border); background: #FFF; color: var(--text); cursor: pointer; text-align: center;
@@ -730,15 +747,15 @@
           </div>
           <div style="background:#FFF; padding:10px; border-radius:8px; border:1px solid var(--border); margin-bottom:10px;">
             <div style="font-size:12.5px; font-weight:700; color:var(--teal); margin-bottom:6px;">➕ 管理員直接登錄加班補休時數（直接核准並累加至員工補休池）</div>
-            <div class="row-3">
+            <div class="row-2" style="margin-bottom:6px;">
               <div><input type="text" id="admOtName" list="employeeList" placeholder="員工姓名"></div>
+              <div><input type="number" step="0.5" id="admOtHours" placeholder="加班時數(h)"></div>
+            </div>
+            <div class="row-2" style="margin-bottom:6px;">
               <div><input type="date" id="admOtDate"></div>
-              <div><input type="number" step="0.5" id="admOtHours" placeholder="時數(h)"></div>
+              <div><input type="text" id="admOtReason" placeholder="加班事由（如：假日支援）"></div>
             </div>
-            <div style="display:flex; gap:6px; margin-top:6px;">
-              <input type="text" id="admOtReason" placeholder="加班事由（例如：週六活動支援）">
-              <button class="btn sm teal" style="white-space:nowrap;" onclick="submitOvertimeByAdmin()">➕ 登錄補休</button>
-            </div>
+            <button class="btn sm teal" style="width:100%; padding:10px;" onclick="submitOvertimeByAdmin()">➕ 直接核准並登錄補休時數</button>
           </div>
           <div style="font-size:13px; font-weight:700; margin-bottom:6px;">📋 近期員工加班補休申請紀錄：</div>
           <div id="admOvertimeListBox" style="max-height:260px; overflow-y:auto;"></div>
@@ -4775,6 +4792,12 @@
     }
 
     function saveAdminSchedule() {
+      const spDateVal = document.getElementById('admSpDate').value;
+      const spNameVal = document.getElementById('admSpName').value.trim();
+      if (spNameVal && !spDateVal) {
+        alert('⚠️ 您填寫了「假日或調整說明」，但尚未選擇「特定日期」！請先點選特定日期後再儲存。');
+        return;
+      }
       const origDays = (STATE.adminData && STATE.adminData.scheduleOverview && STATE.adminData.scheduleOverview.days) || [];
       const days = origDays.map((d, idx) => ({
         ...d,
@@ -4784,9 +4807,9 @@
         afternoonHours: document.getElementById('admDayAft_' + idx).value
       }));
       const newSpecialDate = {
-        date: document.getElementById('admSpDate').value,
+        date: spDateVal,
         type: document.getElementById('admSpType').value,
-        name: document.getElementById('admSpName').value.trim()
+        name: spNameVal
       };
       google.script.run.withSuccessHandler(res => {
         try { localStorage.removeItem(CACHE_KEY_INIT); } catch (_) {}
