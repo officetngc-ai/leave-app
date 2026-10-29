@@ -1738,16 +1738,18 @@
       if (STATE.tab) switchTab(STATE.tab);
 
       if (STATE.liffId && typeof liff !== 'undefined') {
-        let fetchedWithUid = false;
+        let initialFetchSent = false;
         const waitMs = (STATE.editRow || !STATE.uid) ? 1800 : 600;
         const timer = setTimeout(() => {
-          if (!fetchedWithUid) {
+          if (!initialFetchSent) {
+            initialFetchSent = true;
             fetchFreshInitData(savedName);
           }
         }, waitMs);
 
         liff.init({ liffId: STATE.liffId }).then(() => {
           clearTimeout(timer);
+          const prevUid = STATE.uid;
           parseClientUrlParams();
           if (liff.isLoggedIn()) {
             const ctx = liff.getContext();
@@ -1759,12 +1761,14 @@
           }
           applyTabAndRolePermissions();
           if (STATE.tab) switchTab(STATE.tab);
-          fetchedWithUid = true;
-          fetchFreshInitData(savedName);
+          if (!initialFetchSent || (STATE.uid && STATE.uid !== prevUid)) {
+            initialFetchSent = true;
+            fetchFreshInitData(savedName);
+          }
         }).catch(() => {
           clearTimeout(timer);
-          if (!fetchedWithUid) {
-            fetchedWithUid = true;
+          if (!initialFetchSent) {
+            initialFetchSent = true;
             fetchFreshInitData(savedName);
           }
         });
@@ -2999,7 +3003,7 @@
     }
 
     function onNameChange() {
-      const name = document.getElementById('inpName').value.trim();
+      const name = document.getElementById('inpName').value.replace(/\u3000/g, '').replace(/\s+/g, '').trim();
       if (name && name !== '系統管理員' && name !== '王小明') {
         localStorage.setItem('leave_sys_user_name', name);
 
