@@ -209,7 +209,7 @@
     <button class="tab-btn" id="tabBtn_my" onclick="switchTab('my')">🔒 查特休/紀錄</button>
     <button class="tab-btn hidden" id="tabBtn_textform" onclick="switchTab('textform')">✍️ 文字快填</button>
     <button class="tab-btn hidden" id="tabBtn_today" onclick="switchTab('today')">📋 今日請假</button>
-    <button class="tab-btn hidden" id="tabBtn_schedule" onclick="switchTab('schedule')">⚙️ 班表設定</button>
+    <button class="tab-btn hidden" id="tabBtn_schedule" onclick="switchTab('schedule')">⚙️ 上班與休假</button>
     <button class="tab-btn" id="tabBtn_help" onclick="switchTab('help')">📖 說明</button>
     <button class="tab-btn admin-tab hidden" id="tabBtn_admin" onclick="switchTab('admin')">🛠️ 系統管理</button>
   </div>
@@ -291,11 +291,9 @@
         </div>
 
         <div class="form-group">
-          <label>主管核准狀態 <span class="req">*</span></label>
+          <label>核准狀態 <span class="req">*</span></label>
           <select id="selApproval" onchange="onApprovalChange()">
-            <option value="已報請主管核准" selected>已報請主管核准（預設）</option>
-            <option value="已當面報請主管核准">已當面報請主管核准</option>
-            <option value="已LINE報請主管核准">已LINE報請主管核准</option>
+            <option value="已報請主任牧師核准" selected>已報請主任牧師核准</option>
           </select>
         </div>
 
@@ -335,7 +333,7 @@
       </div>
     </div>
 
-    <!-- ==================== 3. 獨立彈出式「文字範本快填」視窗 (tab=textform) ==================== -->
+    <!-- ==================== 3. 獨立彈出式「提送假單」視窗 (tab=textform) ==================== -->
     <div id="sec_textform" class="tab-sec hidden">
       <div class="card">
         <h3 class="section-title">✍️ 文字版範本修改（自動帶入姓名與核准）</h3>
@@ -399,9 +397,9 @@
         <h3 class="section-title">📖 請假系統完整使用說明</h3>
         <div style="font-size:14px; line-height:1.7; color:#334155;">
           <p><strong>1️⃣ 日曆選單快速請假（推薦）：</strong><br>
-          於「📝 填寫請假」分頁選擇日期、時段與假別，系統會自動扣除午休並試算總時數，核准欄位預設為「已報請主管核准」，按送出即完成請假。</p>
-          <p><strong>2️⃣ 文字範本快填（自動記憶您的姓名與核准狀態）：</strong><br>
-          點擊下方「✍️ 文字範本快填」浮動按鈕，系統會自動帶入您上次請假的「請假人」與「核准」內容。修改日期與時數後，系統會先與後端資料庫核對格式與是否重複請假，確認無誤後：<br>
+          於「📝 填寫請假」分頁選擇日期、時段與假別，系統會自動扣除午休並試算總時數，核准欄位預設為「已報請主任牧師/牧師核准」，按送出即完成請假。</p>
+          <p><strong>2️⃣ 提送假單（自動記憶您的姓名與核准狀態）：</strong><br>
+          點擊下方「✍️ 提送假單」浮動按鈕，系統會自動帶入您上次請假的「請假人」與「核准」內容。修改日期與時數後，系統會先與後端資料庫核對格式與是否重複請假，確認無誤後：<br>
           • <strong>手機版點擊綠色按鈕</strong>：若已授權將以您的 LINE 帳號直接在原群組發出 7 行請假文字並收起視窗；若未授權則自動將文字複製到剪貼簿並收起視窗返回原群組，讓您直接在輸入框貼上發送。<br>
           • <strong>電腦版點擊綠色按鈕</strong>：自動將驗證通過的 7 行文字複製到電腦剪貼簿，切回電腦版 LINE 輸入框按 <code>Ctrl + V</code> 即可貼上發送。<br>
           • <strong>點擊灰色按鈕</strong>：明確授權由系統直接在原聊天室發出留言與假單卡片。</p>
@@ -452,11 +450,11 @@
             <input type="checkbox" id="chkGrpQr_form" checked>
           </label>
           <label class="group-ui-item">
-            <span>✍️ 文字範本快填</span>
+            <span>✍️ 提送假單</span>
             <input type="checkbox" id="chkGrpQr_textform" checked>
           </label>
           <label class="group-ui-item">
-            <span>⚙️ 班表設定</span>
+            <span>⚙️ 上班與休假</span>
             <input type="checkbox" id="chkGrpQr_schedule">
           </label>
           <label class="group-ui-item">
@@ -480,7 +478,7 @@
             <input type="checkbox" id="chkGrpTab_my" checked>
           </label>
           <label class="group-ui-item">
-            <span>⚙️ 班表設定(預設開)</span>
+            <span>⚙️ 上班與休假(預設開)</span>
             <input type="checkbox" id="chkGrpTab_schedule" checked>
           </label>
           <label class="group-ui-item">
@@ -674,7 +672,7 @@
           <div class="row-2">
             <div class="form-group">
               <label>員工姓名 <span class="req">*</span></label>
-              <input type="text" id="admAdminName" list="employeeList" placeholder="例如：林主管">
+              <input type="text" id="admAdminName" list="employeeList" placeholder="例如：陳同工">
             </div>
             <div class="form-group">
               <label>LINE UserID (選填/自動對應)</label>
@@ -702,7 +700,7 @@
 
           <div class="form-group">
             <label>職務 / 權限備註說明</label>
-            <input type="text" id="admAdminRemarks" placeholder="例如：店務主管、人事管理員">
+            <input type="text" id="admAdminRemarks" placeholder="例如：同工、傳道、牧師">
           </div>
 
           <button class="btn blue" style="margin-top:0;" onclick="saveAdminUserRecord()">💾 儲存管理員角色權限 (adminUsers)</button>
@@ -977,7 +975,7 @@
 
         <div class="ent-toggle-row">
           <div>
-            <div style="font-weight:800; font-size:13.5px;">✔️ 第二關簽核：主管線上「✔️ 核准 / ❌ 退回」按鈕</div>
+            <div style="font-weight:800; font-size:13.5px;">✔️ 第二關簽核：牧師線上「✔️ 核准 / ❌ 退回」按鈕</div>
             <div style="font-size:12px; color:var(--muted);">開啟後：假單卡片顯示核准與退回按鈕（點擊退回時 0 秒自動返還預扣之特休/補休並自癒快照）</div>
           </div>
           <input type="checkbox" id="chkEnt_onlineApproval">
@@ -1356,7 +1354,7 @@
       isAdmin: false,
       isSuperAdmin: false,
       boundName: "",
-      lastApproval: "已報請主管核准",
+      lastApproval: "已報請牧師核准",
       userEditedRawText: false,
       userCustomPerms: {
         allowToday:    false,
@@ -1719,7 +1717,7 @@
         savedName = '';
         localStorage.removeItem('leave_sys_user_name');
       }
-      const savedApproval = localStorage.getItem('leave_sys_last_approval') || '已報請主管核准';
+      const savedApproval = localStorage.getItem('leave_sys_last_approval') || '已報牧師核准';
       STATE.lastApproval  = savedApproval;
       syncApprovalSelectOption(savedApproval);
 
@@ -1895,9 +1893,9 @@
       }
 
       const savedApproval    = localStorage.getItem('leave_sys_last_approval') || '';
-      const resolvedApproval = (res.lastApproval && res.lastApproval !== '已報請主管核准')
+      const resolvedApproval = (res.lastApproval && res.lastApproval !== '已報請牧師核准')
         ? res.lastApproval
-        : (savedApproval || res.lastApproval || '已報請主管核准');
+        : (savedApproval || res.lastApproval || '已報請牧師核准');
       STATE.lastApproval     = resolvedApproval;
       if (resolvedApproval) {
         try { localStorage.setItem('leave_sys_last_approval', resolvedApproval); } catch (_) {}
@@ -2276,7 +2274,7 @@
       try { window.top.location.replace(targetUrl); } catch (_) { window.location.href = targetUrl; }
     }
 
-    // ==================== 文字範本快填（自帶上次假單之姓名與核准狀態） ====================
+    // ==================== 提送假單（自帶上次假單之姓名與核准狀態） ====================
     function saveLastUsedFieldsFromText(rawText) {
       try {
         if (!rawText) return;
@@ -2308,7 +2306,7 @@
       const cleanInitName     = (name && name !== '系統管理員' && name !== '王小明') ? name : '王小明';
       const cleanInitApproval = (approvalStr && approvalStr.trim())
         ? approvalStr.trim()
-        : (localStorage.getItem('leave_sys_last_approval') || STATE.lastApproval || '已報請主管核准');
+        : (localStorage.getItem('leave_sys_last_approval') || STATE.lastApproval || '已報請牧師核准');
 
       if (!txt.value) {
         txt.value = [
@@ -2981,7 +2979,7 @@
       document.getElementById('selLeaveType').value = rec.leaveType || '特休';
       document.getElementById('inpDeputy').value    = rec.deputy || '';
       document.getElementById('inpReason').value    = rec.reason || '';
-      syncApprovalSelectOption(rec.approval || '已報請主管核准');
+      syncApprovalSelectOption(rec.approval || '已報請牧師核准');
 
       const existAttBox = document.getElementById('existingAttachmentBox');
       if (rec.attachmentUrl && existAttBox) {
@@ -3227,7 +3225,7 @@
               <div class="quota-item" style="background:#FFF;"><div class="quota-num" style="color:#059669;">${cp.remainingHours}<span style="font-size:12px;">h</span></div><div class="quota-sub">可用補休餘額</div></div>
             </div>
             <div id="userOvertimeFormBox" class="hidden" style="background:#FFF; padding:10px; border-radius:10px; border:1px solid var(--border); margin-top:8px;">
-              <div style="font-size:13px; font-weight:700; color:var(--teal); margin-bottom:8px;">⏱️ 填寫加班轉補休申請（主管核准後自動累加至補休池）</div>
+              <div style="font-size:13px; font-weight:700; color:var(--teal); margin-bottom:8px;">⏱️ 填寫加班轉補休申請（牧師核准後自動累加至補休池）</div>
               <div class="row-2">
                 <div class="form-group" style="margin-bottom:8px;">
                   <label>加班日期</label>
@@ -3638,7 +3636,7 @@
 
         const permBadges = [];
         if (m.allowToday)    permBadges.push('<span class="badge admin-role">📋 可看今日請假</span>');
-        if (m.allowSchedule) permBadges.push('<span class="badge">⚙️ 可看班表設定</span>');
+        if (m.allowSchedule) permBadges.push('<span class="badge">⚙️ 可看上班與休假</span>');
         if (m.allowQueryAll) permBadges.push('<span class="badge">🔍 可查全體紀錄</span>');
 
         return `
