@@ -2903,25 +2903,6 @@
         }
       }
 
-// ✅ [新增] 在文字快填客戶端驗證中即時檢查特休/補休額度是否足夠
-      const reqTotal = Math.round(hoursPerDay * workDayCount * 10) / 10;
-      if (matchedType === '特休' && STATE.dashboard && STATE.dashboard.hasQuota && STATE.dashboard.name === cleanApp) {
-        if (reqTotal > STATE.dashboard.remainingHours) {
-          return {
-            valid: false,
-            errorMessage: `⚠️ 特休額度不足！\n申請人：${cleanApp}\n本次申請：${reqTotal} 小時\n目前剩餘：${STATE.dashboard.remainingHours} 小時`
-          };
-        }
-      } else if (matchedType === '補休' && entCfg.ENABLE_COMP_LEAVE_POOL &&
-                 STATE.dashboard && STATE.dashboard.compPool && STATE.dashboard.name === cleanApp) {
-        if (reqTotal > STATE.dashboard.compPool.remainingHours) {
-          return {
-            valid: false,
-            errorMessage: `⚠️ 補休時數池額度不足！\n申請人：${cleanApp}\n本次申請：${reqTotal} 小時\n可用補休：${STATE.dashboard.compPool.remainingHours} 小時`
-          };
-        }
-      }
-
       return { valid: true };
     }
 
@@ -3123,36 +3104,28 @@ function onNameChange() {
       const type = document.getElementById('selLeaveType').value || '';
       const name = document.getElementById('inpName').value.replace(/\u3000/g, '').replace(/\s+/g, '').trim();
       const box  = document.getElementById('quotaHintBox');
-      const canQueryAny = (!STATE.gid && STATE.isAdmin) || (STATE.userCustomPerms && STATE.userCustomPerms.allowQueryAll);
-
-      if (!STATE.dashboard || !STATE.dashboard.found || STATE.dashboard.name !== name || (!canQueryAny && STATE.boundName && name !== STATE.boundName)) {
+      if (!STATE.dashboard || STATE.dashboard.name !== name) {
         box.classList.add('hidden');
         return;
       }
 
       if (type.includes('特休') && STATE.dashboard.hasQuota) {
-        const remHrs   = Number(STATE.dashboard.remainingHours || 0);
-        const remDays  = Number(STATE.dashboard.remainingDays || 0);
-        const reqHrs   = Number(STATE.lastPreviewHours || 0);
-        const afterHrs = Math.max(0, Math.round((remHrs - reqHrs) * 10) / 10);
-        const afterDays = Math.round((afterHrs / 8) * 10) / 10;
-        const defNote  = STATE.dashboard.deferredHours > 0 ? `（含上期遞延剩餘 ${STATE.dashboard.deferredRemainingHours}h，優先扣減）` : '';
+        const remHrs  = Number(STATE.dashboard.remainingHours || 0);
+        const remDays = Number(STATE.dashboard.remainingDays || 0);
+        const reqHrs  = Number(STATE.lastPreviewHours || 0);
+        const afterHrs = Math.round((remHrs - reqHrs) * 10) / 10;
+        const defNote = STATE.dashboard.deferredHours > 0 ? `（含上期遞延剩餘 ${STATE.dashboard.deferredRemainingHours}h，優先扣減）` : '';
 
         let countdownHtml = '';
-        if (reqHrs > 0) {
-          if (reqHrs > remHrs) {
-            box.className = 'banner edit-mode';
-            countdownHtml = `<div style="margin-top:4px; color:#B91C1C; font-weight:800;">⚠️ 【特休額度不足】本次申請 ${reqHrs} 小時，超過您目前剩餘的 ${remHrs} 小時！</div>`;
-          } else if (afterHrs === 0) {
-            box.className = 'banner edit-mode';
-            countdownHtml = `<div style="margin-top:4px; color:#B91C1C; font-weight:800;">🔴 【特休用罄預警】本次請假 (${reqHrs}h) 扣除後，您的特休將剛好全部用完 (剩餘 0h)！</div>`;
-          } else if (afterHrs <= 8) {
-            box.className = 'banner edit-mode';
-            countdownHtml = `<div style="margin-top:4px; color:#B91C1C; font-weight:800;">⏳ 【特休倒數 8 小時預警】本次請假 (${reqHrs}h) 扣除後，您的特休將僅剩 ${afterDays} 天 (${afterHrs} 小時)，進入倒數 8 小時內！</div>`;
-          } else {
-            box.className = 'banner';
-            countdownHtml = `<div style="margin-top:4px; color:#065F46; font-weight:700;">📌 本次請假 (${reqHrs}h) 扣除後，剩餘可用：<strong>${afterDays} 天 (${afterHrs} 小時)</strong></div>`;
-          }
+        if (remHrs > 0 && remHrs <= 8) {
+          box.className = 'banner edit-mode';
+          countdownHtml = `<div style="margin-top:4px; color:#B91C1C; font-weight:800;">⏳ 【特休倒數 8 小時提示】您的特休僅剩最後 ${remHrs} 小時（已進入 8 小時倒數階段），請留意休假安排！</div>`;
+        } else if (remHrs <= 0) {
+          box.className = 'banner edit-mode';
+          countdownHtml = `<div style="margin-top:4px; color:#B91C1C; font-weight:800;">🔴 【特休已用罄】您的特休剩餘 0 小時，請改選其他假別！</div>`;
+        } else if (reqHrs > 0 && afterHrs > 0 && afterHrs <= 8) {
+          box.className = 'banner edit-mode';
+          countdownHtml = `<div style="margin-top:4px; color:#B45309; font-weight:800;">⏳ 【特休倒數 8 小時預警】本次請假 (${reqHrs}h) 扣除後，您的特休將僅剩 ${afterHrs} 小時（進入倒數 8 小時內）！</div>`;
         } else {
           box.className = 'banner';
         }
@@ -3160,22 +3133,8 @@ function onNameChange() {
         box.innerHTML = `🔒 您的個人特休剩餘：<strong>${remDays} 天 (${remHrs} 小時)</strong>${defNote}${countdownHtml}`;
         box.classList.remove('hidden');
       } else if (type.includes('補休') && STATE.enterpriseConfig && STATE.enterpriseConfig.ENABLE_COMP_LEAVE_POOL && STATE.dashboard.compPool) {
-        const cpRem = Number(STATE.dashboard.compPool.remainingHours || 0);
-        const reqHrs = Number(STATE.lastPreviewHours || 0);
-        const afterCp = Math.max(0, Math.round((cpRem - reqHrs) * 10) / 10);
-        let cpWarn = '';
-        if (reqHrs > 0) {
-          if (reqHrs > cpRem) {
-            box.className = 'banner edit-mode';
-            cpWarn = `<div style="margin-top:4px; color:#B91C1C; font-weight:800;">⚠️ 【補休時數不足】本次申請 ${reqHrs}h，超過可用補休 ${cpRem}h！</div>`;
-          } else {
-            box.className = 'banner';
-            cpWarn = `<div style="margin-top:4px; color:#065F46; font-weight:700;">📌 本次扣除後補休剩餘：<strong>${afterCp} 小時</strong></div>`;
-          }
-        } else {
-          box.className = 'banner';
-        }
-        box.innerHTML = `⚡ 您的個人補休池可用餘額：<strong>${cpRem} 小時</strong>${cpWarn}`;
+        box.className = 'banner';
+        box.innerHTML = `⚡ 您的個人補休池可用餘額：<strong>${STATE.dashboard.compPool.remainingHours} 小時</strong>（累計加班 ${STATE.dashboard.compPool.totalHours}h / 已休 ${STATE.dashboard.compPool.usedHours}h）`;
         box.classList.remove('hidden');
       } else {
         box.classList.add('hidden');
@@ -3201,7 +3160,7 @@ function onNameChange() {
           box.className = 'preview-box err';
           box.innerHTML = `⚠️ ${escHtml(res.message)}`;
         }
-        updateQuotaHint(); // 確保這裡有被調用，讓下方提示框即時更新
+        updateQuotaHint();
       }).previewLeaveHoursFromWeb(sDate, eDate, STATE.periodMode, sTime, eTime);
     }
 
@@ -4971,4 +4930,4 @@ function onNameChange() {
     }
   </script>
 </body>
-</html>  
+</html>
