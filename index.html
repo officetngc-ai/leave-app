@@ -294,7 +294,7 @@
           <label>核准狀態 <span class="req">*</span></label>
           <select id="selApproval" onchange="onApprovalChange()">
             <option value="已報請主任牧師核准" selected>已報請主任牧師核准</option>
-            <option value="已報請堂會牧師核准" selected>已報請堂會牧師核准</option>
+            <option value="已報請堂會牧師核准">已報請堂會牧師核准</option>
           </select>
         </div>
 
@@ -1355,7 +1355,7 @@
       isAdmin: false,
       isSuperAdmin: false,
       boundName: "",
-      lastApproval: "已報請牧師核准",
+      lastApproval: "已報請主任牧師核准",
       userEditedRawText: false,
       userCustomPerms: {
         allowToday:    false,
@@ -1405,6 +1405,7 @@
       verifyErrorMsg: "",
       verifySummary: "",
       verifySeq: 0,
+      initFetchSeq: 0,
       _fetchedBySavedName: false
     };
 
@@ -1467,6 +1468,15 @@
           if (sp.get('gid'))     STATE.gid     = sp.get('gid');
           if (sp.get('editRow')) STATE.editRow = sp.get('editRow');
           if (sp.get('noRedirect') === '1') STATE.noRedirect = true;
+        }
+
+        if (STATE.uid && STATE.uid.startsWith('U')) {
+          try { localStorage.setItem('leave_sys_user_uid', STATE.uid); } catch (_) {}
+        } else {
+          try {
+            const savedUid = localStorage.getItem('leave_sys_user_uid') || '';
+            if (savedUid && savedUid.startsWith('U')) STATE.uid = savedUid;
+          } catch (_) {}
         }
       } catch (_) {}
     }
@@ -1718,7 +1728,7 @@
         savedName = '';
         localStorage.removeItem('leave_sys_user_name');
       }
-      const savedApproval = localStorage.getItem('leave_sys_last_approval') || '已報牧師核准';
+      const savedApproval = localStorage.getItem('leave_sys_last_approval') || '已報請主任牧師核准';
       STATE.lastApproval  = savedApproval;
       syncApprovalSelectOption(savedApproval);
 
@@ -1763,7 +1773,7 @@
           }
         }, waitMs);
 
-        liff.init({ liffId: STATE.liffId }).then(() => {
+      liff.init({ liffId: STATE.liffId }).then(() => {
           clearTimeout(timer);
           const prevUid = STATE.uid;
           parseClientUrlParams();
@@ -1773,6 +1783,13 @@
               if (ctx.userId) STATE.uid = ctx.userId;
               const trueGid = ctx.groupId || ctx.roomId || '';
               if (trueGid) STATE.gid = trueGid;
+            }
+            if (!STATE.uid && typeof liff.getDecodedIDToken === 'function') {
+              const idToken = liff.getDecodedIDToken();
+              if (idToken && idToken.sub) STATE.uid = idToken.sub;
+            }
+            if (STATE.uid && STATE.uid.startsWith('U')) {
+              try { localStorage.setItem('leave_sys_user_uid', STATE.uid); } catch (_) {}
             }
           }
           applyTabAndRolePermissions();
@@ -1794,14 +1811,20 @@
     };
 
     function fetchFreshInitData(savedName) {
+      const seq = ++STATE.initFetchSeq;
+      const reqUid = STATE.uid;
       google.script.run.withSuccessHandler(res => {
+        // ✅ 防競態保護：若後續已有帶 UID 的新請求發出，忽略舊的無 UID 回應
+        if (seq !== STATE.initFetchSeq) return;
         if (res && res.success) {
           try {
-            if (!STATE.editRow) localStorage.setItem(CACHE_KEY_INIT, JSON.stringify(res));
+            if (!STATE.editRow && reqUid) {
+              localStorage.setItem(CACHE_KEY_INIT, JSON.stringify(res));
+            }
           } catch (_) {}
           applyInitData(res, savedName, false);
         }
-      }).getWebFormInitData(STATE.uid, savedName, STATE.editRow, STATE.tab, STATE.gid);
+      }).getWebFormInitData(reqUid, savedName, STATE.editRow, STATE.tab, STATE.gid);
     }
 
     function renderLeaveTypeOptions(leaveTypes, preferredVal) {
@@ -1894,9 +1917,10 @@
       }
 
       const savedApproval    = localStorage.getItem('leave_sys_last_approval') || '';
-      const resolvedApproval = (res.lastApproval && res.lastApproval !== '已報請牧師核准')
+      const defaultApp       = '已報請主任牧師核准';
+      const resolvedApproval = (res.lastApproval && res.lastApproval !== defaultApp && res.lastApproval !== '已報請主管核准')
         ? res.lastApproval
-        : (savedApproval || res.lastApproval || '已報請牧師核准');
+        : (savedApproval || (res.lastApproval !== '已報請主管核准' ? res.lastApproval : '') || defaultApp);
       STATE.lastApproval     = resolvedApproval;
       if (resolvedApproval) {
         try { localStorage.setItem('leave_sys_last_approval', resolvedApproval); } catch (_) {}
@@ -1914,20 +1938,22 @@
       initTextTemplate(resolvedName, res.todaySlashStr || getLocalTodayStrings().slash, resolvedApproval);
       applyTabAndRolePermissions();
 
+      if (res.personalDashboard && res.personalDashboard.found && res.personalDashboard.name !== '系統管理員') {
+        STATE.dashboard = res.personalDashboard;
+        renderDashboard(res.personalDashboard);
+        updateQuotaHint();
+      } else if (!isFromLocalCache) {
+        STATE.dashboard = null;
+        renderDashboard(null);
+        updateQuotaHint();
+      }
+
       if (!isFromLocalCache && res.editRecord) {
         enterEditMode(res.editRecord);
       } else if (!isFromLocalCache && STATE.editRow && parseInt(STATE.editRow, 10) >= 2 && STATE.uid) {
         loadRecordForEdit(parseInt(STATE.editRow, 10));
       } else if (!isFromLocalCache && isTabAllowed('form')) {
         triggerPreview();
-      }
-
-      if (res.personalDashboard && res.personalDashboard.name !== '系統管理員') {
-        STATE.dashboard = res.personalDashboard;
-        renderDashboard(res.personalDashboard);
-        updateQuotaHint();
-      } else if (!isFromLocalCache) {
-        renderDashboard(null);
       }
 
       if (res.todayOverview) renderTodayOverview(res.todayOverview);
@@ -3018,10 +3044,12 @@
       applyTabAndRolePermissions();
     }
 
-    function onNameChange() {
+function onNameChange() {
       const name = document.getElementById('inpName').value.replace(/\u3000/g, '').replace(/\s+/g, '').trim();
       if (name && name !== '系統管理員' && name !== '王小明') {
-        localStorage.setItem('leave_sys_user_name', name);
+        if (!STATE.boundName || name === STATE.boundName) {
+          localStorage.setItem('leave_sys_user_name', name);
+        }
 
         const txt = document.getElementById('txtRawLeave');
         if (txt && txt.value) {
@@ -3034,7 +3062,11 @@
         if (canQueryAny || (STATE.boundName && name === STATE.boundName)) {
           document.getElementById('inpQueryName').value = name;
           loadPersonalDashboard(name);
+        } else {
+          updateQuotaHint();
         }
+      } else {
+        updateQuotaHint();
       }
     }
 
