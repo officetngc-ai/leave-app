@@ -990,6 +990,14 @@
           <input type="checkbox" id="chkEnt_payrollExport" checked>
         </div>
 
+        <div class="ent-toggle-row">
+          <div>
+            <div style="font-weight:800; font-size:13.5px; color:var(--blue);">🚀 啟用文字快填「直接由系統留言並送出假單」按鈕</div>
+            <div style="font-size:12px; color:var(--muted);">開啟時：於「✍️ 文字快填」顯示灰色副按鈕供系統代發；關閉時：自動隱藏該顆副按鈕</div>
+          </div>
+          <input type="checkbox" id="chkEnt_sysDirectSubmit" checked>
+        </div>
+
         <hr style="border:none; border-top:1px dashed var(--border); margin:12px 0;">
         <h4 style="margin:0 0 8px 0; font-size:14px; color:var(--teal);">🛡️ 【維度一：20 年長效防呆與邊界保護彈性開關】</h4>
 
@@ -1375,6 +1383,7 @@
         ENABLE_DEPUTY_APPROVAL:      false,
         ENABLE_ONLINE_APPROVAL:      false,
         ENABLE_PAYROLL_EXPORT:       true,
+        ENABLE_SYSTEM_DIRECT_SUBMIT: true,
         ENABLE_BACKDATE_LIMIT:       false,
         MAX_BACKDATE_DAYS:           7,
         PROTECT_ANNIVERSARY_ARCHIVE: true,
@@ -1441,7 +1450,7 @@
       setTimeout(() => URL.revokeObjectURL(url), 1500);
     }
 
-    function parseClientUrlParams() {
+function parseClientUrlParams() {
       try {
         if (typeof GAS_SSR_PAYLOAD === "object" && GAS_SSR_PAYLOAD !== null) {
           if (GAS_SSR_PAYLOAD.initUid)     STATE.uid     = GAS_SSR_PAYLOAD.initUid;
@@ -1476,6 +1485,15 @@
           try {
             const savedUid = localStorage.getItem('leave_sys_user_uid') || '';
             if (savedUid && savedUid.startsWith('U')) STATE.uid = savedUid;
+          } catch (_) {}
+        }
+
+        if (STATE.gid && (STATE.gid.startsWith('C') || STATE.gid.startsWith('R'))) {
+          try { sessionStorage.setItem('leave_sys_session_gid', STATE.gid); } catch (_) {}
+        } else {
+          try {
+            const savedGid = sessionStorage.getItem('leave_sys_session_gid') || '';
+            if (savedGid && (savedGid.startsWith('C') || savedGid.startsWith('R'))) STATE.gid = savedGid;
           } catch (_) {}
         }
       } catch (_) {}
@@ -1590,7 +1608,8 @@
       const isGroup        = !!(STATE.gid && String(STATE.gid).trim());
       const entCfg         = STATE.enterpriseConfig || {};
       const uPerms         = STATE.userCustomPerms  || {};
-      const isAdminPrivate = (!isGroup && STATE.isAdmin);
+      const isAdminUser    = Boolean(STATE.isAdmin || STATE.isSuperAdmin);
+      const isAdminPrivate = (!isGroup && isAdminUser);
       const isSuperPrivate = (!isGroup && STATE.isSuperAdmin);
 
       const attGroup = document.getElementById('attachmentUploadGroup');
@@ -1598,6 +1617,22 @@
 
       const payrollBar = document.getElementById('admPayrollExportBar');
       if (payrollBar) payrollBar.classList.toggle('hidden', entCfg.ENABLE_PAYROLL_EXPORT === false);
+
+      // ✅ 根據後台 ENABLE_SYSTEM_DIRECT_SUBMIT 開關控制文字快填「🚀 直接由系統留言並送出假單」按鈕顯示或隱藏
+      const btnSubmitTextEl = document.getElementById('btnSubmitText');
+      if (btnSubmitTextEl) {
+        btnSubmitTextEl.classList.toggle('hidden', entCfg.ENABLE_SYSTEM_DIRECT_SUBMIT === false);
+      }
+
+      // ✅ 超級管理員、管理員在 1對1 與群組皆可選擇全體員工名單代填假單；一般成員僅限填寫本人
+      const inpNameEl = document.getElementById('inpName');
+      if (inpNameEl) {
+        if (isAdminUser) {
+          inpNameEl.setAttribute('list', 'employeeList');
+        } else if (STATE.boundName) {
+          inpNameEl.removeAttribute('list');
+        }
+      }
 
       applyBackdateInputRestriction();
 
@@ -1773,28 +1808,37 @@
           }
         }, waitMs);
 
-      liff.init({ liffId: STATE.liffId }).then(() => {
+// ✅ 請將 window.onload 內的 liff.init 區塊完整替換為：
+        liff.init({ liffId: STATE.liffId }).then(() => {
           clearTimeout(timer);
           const prevUid = STATE.uid;
+          const prevGid = STATE.gid;
           parseClientUrlParams();
-          if (liff.isLoggedIn()) {
-            const ctx = liff.getContext();
-            if (ctx) {
-              if (ctx.userId) STATE.uid = ctx.userId;
-              const trueGid = ctx.groupId || ctx.roomId || '';
-              if (trueGid) STATE.gid = trueGid;
-            }
-            if (!STATE.uid && typeof liff.getDecodedIDToken === 'function') {
-              const idToken = liff.getDecodedIDToken();
-              if (idToken && idToken.sub) STATE.uid = idToken.sub;
-            }
-            if (STATE.uid && STATE.uid.startsWith('U')) {
-              try { localStorage.setItem('leave_sys_user_uid', STATE.uid); } catch (_) {}
+
+          // 無論 liff.isLoggedIn() 狀態為何，只要在 LINE 內部開啟即可直接從 getContext() 取得 userId 與 groupId
+          const ctx = (typeof liff.getContext === 'function') ? liff.getContext() : null;
+          if (ctx) {
+            if (ctx.userId) STATE.uid = ctx.userId;
+            const trueGid = ctx.groupId || ctx.roomId || '';
+            if (trueGid) {
+              STATE.gid = trueGid;
+              try { sessionStorage.setItem('leave_sys_session_gid', trueGid); } catch (_) {}
+            } else if (ctx.type === 'utou') {
+              STATE.gid = '';
+              try { sessionStorage.removeItem('leave_sys_session_gid'); } catch (_) {}
             }
           }
+          if (!STATE.uid && liff.isLoggedIn && liff.isLoggedIn() && typeof liff.getDecodedIDToken === 'function') {
+            const idToken = liff.getDecodedIDToken();
+            if (idToken && idToken.sub) STATE.uid = idToken.sub;
+          }
+          if (STATE.uid && STATE.uid.startsWith('U')) {
+            try { localStorage.setItem('leave_sys_user_uid', STATE.uid); } catch (_) {}
+          }
+
           applyTabAndRolePermissions();
           if (STATE.tab) switchTab(STATE.tab);
-          if (!initialFetchSent || (STATE.uid && STATE.uid !== prevUid)) {
+          if (!initialFetchSent || (STATE.uid && STATE.uid !== prevUid) || (STATE.gid !== prevGid)) {
             initialFetchSent = true;
             fetchFreshInitData(savedName);
           }
@@ -3044,8 +3088,9 @@
       applyTabAndRolePermissions();
     }
 
-function onNameChange() {
+    function onNameChange() {
       const name = document.getElementById('inpName').value.replace(/\u3000/g, '').replace(/\s+/g, '').trim();
+      const isAdminUser = Boolean(STATE.isAdmin || STATE.isSuperAdmin);
       if (name && name !== '系統管理員' && name !== '王小明') {
         if (!STATE.boundName || name === STATE.boundName) {
           localStorage.setItem('leave_sys_user_name', name);
@@ -3058,9 +3103,12 @@ function onNameChange() {
           STATE.verifyStatus = 'idle';
         }
 
-        const canQueryAny = (!STATE.gid && STATE.isAdmin) || (STATE.userCustomPerms && STATE.userCustomPerms.allowQueryAll);
+        // 超級管理員、管理員在「1對1」與「LINE 群組」皆可載入其他成員的特休剩餘；一般成員僅限本人
+        const canQueryAny = Boolean(isAdminUser || (STATE.userCustomPerms && STATE.userCustomPerms.allowQueryAll));
         if (canQueryAny || (STATE.boundName && name === STATE.boundName)) {
-          document.getElementById('inpQueryName').value = name;
+          if (!STATE.gid || isAdminUser) {
+            document.getElementById('inpQueryName').value = name;
+          }
           loadPersonalDashboard(name);
         } else {
           updateQuotaHint();
@@ -3099,44 +3147,69 @@ function onNameChange() {
       triggerPreview();
     }
 
-// ✅ 請替換為（支援特休倒數 8 小時醒目變色與扣假後預估倒數提示）：
     function updateQuotaHint() {
       const type = document.getElementById('selLeaveType').value || '';
       const name = document.getElementById('inpName').value.replace(/\u3000/g, '').replace(/\s+/g, '').trim();
       const box  = document.getElementById('quotaHintBox');
-      if (!STATE.dashboard || STATE.dashboard.name !== name) {
+      const isAdminUser = Boolean(STATE.isAdmin || STATE.isSuperAdmin);
+      const canQueryAny = Boolean(isAdminUser || (STATE.userCustomPerms && STATE.userCustomPerms.allowQueryAll));
+
+      if (!STATE.dashboard || !STATE.dashboard.found || STATE.dashboard.name !== name || (!canQueryAny && STATE.boundName && name !== STATE.boundName)) {
+        box.style.cssText = '';
         box.classList.add('hidden');
         return;
       }
 
-      if (type.includes('特休') && STATE.dashboard.hasQuota) {
-        const remHrs  = Number(STATE.dashboard.remainingHours || 0);
-        const remDays = Number(STATE.dashboard.remainingDays || 0);
-        const reqHrs  = Number(STATE.lastPreviewHours || 0);
-        const afterHrs = Math.round((remHrs - reqHrs) * 10) / 10;
-        const defNote = STATE.dashboard.deferredHours > 0 ? `（含上期遞延剩餘 ${STATE.dashboard.deferredRemainingHours}h，優先扣減）` : '';
+      // ✅ 問題 1：管理員在 1對1 與群組代填其他成員假單時，醒目顯示「🔒 「其他成員姓名」的個人特休剩餘」
+      const isOtherMember = Boolean(!STATE.boundName || name !== STATE.boundName);
+      const labelTitle    = isOtherMember
+        ? `🔒 「<strong>${escHtml(name)}</strong>」的個人特休剩餘`
+        : `🔒 您的個人特休剩餘`;
+      const proxyNoticeHtml = (isAdminUser && isOtherMember)
+        ? `<div style="margin-bottom:4px; color:#B45309; font-weight:800; font-size:12.5px;">🛡️ 【管理員代填提示】您目前正在提送「${escHtml(name)}」的假單</div>`
+        : '';
 
+      if (type.includes('特休') && STATE.dashboard.hasQuota) {
+        const remHrs   = Number(STATE.dashboard.remainingHours || 0);
+        const remDays  = Number(STATE.dashboard.remainingDays || 0);
+        const reqHrs   = Number(STATE.lastPreviewHours || 0);
+        const afterHrs = Math.round((remHrs - reqHrs) * 10) / 10;
+        const defNote  = STATE.dashboard.deferredHours > 0 ? `（含上期遞延剩餘 ${STATE.dashboard.deferredRemainingHours}h，優先扣減）` : '';
+
+        // ✅ 問題 2：當特休倒數少於或等於 8 小時，整段文字與剩餘時數顏色轉成顯眼正紅色 (#DC2626)
+        const isLowRed = (remHrs <= 8) || (reqHrs > 0 && afterHrs <= 8);
         let countdownHtml = '';
+
         if (remHrs > 0 && remHrs <= 8) {
-          box.className = 'banner edit-mode';
-          countdownHtml = `<div style="margin-top:4px; color:#B91C1C; font-weight:800;">⏳ 【特休倒數 8 小時提示】您的特休僅剩最後 ${remHrs} 小時（已進入 8 小時倒數階段），請留意休假安排！</div>`;
-        } else if (remHrs <= 0) {
-          box.className = 'banner edit-mode';
-          countdownHtml = `<div style="margin-top:4px; color:#B91C1C; font-weight:800;">🔴 【特休已用罄】您的特休剩餘 0 小時，請改選其他假別！</div>`;
-        } else if (reqHrs > 0 && afterHrs > 0 && afterHrs <= 8) {
-          box.className = 'banner edit-mode';
-          countdownHtml = `<div style="margin-top:4px; color:#B45309; font-weight:800;">⏳ 【特休倒數 8 小時預警】本次請假 (${reqHrs}h) 扣除後，您的特休將僅剩 ${afterHrs} 小時（進入倒數 8 小時內）！</div>`;
-        } else {
           box.className = 'banner';
+          box.style.cssText = 'background:#FEF2F2; color:#DC2626; border:1.5px solid #EF4444; font-weight:800;';
+          countdownHtml = `<div style="margin-top:4px; color:#DC2626; font-weight:800;">⏳ 【特休倒數 8 小時提示】「${escHtml(name)}」的特休僅剩最後 ${remHrs} 小時（已少於 8 小時），請留意休假安排！</div>`;
+        } else if (remHrs <= 0) {
+          box.className = 'banner';
+          box.style.cssText = 'background:#FEF2F2; color:#DC2626; border:1.5px solid #EF4444; font-weight:800;';
+          countdownHtml = `<div style="margin-top:4px; color:#DC2626; font-weight:800;">🔴 【特休已用罄】「${escHtml(name)}」的特休剩餘 0 小時，請改選其他假別！</div>`;
+        } else if (reqHrs > 0 && afterHrs >= 0 && afterHrs <= 8) {
+          box.className = 'banner';
+          box.style.cssText = 'background:#FEF2F2; color:#DC2626; border:1.5px solid #EF4444; font-weight:800;';
+          countdownHtml = `<div style="margin-top:4px; color:#DC2626; font-weight:800;">⏳ 【特休倒數 8 小時預警】本次請假 (${reqHrs}h) 扣除後，「${escHtml(name)}」的特休將僅剩 ${afterHrs} 小時！</div>`;
+        } else {
+          box.className = isOtherMember ? 'banner edit-mode' : 'banner';
+          box.style.cssText = '';
         }
 
-        box.innerHTML = `🔒 您的個人特休剩餘：<strong>${remDays} 天 (${remHrs} 小時)</strong>${defNote}${countdownHtml}`;
+        const redTextSpanStyle = isLowRed ? 'color:#DC2626; font-weight:900;' : '';
+        box.innerHTML = `${proxyNoticeHtml}<span style="${redTextSpanStyle}">${labelTitle}：<strong>${remDays} 天 (${remHrs} 小時)</strong>${defNote}</span>${countdownHtml}`;
         box.classList.remove('hidden');
       } else if (type.includes('補休') && STATE.enterpriseConfig && STATE.enterpriseConfig.ENABLE_COMP_LEAVE_POOL && STATE.dashboard.compPool) {
-        box.className = 'banner';
-        box.innerHTML = `⚡ 您的個人補休池可用餘額：<strong>${STATE.dashboard.compPool.remainingHours} 小時</strong>（累計加班 ${STATE.dashboard.compPool.totalHours}h / 已休 ${STATE.dashboard.compPool.usedHours}h）`;
+        box.className = isOtherMember ? 'banner edit-mode' : 'banner';
+        box.style.cssText = '';
+        const compLabel = isOtherMember
+          ? `⚡ 「<strong>${escHtml(name)}</strong>」的個人補休池可用餘額`
+          : `⚡ 您的個人補休池可用餘額`;
+        box.innerHTML = `${proxyNoticeHtml}${compLabel}：<strong>${STATE.dashboard.compPool.remainingHours} 小時</strong>（累計加班 ${STATE.dashboard.compPool.totalHours}h / 已休 ${STATE.dashboard.compPool.usedHours}h）`;
         box.classList.remove('hidden');
       } else {
+        box.style.cssText = '';
         box.classList.add('hidden');
       }
     }
@@ -3238,7 +3311,7 @@ function onNameChange() {
         <div class="quota-grid">
           <div class="quota-item"><div class="quota-num">${d.totalDays}<span style="font-size:12px;">天</span></div><div class="quota-sub">可用總額 (${d.totalHours}h)</div></div>
           <div class="quota-item"><div class="quota-num" style="color:#D97706;">${d.usedDays}<span style="font-size:12px;">天</span></div><div class="quota-sub">已使用 (${d.usedHours}h)</div></div>
-          <div class="quota-item"><div class="quota-num" style="color:#059669;">${d.remainingDays}<span style="font-size:12px;">天</span></div><div class="quota-sub">剩餘可用 (${d.remainingHours}h)</div></div>
+          <div class="quota-item"><div class="quota-num" style="color:${d.remainingHours <= 8 ? '#DC2626' : '#059669'};">${d.remainingDays}<span style="font-size:12px;">天</span></div><div class="quota-sub" style="${d.remainingHours <= 8 ? 'color:#DC2626; font-weight:800;' : ''}">剩餘可用 (${d.remainingHours}h)</div></div>
         </div>
       ` : `<div class="banner">ℹ️ ${escHtml(d.name)} 目前尚未設定特休額度 ${verifiedTag}</div>`;
 
@@ -3408,13 +3481,13 @@ function onNameChange() {
 
     function submitForm() {
       if (isSubmitting) return;
-      const name   = document.getElementById('inpName').value.replace(/\u3000/g, '').replace(/\s+/g, '').trim();
+      const name      = document.getElementById('inpName').value.replace(/\u3000/g, '').replace(/\s+/g, '').trim();
       const startDate = document.getElementById('inpStartDate').value;
       const endDate   = document.getElementById('inpEndDate').value;
       const startTime = document.getElementById('inpStartTime').value;
       const endTime   = document.getElementById('inpEndTime').value;
       const leaveType = document.getElementById('selLeaveType').value;
-      const deputy = document.getElementById('inpDeputy').value.replace(/\u3000/g, '').replace(/\s+/g, '').trim();
+      const deputy    = document.getElementById('inpDeputy').value.replace(/\u3000/g, '').replace(/\s+/g, '').trim();
       const reason    = document.getElementById('inpReason').value.trim();
       const approval  = document.getElementById('selApproval').value;
 
@@ -3434,8 +3507,8 @@ function onNameChange() {
         return;
       }
 
-      const isAdminPrivate = (!STATE.gid && STATE.isAdmin);
-      if (entCfg.ENABLE_BACKDATE_LIMIT && !STATE.editRow && !isAdminPrivate) {
+      const isAdminUser = Boolean(STATE.isAdmin || STATE.isSuperAdmin);
+      if (entCfg.ENABLE_BACKDATE_LIMIT && !STATE.editRow && !isAdminUser) {
         const maxDays   = !isNaN(parseInt(entCfg.MAX_BACKDATE_DAYS, 10)) ? parseInt(entCfg.MAX_BACKDATE_DAYS, 10) : 7;
         const sParts    = startDate.split('-').map(Number);
         const sDateObj  = new Date(sParts[0], sParts[1] - 1, sParts[2]);
@@ -3448,20 +3521,23 @@ function onNameChange() {
         }
       }
 
-      if (!STATE.gid && typeof liff !== 'undefined' && liff.getContext) {
+      if (typeof liff !== 'undefined' && typeof liff.getContext === 'function') {
         try {
           const ctx = liff.getContext();
-          if (ctx && (ctx.groupId || ctx.roomId)) STATE.gid = ctx.groupId || ctx.roomId;
+          if (ctx) {
+            if (!STATE.uid && ctx.userId) STATE.uid = ctx.userId;
+            if (!STATE.gid && (ctx.groupId || ctx.roomId)) STATE.gid = ctx.groupId || ctx.roomId;
+          }
         } catch (_) {}
       }
 
       isSubmitting = true;
       const btn = document.getElementById('btnSubmit');
       btn.disabled = true;
-      btn.innerText = '🔒 安全寫入資料庫中...';
-      showStatusBanner('formResultBox', 'info', '⏳ 正在驗證並送出假單，請稍候...');
+      btn.innerText = '🔒 安全寫入資料庫並發送假單中...';
+      showStatusBanner('formResultBox', 'info', '⏳ 正在驗證並發送假單至聊天視窗，請稍候...');
 
-      if (!STATE.editRow && name !== '系統管理員' && name !== '王小明') {
+      if (!STATE.editRow && name !== '系統管理員' && name !== '王小明' && (!STATE.boundName || name === STATE.boundName)) {
         localStorage.setItem('leave_sys_user_name', name);
       }
       if (approval) {
@@ -3471,6 +3547,23 @@ function onNameChange() {
 
       const timeBucket = Math.floor(Date.now() / 15000);
       const reqToken   = `WEB_${STATE.editRow || 'NEW'}_${name}_${startDate}_${endDate}_${STATE.periodMode}_${leaveType}_${timeBucket}`;
+
+      // ✅ 關鍵修復：在前端預先組裝 clientFormattedText，防止呼叫時 formattedText 變數未定義拋出例外！
+      const sDateSlash = startDate.replace(/-/g, '/');
+      const eDateSlash = (endDate || startDate).replace(/-/g, '/');
+      const dateRangeStr = (sDateSlash && eDateSlash && sDateSlash !== eDateSlash) ? `${sDateSlash}～${eDateSlash}` : sDateSlash;
+      const hoursStr = STATE.periodMode === 'custom'
+        ? `${document.getElementById('inpStartTime').value}～${document.getElementById('inpEndTime').value}`
+        : STATE.periodMode;
+      const clientFormattedText = [
+        `請假人：${name}`,
+        `請假日期：${dateRangeStr}`,
+        `請假時數：${hoursStr}`,
+        `假別：${leaveType}`,
+        `事由：${reason}`,
+        `職務代理：${deputy}`,
+        `核准：${approval}`
+      ].join('\n');
 
       try {
         google.script.run
@@ -3498,6 +3591,19 @@ function onNameChange() {
             }
             showStatusBanner('formResultBox', 'ok', `🎉 ${res.isUpdated ? '假單修改成功' : '請假申請成功'}！（編號 #${res.rowNumber}）\n${res.summaryText}`);
             exitEditMode();
+
+            // ✅ 雙引擎保底：若後端 Push API 受限未推播 (pushedToLine === false)，自動由 LIFF 發送請假文字，觸發聊天室機器人用免費 replyToken 回覆卡片
+            if (res.pushedToLine === false && typeof liff !== 'undefined' && liff.isInClient && liff.isInClient()) {
+              const textToSend = (!res.isUpdated && (res.formattedText || clientFormattedText))
+                ? (res.formattedText || clientFormattedText)
+                : `${res.echoText || ''}\n\n${res.confirmText || ''}`.trim();
+
+              liff.sendMessages([{ type: 'text', text: textToSend }]).finally(() => {
+                setTimeout(() => { safeCloseLiffWindow(); }, 350);
+              });
+              return;
+            }
+
             setTimeout(() => { safeCloseLiffWindow(); }, 800);
           })
           .withFailureHandler(err => {
@@ -3525,7 +3631,7 @@ function onNameChange() {
       }
     }
 
-    function submitTextForm() {
+function submitTextForm() {
       if (isSubmitting) return;
       const rawText = document.getElementById('txtRawLeave').value.trim();
 
@@ -3537,10 +3643,13 @@ function onNameChange() {
 
       saveLastUsedFieldsFromText(rawText);
 
-      if (!STATE.gid && typeof liff !== 'undefined' && liff.getContext) {
+      if (typeof liff !== 'undefined' && typeof liff.getContext === 'function') {
         try {
           const ctx = liff.getContext();
-          if (ctx && (ctx.groupId || ctx.roomId)) STATE.gid = ctx.groupId || ctx.roomId;
+          if (ctx) {
+            if (!STATE.uid && ctx.userId) STATE.uid = ctx.userId;
+            if (!STATE.gid && (ctx.groupId || ctx.roomId)) STATE.gid = ctx.groupId || ctx.roomId;
+          }
         } catch (_) {}
       }
 
@@ -3550,7 +3659,7 @@ function onNameChange() {
         btnSubmit.disabled = true;
         btnSubmit.innerText = '⏳ 正在連線後端資料庫並送出假單...';
       }
-      showStatusBanner('textFormResultBox', 'info', '⏳ 正在連線至後端資料庫進行驗證並發送假單至原群組聊天室，請稍候...');
+      showStatusBanner('textFormResultBox', 'info', '⏳ 正在連線至後端資料庫進行驗證並發送假單至聊天視窗，請稍候...');
 
       try {
         google.script.run
@@ -3593,8 +3702,19 @@ function onNameChange() {
             showStatusBanner(
               'textFormResultBox',
               'ok',
-              `🎉 請假單已成功送出至原群組聊天室！\n🔖 記錄編號：#${res.rowNumber}\n📋 摘要：${res.summaryText}\n\n（正在自動關閉視窗返回原群組...）`
+              `🎉 請假單已成功送出至聊天室！\n🔖 記錄編號：#${res.rowNumber}\n📋 摘要：${res.summaryText}\n\n（正在自動關閉視窗返回聊天室...）`
             );
+
+            // ✅ 雙引擎保底：若後端 Push API 受限未推播 (pushedToLine === false)，自動由 LIFF 發出 7 行請假文字，觸發聊天室機器人用免費 replyToken 回覆申請卡片
+            if (res.pushedToLine === false && typeof liff !== 'undefined' && liff.isInClient && liff.isInClient()) {
+              const relayMsg = res.formattedText
+                ? [{ type: 'text', text: res.formattedText }]
+                : [{ type: 'text', text: `${res.echoText || ''}\n\n${res.confirmText || ''}`.trim() }];
+              liff.sendMessages(relayMsg).finally(() => {
+                setTimeout(() => { safeCloseLiffWindow(); }, 350);
+              });
+              return;
+            }
 
             setTimeout(() => { safeCloseLiffWindow(); }, 500);
           })
@@ -3615,7 +3735,7 @@ function onNameChange() {
             showStatusBanner(
               'textFormResultBox',
               'err',
-              `❌ 後端連線中斷：${err.message}\n👉 請確認網路訊號後，直接再次點擊下方「綠色按鈕」或「灰色按鈕」重新連線！`
+              `❌ 後端連線中斷：${err.message}\n👉 請確認網路訊號後，直接再次點擊下方按鈕重新連線！`
             );
           })
           .submitRawTextLeaveFromWeb({
@@ -3894,7 +4014,8 @@ function onNameChange() {
       setChk('chkEnt_attachment',     cfg.ENABLE_ATTACHMENT_UPLOAD);
       setChk('chkEnt_deputyApproval', cfg.ENABLE_DEPUTY_APPROVAL);
       setChk('chkEnt_onlineApproval', cfg.ENABLE_ONLINE_APPROVAL);
-      setChk('chkEnt_payrollExport',  cfg.ENABLE_PAYROLL_EXPORT !== undefined ? cfg.ENABLE_PAYROLL_EXPORT : true);
+      setChk('chkEnt_payrollExport',   cfg.ENABLE_PAYROLL_EXPORT !== undefined ? cfg.ENABLE_PAYROLL_EXPORT : true);
+      setChk('chkEnt_sysDirectSubmit', cfg.ENABLE_SYSTEM_DIRECT_SUBMIT !== undefined ? cfg.ENABLE_SYSTEM_DIRECT_SUBMIT : true);
 
       // 維度一：5 大防呆開關
       setChk('chkEnt_backdateLimit',       cfg.ENABLE_BACKDATE_LIMIT);
@@ -3942,6 +4063,7 @@ function onNameChange() {
         ENABLE_DEPUTY_APPROVAL:      getChk('chkEnt_deputyApproval'),
         ENABLE_ONLINE_APPROVAL:      getChk('chkEnt_onlineApproval'),
         ENABLE_PAYROLL_EXPORT:       getChk('chkEnt_payrollExport'),
+        ENABLE_SYSTEM_DIRECT_SUBMIT: getChk('chkEnt_sysDirectSubmit'),
 
         ENABLE_BACKDATE_LIMIT:       getChk('chkEnt_backdateLimit'),
         MAX_BACKDATE_DAYS:           parseInt(document.getElementById('inpEnt_maxBackdateDays').value, 10) || 0,
@@ -4930,4 +5052,4 @@ function onNameChange() {
     }
   </script>
 </body>
-</html>
+</html>  
