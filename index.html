@@ -230,11 +230,11 @@
         <div class="row-2">
           <div class="form-group">
             <label>開始日期 <span class="req">*</span></label>
-            <input type="date" id="inpStartDate" onchange="onStartDateChange()">
+            <input type="date" id="inpStartDate" onchange="onStartDateChange()" oninput="onStartDateChange()">
           </div>
           <div class="form-group">
             <label>結束日期 <span class="req">*</span></label>
-            <input type="date" id="inpEndDate" onchange="triggerPreview()">
+            <input type="date" id="inpEndDate" onchange="triggerPreview()" oninput="triggerPreview()">
           </div>
         </div>
 
@@ -252,11 +252,11 @@
         <div class="row-2 hidden" id="customTimeBox">
           <div class="form-group">
             <label>開始時間 <span class="req">*</span></label>
-            <input type="time" id="inpStartTime" value="09:00" onchange="triggerPreview()">
+            <input type="time" id="inpStartTime" value="09:00" onchange="triggerPreview()" oninput="triggerPreview()">
           </div>
           <div class="form-group">
             <label>結束時間 <span class="req">*</span></label>
-            <input type="time" id="inpEndTime" value="12:00" onchange="triggerPreview()">
+            <input type="time" id="inpEndTime" value="12:00" onchange="triggerPreview()" oninput="triggerPreview()">
           </div>
         </div>
 
@@ -1355,6 +1355,7 @@
       gid: "",
       tab: "form",
       editRow: "",
+      editRecord: null, // ✅ 記錄修改前之原假單物件（含原假別與原請假時數），供即時加回重算特休
       adminForceForm: false,
       noRedirect: false,
       liffId: DEFAULT_LIFF_ID,
@@ -3015,16 +3016,18 @@
         .adminGetBackendData(STATE.uid);
     }
 
-    function enterEditMode(rec) {
+function enterEditMode(rec) {
       if (!rec) return;
       if (rec.inactive || rec.permissionDenied || rec.expiredLock) {
         alert(rec.errorMessage || `⚠️ 記錄 #${rec.rowNumber} 無法修改！`);
         exitEditMode();
         return;
       }
-      STATE.editRow = rec.rowNumber;
+      STATE.editRow    = rec.rowNumber;
+      STATE.editRecord = rec; // ✅ 暫存原假單資訊（原時數 rec.hoursCalc、原假別 rec.leaveType、申請人 rec.name）
+
       const banner = document.getElementById('editModeBanner');
-      banner.innerHTML = `✏️ 正在修改假單編號 <strong>#${escHtml(rec.rowNumber)}</strong>（今日及未來假單允許本人修改，點擊下方按鈕即可覆蓋更新）`;
+      banner.innerHTML = `✏️ 正在修改假單編號 <strong>#${escHtml(rec.rowNumber)}</strong>（原請假：${escHtml(rec.leaveType || '')} <strong>${Number(rec.hoursCalc || 0)}h</strong>｜改變請假時間將即時重算剩餘特休）`;
       banner.classList.remove('hidden');
 
       const isRestrictedUser = Boolean(!STATE.isAdmin && !STATE.isSuperAdmin);
@@ -3062,6 +3065,11 @@
         existAttBox.classList.add('hidden');
       }
 
+      // ✅ 若當前尚未載入該請假人之特休儀表板，立即自動載入以確保特休剩餘即時顯示
+      if (rec.name && (!STATE.dashboard || !STATE.dashboard.found || STATE.dashboard.name !== rec.name)) {
+        loadPersonalDashboard(rec.name);
+      }
+
       const targetPill = document.querySelector(`.pill[data-mode="${rec.periodMode}"]`) || document.querySelector('.pill[data-mode="全天"]');
       selectPeriod(rec.periodMode || '全天', targetPill);
 
@@ -3072,8 +3080,9 @@
       switchTab('form');
     }
 
-    function exitEditMode() {
-      STATE.editRow = '';
+function exitEditMode() {
+      STATE.editRow        = '';
+      STATE.editRecord     = null;
       STATE.adminForceForm = false;
       clearAttachmentFile();
       const existAttBox = document.getElementById('existingAttachmentBox');
@@ -3087,9 +3096,10 @@
       document.getElementById('btnSubmit').classList.remove('blue');
       document.getElementById('btnCancelEdit').classList.add('hidden');
       applyTabAndRolePermissions();
+      triggerPreview();
     }
 
-    function onNameChange() {
+function onNameChange() {
       const name = document.getElementById('inpName').value.replace(/\u3000/g, '').replace(/\s+/g, '').trim();
       const isAdminUser = Boolean(STATE.isAdmin || STATE.isSuperAdmin);
       if (name && name !== '系統管理員' && name !== '王小明') {
@@ -3104,7 +3114,6 @@
           STATE.verifyStatus = 'idle';
         }
 
-        // 超級管理員、管理員在「1對1」與「LINE 群組」皆可載入其他成員的特休剩餘；一般成員僅限本人
         const canQueryAny = Boolean(isAdminUser || (STATE.userCustomPerms && STATE.userCustomPerms.allowQueryAll));
         if (canQueryAny || (STATE.boundName && name === STATE.boundName)) {
           if (!STATE.gid || isAdminUser) {
@@ -3120,7 +3129,7 @@
       }
     }
 
-    function onApprovalChange() {
+function onApprovalChange() {
       const appVal = document.getElementById('selApproval').value;
       if (appVal) {
         localStorage.setItem('leave_sys_last_approval', appVal);
@@ -3149,7 +3158,7 @@
       triggerPreview();
     }
 
-    function updateQuotaHint() {
+function updateQuotaHint() {
       const type = document.getElementById('selLeaveType').value || '';
       const name = document.getElementById('inpName').value.replace(/\u3000/g, '').replace(/\s+/g, '').trim();
       const box  = document.getElementById('quotaHintBox');
@@ -3162,58 +3171,246 @@
         return;
       }
 
-      // ✅ 管理員在 1對1 與群組代填其他成員假單時，醒目顯示「🔒 「其他成員姓名」的個人特休剩餘」
+      const HPD = (STATE.scheduleOverview && Array.isArray(STATE.scheduleOverview.days) && STATE.scheduleOverview.days[1] && STATE.scheduleOverview.days[1].fullDayHours)
+        ? Number(STATE.scheduleOverview.days[1].fullDayHours)
+        : 8;
+
       const isOtherMember = Boolean(!STATE.boundName || name !== STATE.boundName);
-      const labelTitle    = isOtherMember
-        ? `🔒 「<strong>${escHtml(name)}</strong>」的個人特休剩餘`
-        : `🔒 您的個人特休剩餘`;
+      const isEditing     = Boolean(STATE.editRow && STATE.editRecord && STATE.editRecord.name === name);
+      const reqHrs        = Number(STATE.lastPreviewHours || 0);
+
       const proxyNoticeHtml = (isAdminUser && isOtherMember)
-        ? `<div style="margin-bottom:4px; color:#B45309; font-weight:800; font-size:12.5px;">🛡️ 【管理員代填提示】您目前正在提送「${escHtml(name)}」的假單</div>`
+        ? `<div style="margin-bottom:4px; color:#B45309; font-weight:800; font-size:12.5px;">🛡️ 【管理員代填提示】您目前正在${isEditing ? '修改' : '提送'}「${escHtml(name)}」的假單</div>`
         : '';
 
       if (type.includes('特休') && STATE.dashboard.hasQuota) {
-        const remHrs   = Number(STATE.dashboard.remainingHours || 0);
-        const remDays  = Number(STATE.dashboard.remainingDays || 0);
-        const reqHrs   = Number(STATE.lastPreviewHours || 0);
-        const afterHrs = Math.round((remHrs - reqHrs) * 10) / 10;
-        const defNote  = STATE.dashboard.deferredHours > 0 ? `（含上期遞延剩餘 ${STATE.dashboard.deferredRemainingHours}h，優先扣減）` : '';
+        const dbRemHrs = Number(STATE.dashboard.remainingHours || 0);
 
-        // ✅ 當特休倒數少於或等於 8 小時，整段文字與剩餘時數顏色轉成顯眼正紅色 (#DC2626)
-        const isLowRed = (remHrs <= 8) || (reqHrs > 0 && afterHrs <= 8);
+        // ✅ 若正在修改同一人的「特休」假單，先將原假單已扣之時數加回可用額度，避免重複扣除
+        const origWasAnnual = Boolean(isEditing && String(STATE.editRecord.leaveType || '').includes('特休'));
+        const origAnnualHrs = origWasAnnual ? Number(STATE.editRecord.hoursCalc || 0) : 0;
+
+        const availBeforeHrs  = Math.round((dbRemHrs + origAnnualHrs) * 10) / 10;
+        const availBeforeDays = Math.round((availBeforeHrs / HPD) * 10) / 10;
+
+        // ✅ 依目前畫面選擇的請假時數 (reqHrs) 即時重算扣假後的剩餘特休
+        const afterHrs      = Math.round((availBeforeHrs - reqHrs) * 10) / 10;
+        const afterDays     = Math.round((afterHrs / HPD) * 10) / 10;
+        const displayRemHrs = Math.max(0, afterHrs);
+        const displayRemDys = Math.max(0, afterDays);
+
+        const actionTag  = isEditing ? '（本次修改後即時重算）' : (reqHrs > 0 ? '（扣除本次請假後）' : '');
+        const labelTitle = isOtherMember
+          ? `🔒 「<strong>${escHtml(name)}</strong>」的個人特休剩餘${actionTag}`
+          : `🔒 您的個人特休剩餘${actionTag}`;
+
+        const defNote = STATE.dashboard.deferredHours > 0
+          ? `（含上期遞延剩餘 ${STATE.dashboard.deferredRemainingHours}h，優先扣減）`
+          : '';
+
+        const formulaHtml = reqHrs > 0
+          ? `<div style="margin-top:4px; font-size:12px; color:${afterHrs < 0 ? '#DC2626' : '#475569'}; font-weight:700;">` +
+            `🔄 即時試算：${isEditing ? `修改前可用 ${availBeforeHrs}h (${availBeforeDays}天)${origAnnualHrs > 0 ? ` [已加回原假單 ${origAnnualHrs}h]` : ''}` : `目前可用 ${availBeforeHrs}h (${availBeforeDays}天)`}` +
+            ` － 本次請假 <strong>${reqHrs}h</strong> ＝ 剩餘 <strong>${afterHrs}h (${afterDays}天)</strong>` +
+            `</div>`
+          : '';
+
+        const isLowRed = (availBeforeHrs <= 8) || (reqHrs > 0 && afterHrs <= 8);
         let countdownHtml = '';
 
-        if (remHrs > 0 && remHrs <= 8) {
+        if (reqHrs > 0 && afterHrs < 0) {
+          const diffHrs = Math.round((reqHrs - availBeforeHrs) * 10) / 10;
           box.className = 'banner';
           box.style.cssText = 'background:#FEF2F2; color:#DC2626; border:1.5px solid #EF4444; font-weight:800;';
-          countdownHtml = `<div style="margin-top:4px; color:#DC2626; font-weight:800;">⏳ 【特休倒數 8 小時提示】「${escHtml(name)}」的特休僅剩最後 ${remHrs} 小時（已少於 8 小時），請留意休假安排！</div>`;
-        } else if (remHrs <= 0) {
+          countdownHtml = `<div style="margin-top:4px; color:#DC2626; font-weight:800;">⛔ 【特休額度不足】本次申請 ${reqHrs}h 超過可用特休 ${availBeforeHrs}h（不足 ${diffHrs}h），請縮短時數或改選其他假別！</div>`;
+        } else if (reqHrs > 0 && afterHrs === 0 && availBeforeHrs > 0) {
+          box.className = 'banner';
+          box.style.cssText = 'background:#FEF2F2; color:#DC2626; border:1.5px solid #EF4444; font-weight:800;';
+          countdownHtml = `<div style="margin-top:4px; color:#DC2626; font-weight:800;">🔴 【特休將全數用罄】本次請假 (${reqHrs}h) 扣除後，「${escHtml(name)}」的特休將剩餘 0 小時！</div>`;
+        } else if (reqHrs > 0 && afterHrs > 0 && afterHrs <= 8) {
+          box.className = 'banner';
+          box.style.cssText = 'background:#FEF2F2; color:#DC2626; border:1.5px solid #EF4444; font-weight:800;';
+          countdownHtml = `<div style="margin-top:4px; color:#DC2626; font-weight:800;">⏳ 【特休倒數 8 小時預警】本次請假 (${reqHrs}h) 扣除後，「${escHtml(name)}」的特休將僅剩最後 ${afterHrs} 小時！</div>`;
+        } else if (availBeforeHrs > 0 && availBeforeHrs <= 8) {
+          box.className = 'banner';
+          box.style.cssText = 'background:#FEF2F2; color:#DC2626; border:1.5px solid #EF4444; font-weight:800;';
+          countdownHtml = `<div style="margin-top:4px; color:#DC2626; font-weight:800;">⏳ 【特休倒數 8 小時提示】「${escHtml(name)}」的特休僅剩最後 ${availBeforeHrs} 小時（已少於 8 小時），請留意休假安排！</div>`;
+        } else if (availBeforeHrs <= 0) {
           box.className = 'banner';
           box.style.cssText = 'background:#FEF2F2; color:#DC2626; border:1.5px solid #EF4444; font-weight:800;';
           countdownHtml = `<div style="margin-top:4px; color:#DC2626; font-weight:800;">🔴 【特休已用罄】「${escHtml(name)}」的特休剩餘 0 小時，請改選其他假別！</div>`;
-        } else if (reqHrs > 0 && afterHrs >= 0 && afterHrs <= 8) {
-          box.className = 'banner';
-          box.style.cssText = 'background:#FEF2F2; color:#DC2626; border:1.5px solid #EF4444; font-weight:800;';
-          countdownHtml = `<div style="margin-top:4px; color:#DC2626; font-weight:800;">⏳ 【特休倒數 8 小時預警】本次請假 (${reqHrs}h) 扣除後，「${escHtml(name)}」的特休將僅剩 ${afterHrs} 小時！</div>`;
         } else {
-          box.className = isOtherMember ? 'banner edit-mode' : 'banner';
+          box.className = (isOtherMember || isEditing) ? 'banner edit-mode' : 'banner';
           box.style.cssText = '';
         }
 
         const redTextSpanStyle = isLowRed ? 'color:#DC2626; font-weight:900;' : '';
-        box.innerHTML = `${proxyNoticeHtml}<span style="${redTextSpanStyle}">${labelTitle}：<strong>${remDays} 天 (${remHrs} 小時)</strong>${defNote}</span>${countdownHtml}`;
+        box.innerHTML = `${proxyNoticeHtml}<span style="${redTextSpanStyle}">${labelTitle}：<strong>${displayRemDys} 天 (${displayRemHrs} 小時)</strong>${defNote}</span>${formulaHtml}${countdownHtml}`;
         box.classList.remove('hidden');
       } else if (type.includes('補休') && STATE.enterpriseConfig && STATE.enterpriseConfig.ENABLE_COMP_LEAVE_POOL && STATE.dashboard.compPool) {
-        box.className = isOtherMember ? 'banner edit-mode' : 'banner';
-        box.style.cssText = '';
+        const dbCompRem   = Number(STATE.dashboard.compPool.remainingHours || 0);
+        const origWasComp = Boolean(isEditing && String(STATE.editRecord.leaveType || '').includes('補休'));
+        const origCompHrs = origWasComp ? Number(STATE.editRecord.hoursCalc || 0) : 0;
+
+        const availCompBefore = Math.round((dbCompRem + origCompHrs) * 10) / 10;
+        const afterCompHrs    = Math.round((availCompBefore - reqHrs) * 10) / 10;
+        const dispCompRem     = Math.max(0, afterCompHrs);
+
+        box.className = (isOtherMember || isEditing) ? 'banner edit-mode' : 'banner';
+        box.style.cssText = afterCompHrs < 0 ? 'background:#FEF2F2; color:#DC2626; border:1.5px solid #EF4444; font-weight:800;' : '';
+
+        const actionTag = isEditing ? '（本次修改後即時重算）' : (reqHrs > 0 ? '（扣除本次請假後）' : '');
         const compLabel = isOtherMember
-          ? `⚡ 「<strong>${escHtml(name)}</strong>」的個人補休池可用餘額`
-          : `⚡ 您的個人補休池可用餘額`;
-        box.innerHTML = `${proxyNoticeHtml}${compLabel}：<strong>${STATE.dashboard.compPool.remainingHours} 小時</strong>（累計加班 ${STATE.dashboard.compPool.totalHours}h / 已休 ${STATE.dashboard.compPool.usedHours}h）`;
+          ? `⚡ 「<strong>${escHtml(name)}</strong>」的個人補休池可用餘額${actionTag}`
+          : `⚡ 您的個人補休池可用餘額${actionTag}`;
+        const compFormula = reqHrs > 0
+          ? `<div style="margin-top:4px; font-size:12px;">🔄 即時試算：可用 ${availCompBefore}h${origCompHrs > 0 ? ` [已加回原假單 ${origCompHrs}h]` : ''} － 本次請假 <strong>${reqHrs}h</strong> ＝ 剩餘 <strong>${afterCompHrs}h</strong></div>`
+          : '';
+        box.innerHTML = `${proxyNoticeHtml}${compLabel}：<strong>${dispCompRem} 小時</strong>（累計加班 ${STATE.dashboard.compPool.totalHours}h / 已休 ${STATE.dashboard.compPool.usedHours}h）${compFormula}`;
         box.classList.remove('hidden');
       } else {
         box.style.cssText = '';
         box.classList.add('hidden');
       }
+    }
+
+    /**
+     * ✅ 前端 0 毫秒本地即時工時試算器：
+     * 使用者切換時段或改變起迄時間當下立即算出請假時數，無須等待網路回應即可同步更新特休餘額！
+     */
+    function calcClientPreviewHours(sDateIso, eDateIso, periodMode, sTime, eTime) {
+      if (!sDateIso) return { valid: false, message: '請選擇開始日期' };
+      const sParts = sDateIso.split('-').map(Number);
+      const eParts = (eDateIso || sDateIso).split('-').map(Number);
+      if (sParts.length !== 3 || eParts.length !== 3) return { valid: false, message: '日期格式無效' };
+
+      const sDate = new Date(sParts[0], sParts[1] - 1, sParts[2]);
+      const eDate = new Date(eParts[0], eParts[1] - 1, eParts[2]);
+      if (isNaN(sDate.getTime()) || isNaN(eDate.getTime()) || eDate < sDate) {
+        return { valid: false, message: '結束日期不能早於開始日期' };
+      }
+
+      const spDates = (STATE.scheduleOverview && STATE.scheduleOverview.specialDates) || [];
+      const spMap   = {};
+      spDates.forEach(sp => { if (sp && sp.date) spMap[sp.date] = sp; });
+
+      const workDates = [];
+      const cur = new Date(sDate.getFullYear(), sDate.getMonth(), sDate.getDate());
+      while (cur <= eDate) {
+        const yyyy   = cur.getFullYear();
+        const mm     = String(cur.getMonth() + 1).padStart(2, '0');
+        const dd     = String(cur.getDate()).padStart(2, '0');
+        const dSlash = `${yyyy}/${mm}/${dd}`;
+        const dow    = cur.getDay();
+
+        let isWork = (dow !== 0);
+        if (STATE.scheduleOverview && Array.isArray(STATE.scheduleOverview.days) && STATE.scheduleOverview.days[dow]) {
+          isWork = !!STATE.scheduleOverview.days[dow].isWorkDay;
+        }
+        if (spMap[dSlash]) isWork = !!spMap[dSlash].isWorkDay;
+        if (isWork) workDates.push(new Date(cur));
+        cur.setDate(cur.getDate() + 1);
+      }
+
+      if (workDates.length === 0) {
+        return { valid: false, message: '所選日期為休假日（如週日或國定假日），無有效工作日' };
+      }
+
+      const mode = periodMode || '全天';
+      let totalHours = 0;
+
+      if (mode === 'custom') {
+        if (!sTime || !eTime) return { valid: false, message: '請選擇開始與結束時間' };
+        const stParts = sTime.split(':').map(Number);
+        const etParts = eTime.split(':').map(Number);
+        const startMin = stParts[0] * 60 + (stParts[1] || 0);
+        const endMin   = etParts[0] * 60 + (etParts[1] || 0);
+        if (endMin <= startMin) {
+          return { valid: false, message: '結束時間必須晚於開始時間' };
+        }
+
+        workDates.forEach(d => {
+          const dow    = d.getDay();
+          const dayCfg = (STATE.scheduleOverview && Array.isArray(STATE.scheduleOverview.days) && STATE.scheduleOverview.days[dow])
+            ? STATE.scheduleOverview.days[dow]
+            : { lunchStart: '12:00', lunchEnd: '13:00' };
+          const parseMin = (hhmm, defMin) => {
+            if (!hhmm) return defMin;
+            const p = String(hhmm).split(':');
+            return p.length === 2 ? (parseInt(p[0], 10) * 60 + parseInt(p[1], 10)) : defMin;
+          };
+          const lStart = parseMin(dayCfg.lunchStart, 12 * 60);
+          const lEnd   = parseMin(dayCfg.lunchEnd,   13 * 60);
+          let deduct = 0;
+          if (startMin < lEnd && endMin > lStart) {
+            deduct = Math.max(0, Math.min(endMin, lEnd) - Math.max(startMin, lStart));
+          }
+          totalHours += Math.max(0, Math.round(((endMin - startMin - deduct) / 60) * 100) / 100);
+        });
+
+        if (totalHours <= 0) {
+          return { valid: false, message: '請假時間不可全為午休時間' };
+        }
+      } else {
+        workDates.forEach(d => {
+          const dow    = d.getDay();
+          const dayCfg = (STATE.scheduleOverview && Array.isArray(STATE.scheduleOverview.days) && STATE.scheduleOverview.days[dow])
+            ? STATE.scheduleOverview.days[dow]
+            : { fullDayHours: 8, morningHours: 3, afternoonHours: 5, halfDayHours: 4 };
+          if (mode === '上午')      totalHours += Number(dayCfg.morningHours || 3);
+          else if (mode === '下午') totalHours += Number(dayCfg.afternoonHours || 5);
+          else if (mode === '半天') totalHours += Number(dayCfg.halfDayHours || 4);
+          else                      totalHours += Number(dayCfg.fullDayHours || 8);
+        });
+      }
+
+      return {
+        valid:      true,
+        workDays:   workDates.length,
+        totalHours: Math.round(totalHours * 10) / 10
+      };
+    }
+
+    let previewRpcTimer = null;
+    function triggerPreview() {
+      const sDate = document.getElementById('inpStartDate').value;
+      const eDate = document.getElementById('inpEndDate').value;
+      const sTime = document.getElementById('inpStartTime').value;
+      const eTime = document.getElementById('inpEndTime').value;
+      const box   = document.getElementById('previewBox');
+
+      if (!sDate) return;
+
+      // 1. 先由前端本地引擎 0 毫秒即時計算並刷新特休剩餘時數，讓使用者改變時間時立即看到變化
+      const localRes = calcClientPreviewHours(sDate, eDate, STATE.periodMode, sTime, eTime);
+      if (localRes.valid) {
+        STATE.lastPreviewHours = Number(localRes.totalHours || 0);
+        box.className = 'preview-box ok';
+        box.innerHTML = `⏰ 試算結果：共 <strong>${localRes.workDays}</strong> 個工作天，合計請假 <strong>${localRes.totalHours} 小時</strong>`;
+      } else {
+        STATE.lastPreviewHours = 0;
+        box.className = 'preview-box err';
+        box.innerHTML = `⚠️ ${escHtml(localRes.message)}`;
+      }
+      updateQuotaHint();
+
+      // 2. 背景防抖向後端二次確認班表與特殊假日
+      if (previewRpcTimer) clearTimeout(previewRpcTimer);
+      previewRpcTimer = setTimeout(() => {
+        google.script.run.withSuccessHandler(res => {
+          if (!res) return;
+          if (res.valid) {
+            STATE.lastPreviewHours = Number(res.totalHours || 0);
+            box.className = 'preview-box ok';
+            box.innerHTML = `⏰ 試算結果：共 <strong>${res.workDays}</strong> 個工作天，合計請假 <strong>${res.totalHours} 小時</strong>`;
+          } else {
+            STATE.lastPreviewHours = 0;
+            box.className = 'preview-box err';
+            box.innerHTML = `⚠️ ${escHtml(res.message)}`;
+          }
+          updateQuotaHint();
+        }).previewLeaveHoursFromWeb(sDate, eDate, STATE.periodMode, sTime, eTime);
+      }, 250);
     }
 
     function triggerPreview() {
