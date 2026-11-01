@@ -392,298 +392,271 @@
       </div>
     </div>
 
-<!-- ==================== 6. 彈出式系統使用說明 - 擬真圖文教學版 (tab=help) ==================== -->
+<!-- ==================== 6. 彈出式系統使用說明 (tab=help 圖文並茂視覺引導版) ==================== -->
     <div id="sec_help" class="tab-sec hidden">
       <style>
-        /* 圖文說明專屬內嵌樣式（模擬實機截圖視覺） */
-        .help-nav-pills {
-          display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 14px;
+        /* 圖文說明專屬內嵌樣式（手機高擬真 UI 圖卡） */
+        .help-hero {
+          background: linear-gradient(135deg, #1565C0 0%, #00695C 100%);
+          color: #FFF; border-radius: 14px; padding: 16px; margin-bottom: 14px;
+          box-shadow: 0 4px 12px rgba(21,101,192,0.18);
+        }
+        .help-hero-title { font-size: 17px; font-weight: 800; margin: 0 0 6px 0; display: flex; align-items: center; gap: 6px; }
+        .help-hero-sub { font-size: 13px; color: #E0F2F1; line-height: 1.5; margin: 0; }
+        .help-quick-nav {
+          display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-top: 12px;
         }
         .help-nav-pill {
-          background: #FFFFFF; border: 1.5px solid #CBD5E1; border-radius: 10px; padding: 9px 10px;
-          font-size: 13px; font-weight: 800; color: #1E293B; text-align: center; cursor: pointer;
-          box-shadow: 0 1px 3px rgba(0,0,0,0.04); transition: 0.15s;
+          background: rgba(255,255,255,0.16); color: #FFF; border: 1px solid rgba(255,255,255,0.3);
+          border-radius: 9px; padding: 8px 10px; font-size: 12.5px; font-weight: 700;
+          text-align: center; cursor: pointer; text-decoration: none; display: block;
         }
-        .help-nav-pill:active { transform: scale(0.98); background: #EFF6FF; border-color: #1565C0; }
+        .help-nav-pill:active { background: rgba(255,255,255,0.3); }
+
         .help-step-card {
-          background: #FFFFFF; border-radius: 14px; padding: 16px; margin-bottom: 16px;
-          box-shadow: 0 2px 10px rgba(0,0,0,0.05); border: 1px solid #E2E8F0;
+          background: #FFF; border-radius: 14px; padding: 16px; margin-bottom: 14px;
+          box-shadow: 0 2px 10px rgba(0,0,0,0.05); border-top: 4px solid var(--blue);
         }
+        .help-step-card.teal { border-top-color: var(--teal); }
+        .help-step-card.green { border-top-color: var(--primary); }
+        .help-step-card.amber { border-top-color: #D97706; }
+
         .help-step-header {
-          display: flex; align-items: center; gap: 8px; margin-bottom: 10px;
-          padding-bottom: 8px; border-bottom: 2px solid #F1F5F9;
+          display: flex; align-items: center; justify-content: space-between; gap: 8px;
+          margin-bottom: 10px;
         }
-        .help-step-num {
-          background: #1565C0; color: #FFF; font-weight: 900; font-size: 13px;
-          padding: 4px 9px; border-radius: 8px; flex-shrink: 0;
+        .help-step-badge {
+          background: #EFF6FF; color: var(--blue); font-weight: 800; font-size: 12px;
+          padding: 4px 10px; border-radius: 20px; border: 1px solid #BFDBFE;
         }
-        .help-step-title { font-size: 15.5px; font-weight: 800; color: #0F172A; margin: 0; }
-        .help-desc { font-size: 13.5px; line-height: 1.65; color: #334155; margin: 8px 0 12px 0; }
-        .help-mockup {
-          background: #F8FAFC; border: 2px solid #CBD5E1; border-radius: 14px;
-          padding: 12px; margin: 10px 0; position: relative; overflow: hidden;
+        .help-step-title { font-size: 15.5px; font-weight: 800; color: #0F172A; margin: 4px 0 8px 0; }
+        .help-desc { font-size: 13.5px; color: #334155; line-height: 1.65; margin: 0 0 10px 0; }
+
+        /* 模擬手機截圖之視覺化 UI 示意框 */
+        .ui-mockup {
+          background: #F8FAFC; border: 1.5px solid #CBD5E1; border-radius: 12px;
+          padding: 12px; margin: 10px 0; font-size: 12.5px; position: relative;
         }
-        .help-mockup-tag {
-          display: inline-block; background: #0F172A; color: #FFF; font-size: 11px;
-          font-weight: 700; padding: 3px 8px; border-radius: 6px; margin-bottom: 8px;
+        .ui-mockup-tag {
+          font-size: 11px; font-weight: 800; color: #64748B; margin-bottom: 8px;
+          display: flex; align-items: center; justify-content: space-between;
+          border-bottom: 1px dashed #CBD5E1; padding-bottom: 5px;
         }
-        .mock-field-label { font-size: 12px; font-weight: 700; color: #334155; margin: 6px 0 3px 0; }
-        .mock-field-label span { color: #DC2626; }
-        .mock-input {
-          background: #FFF; border: 1px solid #CBD5E1; border-radius: 8px;
-          padding: 7px 10px; font-size: 13px; color: #1E293B; font-weight: 600;
+        .ui-mock-row { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 8px; }
+        .ui-mock-input {
+          background: #FFF; border: 1px solid #CBD5E1; border-radius: 7px;
+          padding: 6px 9px; font-size: 12px; color: #1E293B; font-weight: 600;
         }
-        .mock-pills { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; margin: 6px 0; }
-        .mock-pill {
+        .ui-mock-pills { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; margin-bottom: 8px; }
+        .ui-mock-pill {
           background: #FFF; border: 1px solid #CBD5E1; border-radius: 6px;
-          padding: 6px 2px; text-align: center; font-size: 11.5px; font-weight: 700; color: #334155;
+          padding: 5px 2px; text-align: center; font-size: 11px; font-weight: 700; color: #475569;
         }
-        .mock-pill.active { background: #1565C0; color: #FFF; border-color: #1565C0; }
-        .mock-box-green {
-          background: #ECFDF5; color: #065F46; border: 1px solid #A7F3D0;
-          padding: 8px 10px; border-radius: 8px; font-size: 12.5px; font-weight: 700; margin: 8px 0; line-height: 1.45;
+        .ui-mock-pill.active { background: #1565C0; color: #FFF; border-color: #1565C0; }
+        .ui-mock-ok {
+          background: #DCFCE7; color: #166534; border: 1px solid #86EFAC;
+          padding: 8px 10px; border-radius: 8px; font-size: 12px; font-weight: 700; line-height: 1.45; margin-bottom: 6px;
         }
-        .mock-box-blue {
+        .ui-mock-info {
           background: #EFF6FF; color: #1E40AF; border: 1px solid #BFDBFE;
-          padding: 8px 10px; border-radius: 8px; font-size: 12px; margin: 8px 0; line-height: 1.5;
+          padding: 8px 10px; border-radius: 8px; font-size: 12px; line-height: 1.45; margin-bottom: 6px;
         }
-        .mock-box-red {
+        .ui-mock-err {
           background: #FEE2E2; color: #991B1B; border: 1px solid #FCA5A5;
-          padding: 8px 10px; border-radius: 8px; font-size: 12px; font-weight: 700; margin: 8px 0; line-height: 1.45;
+          padding: 8px 10px; border-radius: 8px; font-size: 12px; font-weight: 700; line-height: 1.45; margin-bottom: 6px;
         }
-        .mock-btn {
-          width: 100%; padding: 9px; border-radius: 9px; font-size: 13px; font-weight: 800;
-          text-align: center; color: #FFF; margin-top: 6px;
+        .ui-mock-btn {
+          width: 100%; padding: 8px; border-radius: 8px; font-size: 12.5px; font-weight: 800;
+          text-align: center; color: #FFF; background: #06C755; margin-top: 4px;
         }
-        .mock-btn.green { background: #06C755; }
-        .mock-btn.grey-lock { background: #94A3B8; }
-        .mock-btn.grey-sub { background: #64748B; }
-        .mock-btn.blue { background: #1565C0; }
-        .help-callout {
-          background: #FFFBEB; border-left: 4px solid #F59E0B; padding: 8px 10px;
-          border-radius: 0 8px 8px 0; font-size: 12.5px; color: #92400E; line-height: 1.55; margin-top: 8px;
-        }
+        .ui-mock-btn.locked { background: #94A3B8; }
+        .ui-mock-btn.grey { background: #64748B; margin-top: 5px; }
+
+        .help-step-list { margin: 8px 0 0 0; padding-left: 18px; font-size: 13px; color: #334155; line-height: 1.7; }
+        .help-step-list li { margin-bottom: 4px; }
       </style>
 
-      <!-- 頂部快速導覽卡片 -->
-      <div class="card" style="padding:14px 16px; margin-bottom:12px;">
-        <h3 class="section-title" style="margin-bottom:8px;">📖 請假系統圖文操作指南</h3>
-        <div style="font-size:12.5px; color:var(--muted); margin-bottom:10px;">
-          💡 點擊下方項目可快速跳轉至對應的實機畫面圖解：
-        </div>
-        <div class="help-nav-pills">
-          <div class="help-nav-pill" onclick="document.getElementById('helpSec1').scrollIntoView({behavior:'smooth'})">1️⃣ 日曆填單與即時試算</div>
-          <div class="help-nav-pill" onclick="document.getElementById('helpSec2').scrollIntoView({behavior:'smooth'})">2️⃣ 文字快填與防呆驗證</div>
-          <div class="help-nav-pill" onclick="document.getElementById('helpSec3').scrollIntoView({behavior:'smooth'})">3️⃣ 查特休與修改/取消</div>
-          <div class="help-nav-pill" onclick="document.getElementById('helpSec4').scrollIntoView({behavior:'smooth'})">4️⃣ 工時與休假/補班日</div>
+      <!-- 頂部快速導覽橫幅 -->
+      <div class="help-hero">
+        <div class="help-hero-title">📖 全職請假系統・圖文快速上手指南</div>
+        <p class="help-hero-sub">免背指令！點擊聊天室下方膠囊按鈕或上方分頁即可輕鬆完成請假、查特休與修改假單：</p>
+        <div class="help-quick-nav">
+          <a href="#help_sec_1" class="help-nav-pill">1️⃣ 日曆選單請假</a>
+          <a href="#help_sec_2" class="help-nav-pill">2️⃣ 文字快填與防呆</a>
+          <a href="#help_sec_3" class="help-nav-pill">3️⃣ 查特休与修改假單</a>
+          <a href="#help_sec_4" class="help-nav-pill">4️⃣ 查看上班與休假日</a>
         </div>
       </div>
 
       <!-- ==================== 圖解 1：日曆選單快速請假 ==================== -->
-      <div id="helpSec1" class="help-step-card">
+      <div class="help-step-card" id="help_sec_1">
         <div class="help-step-header">
-          <span class="help-step-num">方式 1</span>
-          <h4 class="help-step-title">📝 日曆選單快速請假（推薦首選）</h4>
+          <span class="help-step-badge">方式一・最推薦 🌟</span>
+          <button type="button" class="btn sm blue" onclick="switchTab('form')">👉 前往填寫請假</button>
         </div>
-        <div class="help-desc">
-          於「<strong>📝 填寫請假</strong>」分頁點選日期與時段，系統會<strong>自動扣除午休時間</strong>，並於畫面即時試算「本次請假時數」與「扣除後剩餘特休」：
-        </div>
+        <div class="help-step-title">1️⃣ 「📝 填寫請假」：點選日曆、0秒即時試算特休</div>
+        <p class="help-desc">
+          點選聊天室下方 <strong>「📅 請假 / 查特休」</strong> 開啟視窗，系統會自動帶入您的姓名與上次核准狀態，選擇日期與時段後<strong>即時試算工時與扣假後特休餘額</strong>：
+        </p>
 
-        <!-- 實機畫面模擬：對應截圖 S__10043401_0 & S__10043406_0 -->
-        <div class="help-mockup">
-          <div class="help-mockup-tag">📱 實機畫面圖解：📝 填寫請假</div>
-          <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px;">
-            <div>
-              <div class="mock-field-label">開始日期 <span>*</span></div>
-              <div class="mock-input">2026年11月3日</div>
-            </div>
-            <div>
-              <div class="mock-field-label">結束日期 <span>*</span></div>
-              <div class="mock-input">2026年11月3日</div>
-            </div>
+        <!-- 模擬截圖 2 & 7 的手機畫面 -->
+        <div class="ui-mockup">
+          <div class="ui-mockup-tag">
+            <span>📱 畫面示意：📝 填寫請假分頁</span>
+            <span style="color:var(--blue);">自動扣午休＋即時算餘額</span>
           </div>
-
-          <div class="mock-field-label" style="margin-top:8px;">① 點選請假時段 <span>*</span>（可切換全天 / 上午 / 下午 / 半天 / 自訂）</div>
-          <div class="mock-pills">
-            <div class="mock-pill active">全天</div>
-            <div class="mock-pill">上午</div>
-            <div class="mock-pill">下午</div>
-            <div class="mock-pill">半天</div>
-            <div class="mock-pill">自訂時間</div>
+          <div class="ui-mock-row">
+            <div><span style="font-size:11px; color:#64748B;">開始日期 *</span><div class="ui-mock-input">2026年11月3日</div></div>
+            <div><span style="font-size:11px; color:#64748B;">結束日期 *</span><div class="ui-mock-input">2026年11月3日</div></div>
           </div>
-
-          <!-- 綠框試算 -->
-          <div class="mock-box-green">
-            ⏰ 試算結果：共 <strong>1</strong> 個工作天，合計請假 <strong>8 小時</strong>
+          <div class="ui-mock-pills">
+            <div class="ui-mock-pill active">全天</div>
+            <div class="ui-mock-pill">上午</div>
+            <div class="ui-mock-pill">下午</div>
+            <div class="ui-mock-pill">半天</div>
+            <div class="ui-mock-pill">自訂時間</div>
           </div>
-
-          <!-- 藍框特休即時動態重算 -->
-          <div class="mock-box-blue">
+          <div class="ui-mock-ok">⏰ 試算結果：共 <strong>1</strong> 個工作天，合計請假 <strong>8 小時</strong></div>
+          <div class="ui-mock-info">
             🔒 您的個人特休剩餘（扣除本次請假後）：<strong>10.9 天 (87.5 小時)</strong><br>
-            <span style="font-size:11.5px; color:#475569; font-weight:700;">
-              🔄 即時試算：目前可用 95.5h (11.9天) － 本次請假 <strong>8h</strong> ＝ 剩餘 <strong>87.5h (10.9天)</strong>
-            </span>
+            <span style="font-size:11px; color:#475569;">🔄 即時試算：目前可用 95.5h (11.9天) － 本次請假 8h ＝ 剩餘 87.5h (10.9天)</span>
           </div>
-
-          <div class="mock-field-label">② 填寫代理人、事由並確認核准狀態 <span>*</span></div>
-          <div class="mock-input" style="margin-bottom:6px;">經堂會鈺娟牧師核准 ▾</div>
-          <div class="mock-btn green">✅ 送出請假申請</div>
+          <div class="ui-mock-btn">✅ 送出請假申請</div>
         </div>
 
-        <div class="help-callout">
-          ✨ <strong>貼心功能：</strong>系統會自動記憶您上次選擇的「請假人」與「核准狀態」；當特休剩餘少於或等於 <strong>8 小時</strong>時，提示框會自動轉為<strong>顯眼紅字預警</strong>！
-        </div>
-        <button type="button" class="btn sm blue" style="margin-top:10px; width:100%;" onclick="switchTab('form')">👉 點此前往「📝 填寫請假」</button>
+        <ul class="help-step-list">
+          <li><strong>跨日請假自動略過假日：</strong>若選擇多日區間，系統會自動扣除固定休假日（如週日、週一）與國定假日，只計算實際工作天數。</li>
+          <li><strong>特休倒數紅字預警：</strong>當剩餘特休少於或等於 <strong>8 小時</strong>時，提示框會自動轉為<strong>紅色顯眼字體</strong>提醒您留意額度。</li>
+        </ul>
       </div>
 
-      <!-- ==================== 圖解 2：文字版範本修改與防呆驗證 ==================== -->
-      <div id="helpSec2" class="help-step-card">
+      <!-- ==================== 圖解 2：文字快填與紅綠框防呆驗證 ==================== -->
+      <div class="help-step-card green" id="help_sec_2">
         <div class="help-step-header">
-          <span class="help-step-num">方式 2</span>
-          <h4 class="help-step-title">✍️ 文字版範本快填（即時防呆驗證）</h4>
+          <span class="help-step-badge" style="background:#DCFCE7; color:#166534; border-color:#86EFAC;">方式二・7行文字範本</span>
+          <button type="button" class="btn sm teal" onclick="switchTab('textform')">👉 前往文字快填</button>
         </div>
-        <div class="help-desc">
-          點擊聊天室下方「<strong>✍️ 提送假單</strong>」按鈕，系統會自動帶入您的姓名與上次核准文字。當您修改日期或時數時，系統會先執行<strong>後端資料庫防呆核對</strong>：
+        <div class="help-step-title">2️⃣ 「✍️ 提送假單」：自動記憶欄位＋事前防呆檢查</div>
+        <p class="help-desc">
+          點擊聊天室下方 <strong>「✍️ 提送假單」</strong> 膠囊按鈕，系統會自動帶入您的<strong>「請假人」</strong>與上次的<strong>「核准」</strong>文字。您只需修改日期與時數，系統會立即幫您檢查是否有誤：
+        </p>
+
+        <!-- 正確通過示意圖 (對應截圖 3) -->
+        <div class="ui-mockup" style="border-color:#86EFAC; background:#F0FDF4;">
+          <div class="ui-mockup-tag" style="color:#166534; border-bottom-color:#86EFAC;">
+            <span>🟢 狀態 A：格式正確（綠框解鎖按鈕）</span>
+            <span>直接點擊綠鈕送出</span>
+          </div>
+          <div class="ui-mock-input" style="font-family:monospace; line-height:1.45; margin-bottom:8px;">
+            請假人：林良諭<br>請假日期：2026/11/03<br>請假時數：全天<br>假別：特休 ／ 事由：個人事務<br>職務代理：李大華 ／ 核准：經堂會鈺娟牧師核准
+          </div>
+          <div class="ui-mock-ok">
+            ✅ 資料庫驗證通過！（林良諭｜2026/11/03｜全天 (8h)｜特休｜扣假後特休剩餘 87.5h）<br>請點擊下方綠色按鈕送出。
+          </div>
+          <div class="ui-mock-btn">✅ 驗證通過！點此以本人帳號直接發送（或複製返回）</div>
+          <div class="ui-mock-btn grey">🚀 直接由系統留言並送出假單</div>
         </div>
 
-        <!-- 狀態 A：驗證通過（對應截圖 S__10043402_0） -->
-        <div class="help-mockup" style="border-color:#86EFAC; background:#F0FDF4;">
-          <div class="help-mockup-tag" style="background:#166534;">🟢 狀態 A：驗證通過（綠框解鎖按鈕）</div>
-          <div class="mock-input" style="font-family:monospace; font-size:12px; line-height:1.5; background:#FFF;">
-            請假人：林良諭<br>
-            請假日期：2026/11/03<br>
-            請假時數：全天<br>
-            假別：特休｜事由：個人事務｜職務代理：李大華<br>
-            核准：經堂會鈺娟牧師核准
+        <!-- 錯誤攔截示意圖 (對應截圖 1 & 6) -->
+        <div class="ui-mockup" style="border-color:#FCA5A5; background:#FEF2F2;">
+          <div class="ui-mockup-tag" style="color:#991B1B; border-bottom-color:#FCA5A5;">
+            <span>🔴 狀態 B：填到休假日或時數打錯（紅框自動攔截）</span>
+            <span>保護不發錯假單</span>
           </div>
-          <div class="mock-box-green" style="background:#DCFCE7; border-color:#86EFAC;">
-            ✅ 資料庫驗證通過！（林良諭｜2026/11/03｜全天 (8h)｜特休｜扣假後特休剩餘 87.5h）<br>
-            請點擊下方綠色按鈕送出。
-          </div>
-          <div class="mock-btn green">✅ 驗證通過！點此以本人帳號直接發送（或複製返回）</div>
-          <div class="mock-btn grey-sub">🚀 直接由系統留言並送出假單</div>
-        </div>
-
-        <!-- 狀態 B：格式或休假日錯誤攔截（對應截圖 S__10043400_0 & S__10043405_0） -->
-        <div class="help-mockup" style="border-color:#FCA5A5; background:#FEF2F2; margin-top:12px;">
-          <div class="help-mockup-tag" style="background:#991B1B;">🔴 狀態 B：填寫錯誤或遇休假日（紅框自動鎖定防錯）</div>
-          <div style="font-size:12px; color:#7F1D1D; margin-bottom:4px;">當誤選固定休假日（如週日/週一）或時數打錯字時，系統會立即紅框提醒並鎖定按鈕：</div>
-          <div class="mock-box-red">
+          <div class="ui-mock-err">
             ⚠️ 請假日期「2026/11/01」為休假日（如週日或店休假日），無有效工作日！
           </div>
-          <div class="mock-box-red">
-            ⚠️ 請假時數格式錯誤：「請」<br>
-            支援：全天、上午、下午、半天、09:00～12:00、3h
+          <div class="ui-mock-err">
+            ⚠️ 請假時數格式錯誤：「請」<br>支援：全天、上午、下午、半天、09:00～12:00、3h
           </div>
-          <div class="mock-btn grey-lock">⛔ 假單格式未通過（請先修正上方紅框錯誤）</div>
+          <div class="ui-mock-btn locked">⛔ 假單格式未通過（請先修正上方紅框錯誤）</div>
         </div>
 
-        <div class="help-callout">
-          📌 <strong>兩顆送出按鈕差異：</strong><br>
-          • <strong>🟢 綠色主按鈕</strong>：手機版直接以<strong>您本人的 LINE 帳號</strong>發送假單至聊天室；電腦版自動複製 7 行文字供您回 LINE 按 <code>Ctrl+V</code> 貼上。<br>
-          • <strong>🚀 灰色副按鈕</strong>：免貼上，直接授權由系統在聊天室代發請假留言與假單卡片。
-        </div>
+        <ul class="help-step-list">
+          <li><strong>手機版點綠色按鈕：</strong>直接以您本人的 LINE 帳號將 7 行假單發送至群組並自動收起視窗（若於外部瀏覽器則自動複製文字供貼上）。</li>
+          <li><strong>電腦版點綠色按鈕：</strong>自動將驗證通過的假單複製到電腦剪貼簿，回 LINE 輸入框按 <code>Ctrl + V</code> 即可貼上發送！</li>
+        </ul>
       </div>
 
-      <!-- ==================== 圖解 3：查特休/紀錄與修改取消 ==================== -->
-      <div id="helpSec3" class="help-step-card">
+      <!-- ==================== 圖解 3：查特休/紀錄與修改取消假單 ==================== -->
+      <div class="help-step-card teal" id="help_sec_3">
         <div class="help-step-header">
-          <span class="help-step-num">功能 3</span>
-          <h4 class="help-step-title">🔒 查特休 / 補休池 & 修改取消假單</h4>
+          <span class="help-step-badge" style="background:#E0F2FE; color:#0369A1; border-color:#7DD3FC;">個人專屬查詢與異動</span>
+          <button type="button" class="btn sm teal" onclick="switchTab('my')">👉 前往查特休</button>
         </div>
-        <div class="help-desc">
-          切換至「<strong>🔒 查特休/紀錄</strong>」分頁，輸入您的真實姓名點擊「<strong>🔍 驗證查詢</strong>」（首次查詢即自動完成 LINE 帳號無痕綁定），即可私密檢視特休與歷史明細：
-        </div>
+        <div class="help-step-title">3️⃣ 「🔒 查特休/紀錄」與「✏️ 修改 / 🗑️ 取消假單」</div>
+        <p class="help-desc">
+          切換至 <strong>「🔒 查特休/紀錄」</strong> 分頁，輸入您本人的真實姓名點擊 <strong>「🔍 驗證查詢」</strong>（首次查詢即自動完成 LINE 帳號無痕綁定），即可私密檢視特休儀表板與本年度所有請假明細：
+        </p>
 
-        <!-- 實機畫面模擬：對應截圖 S__10043407_0 -->
-        <div class="help-mockup">
-          <div class="help-mockup-tag">📱 實機畫面圖解：🔒 查特休/紀錄</div>
-          <div style="display:flex; gap:6px; margin-bottom:8px;">
-            <div class="mock-input" style="flex:1;">林良諭</div>
-            <div style="background:#00695C; color:#FFF; padding:7px 12px; border-radius:8px; font-size:12px; font-weight:800;">🔍 驗證查詢</div>
+        <!-- 模擬截圖 8 的特休儀表板畫面 -->
+        <div class="ui-mockup">
+          <div class="ui-mockup-tag">
+            <span>📱 畫面示意：🔒 查特休/紀錄分頁</span>
+            <span style="color:#059669;">✅ 本人驗證保護</span>
           </div>
-          <div class="mock-btn blue" style="margin-bottom:10px;">📩 私訊傳送特休與紀錄至您的LINE</div>
-
-          <!-- 3 格特休統計 -->
-          <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:6px; text-align:center; margin-bottom:10px;">
-            <div style="background:#FFF; padding:8px 4px; border-radius:8px; border:1px solid #CBD5E1;">
-              <div style="font-size:16px; font-weight:800; color:#1565C0;">15<span style="font-size:11px;">天</span></div>
-              <div style="font-size:10.5px; color:#64748B;">可用總額 (120h)</div>
+          <div class="ui-mock-btn" style="background:#1565C0; margin-bottom:8px;">📩 私訊傳送特休與紀錄至您的LINE</div>
+          <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:6px; text-align:center; margin-bottom:8px;">
+            <div style="background:#FFF; padding:7px 4px; border-radius:8px; border:1px solid #CBD5E1;">
+              <div style="font-size:15px; font-weight:800; color:#1565C0;">15<span style="font-size:10px;">天</span></div>
+              <div style="font-size:10px; color:#64748B;">可用總額(120h)</div>
             </div>
-            <div style="background:#FFF; padding:8px 4px; border-radius:8px; border:1px solid #CBD5E1;">
-              <div style="font-size:16px; font-weight:800; color:#D97706;">3.1<span style="font-size:11px;">天</span></div>
-              <div style="font-size:10.5px; color:#64748B;">已使用 (24.5h)</div>
+            <div style="background:#FFF; padding:7px 4px; border-radius:8px; border:1px solid #CBD5E1;">
+              <div style="font-size:15px; font-weight:800; color:#D97706;">3.1<span style="font-size:10px;">天</span></div>
+              <div style="font-size:10px; color:#64748B;">已使用(24.5h)</div>
             </div>
-            <div style="background:#FFF; padding:8px 4px; border-radius:8px; border:1px solid #CBD5E1;">
-              <div style="font-size:16px; font-weight:800; color:#059669;">11.9<span style="font-size:11px;">天</span></div>
-              <div style="font-size:10.5px; color:#64748B;">剩餘可用 (95.5h)</div>
+            <div style="background:#FFF; padding:7px 4px; border-radius:8px; border:1px solid #CBD5E1;">
+              <div style="font-size:15px; font-weight:800; color:#059669;">11.9<span style="font-size:10px;">天</span></div>
+              <div style="font-size:10px; color:#64748B;">剩餘可用(95.5h)</div>
             </div>
           </div>
-
-          <!-- 明細列表與修改按鈕 -->
-          <div style="background:#FFF; padding:9px 10px; border-radius:8px; border:1px solid #E2E8F0; display:flex; justify-content:space-between; align-items:center;">
+          <div style="background:#FFF; padding:8px 10px; border-radius:8px; border:1px solid #E2E8F0; display:flex; justify-content:space-between; align-items:center;">
             <div>
-              <div style="font-size:12.5px; font-weight:800;">#232 2026/10/15 <span style="color:#64748B; font-weight:400;">(部分時段)</span></div>
-              <div style="font-size:11px; color:#64748B;">事由：家因｜職代：雅恩｜經堂會鈺娟牧師核准</div>
+              <div style="font-weight:700; font-size:12px;">#232 2026/10/15 (部分時段)</div>
+              <div style="font-size:11px; color:#64748B;">事由：家因｜職代：雅恩</div>
             </div>
             <div style="text-align:right;">
-              <span class="badge">特休</span> <strong style="font-size:12px;">2h</strong><br>
-              <span style="display:inline-block; background:#1565C0; color:#FFF; font-size:11px; font-weight:700; padding:3px 8px; border-radius:5px; margin-top:3px;">✏️ 修改</span>
+              <span class="badge" style="font-size:10.5px;">特休 2h</span>
+              <div style="background:#1565C0; color:#FFF; font-size:11px; font-weight:700; padding:3px 8px; border-radius:5px; margin-top:3px;">✏️ 修改</div>
             </div>
           </div>
         </div>
 
-        <div class="help-callout">
-          🔒 <strong>修改與取消假單時效規則：</strong><br>
-          • <strong>今日及未來假單：</strong>本人可直接點擊聊天室假單卡片上的「<strong>✏️ 修改假單</strong>」、「<strong>🗑️ 取消假單</strong>」或個人紀錄頁的「<strong>✏️ 修改</strong>」即時變更（特休將自動重新計算或返還）。<br>
-          • <strong>昨日以前的過期假單：</strong>系統自動鎖定為「<strong>🔒 已鎖定/唯讀</strong>」，如需異動請洽管理員。
-        </div>
-        <button type="button" class="btn sm teal" style="margin-top:10px; width:100%;" onclick="switchTab('my')">👉 點此前往「🔒 查特休/紀錄」</button>
+        <ul class="help-step-list">
+          <li><strong>✏️ 修改或 🗑️ 取消假單：</strong>直接點擊 LINE 聊天室假單卡片上的 <strong>「✏️ 修改假單」</strong> 或 <strong>「🗑️ 取消假單」</strong> 按鈕即可操作，取消後系統會自動返還已扣特休時數。</li>
+          <li><strong>🔒 過期假單時效保護：</strong><strong>今日及未來日期</strong>的假單允許申請人本人自由修改或取消；<strong>昨日以前的過期假單</strong>系統將自動鎖定（顯示 <code>🔒 已鎖定/唯讀</code>），如需異動請聯絡管理員協助。</li>
+        </ul>
       </div>
 
-      <!-- ==================== 圖解 4：上班與休假 / 國定假日檢視 ==================== -->
-      <div id="helpSec4" class="help-step-card" style="margin-bottom:6px;">
+      <!-- ==================== 圖解 4：查看上班與休假設定 ==================== -->
+      <div class="help-step-card amber" id="help_sec_4">
         <div class="help-step-header">
-          <span class="help-step-num">功能 4</span>
-          <h4 class="help-step-title">⚙️ 上班與休假設定（自動略過休假日）</h4>
+          <span class="help-step-badge" style="background:#FEF3C7; color:#92400E; border-color:#FDE68A;">排休與國定假日查詢</span>
+          <button type="button" class="btn sm secondary" style="margin-top:0;" onclick="switchTab('schedule')">👉 查看上班與休假</button>
         </div>
-        <div class="help-desc">
-          切換至「<strong>⚙️ 上班與休假</strong>」分頁，可隨時查閱每週開放請假工時，以及已啟用的特定國定假日與補班日：
-        </div>
+        <div class="help-step-title">4️⃣ 「⚙️ 上班與休假」：秒查固定休假、國定假日與補班日</div>
+        <p class="help-desc">
+          不確定某天是否需要請假？切換至 <strong>「⚙️ 上班與休假」</strong> 分頁，即可清楚查看每週開放請假工時，以及未來已設定的國定休假日與補班日：
+        </p>
 
-        <!-- 實機畫面模擬：對應截圖 S__10043403_0 & S__10043404_0 -->
-        <div class="help-mockup">
-          <div class="help-mockup-tag">📱 實機畫面圖解：⚙️ 上班與休假</div>
-          <div style="background:#FFF; border-radius:8px; padding:8px 10px; border:1px solid #E2E8F0; margin-bottom:8px;">
-            <div style="display:flex; justify-content:space-between; align-items:center; padding:4px 0; border-bottom:1px solid #F1F5F9; font-size:12px;">
-              <div><strong>週日 / 週一</strong> <span class="badge off" style="margin-left:4px;">固定休假</span></div>
-              <span style="color:#64748B; font-size:11.5px;">拒絕單日請假 / 區間自動略過</span>
-            </div>
-            <div style="display:flex; justify-content:space-between; align-items:center; padding:4px 0; font-size:12px;">
-              <div><strong>週二 ～ 週六</strong> <span class="badge on" style="margin-left:4px;">開放請假</span></div>
-              <span style="color:#64748B; font-size:11.5px;">全天 8h (早3h / 午5h) 09:00~18:00</span>
-            </div>
+        <!-- 模擬截圖 4 & 5 的班表與國定假日畫面 -->
+        <div class="ui-mockup">
+          <div class="ui-mockup-tag">
+            <span>📱 畫面示意：⚙️ 上班與休假分頁</span>
+            <span>紅底休假免請假／綠底開放請假</span>
           </div>
-
-          <div style="font-size:12px; font-weight:800; color:#1565C0; margin-bottom:4px;">📅 已啟用特定假日 / 補班日</div>
-          <div style="background:#FFF; border-radius:8px; padding:6px 10px; border:1px solid #E2E8F0; font-size:12px;">
-            <div style="display:flex; justify-content:space-between; align-items:center; padding:4px 0; border-bottom:1px solid #F1F5F9;">
-              <span><strong>2026/10/09</strong>｜國慶日補假</span>
-              <span class="badge on">補班日</span>
-            </div>
-            <div style="display:flex; justify-content:space-between; align-items:center; padding:4px 0; border-bottom:1px solid #F1F5F9;">
-              <span><strong>2026/10/10</strong>｜國慶日</span>
-              <span class="badge off">休假日</span>
-            </div>
-            <div style="display:flex; justify-content:space-between; align-items:center; padding:4px 0;">
-              <span><strong>2026/10/25</strong>｜光復節</span>
-              <span class="badge off">休假日</span>
-            </div>
+          <div style="background:#FFF; padding:7px 10px; border-radius:8px; border:1px solid #E2E8F0; margin-bottom:6px; display:flex; justify-content:space-between; align-items:center;">
+            <div><strong>週日、週一</strong> <span class="badge off" style="margin-left:4px;">固定休假</span></div>
+            <span style="font-size:11px; color:#64748B;">拒絕單日請假 / 區間自動略過</span>
           </div>
-        </div>
-
-        <div class="help-callout">
-          💡 <strong>跨日請假自動計算：</strong>當您請連續多天假（例如跨週日、週一或國定休假日）時，系統會<strong>自動扣除中間的「固定休假」與「休假日」</strong>，不會多扣您的特休時數！
+          <div style="background:#FFF; padding:7px 10px; border-radius:8px; border:1px solid #E2E8F0; margin-bottom:6px; display:flex; justify-content:space-between; align-items:center;">
+            <div><strong>週二 ～ 週六</strong> <span class="badge on" style="margin-left:4px;">開放請假</span></div>
+            <span style="font-size:11px; color:#64748B;">全天 8h (早3h / 午5h) 09:00~18:00</span>
+          </div>
+          <div style="background:#FFF; padding:7px 10px; border-radius:8px; border:1px solid #E2E8F0; display:flex; justify-content:space-between; align-items:center;">
+            <div style="font-size:11.5px;"><strong>2026/10/09</strong>｜國慶日補假 <span class="badge on">補班日</span></div>
+            <div style="font-size:11.5px;"><strong>2026/10/10</strong>｜國慶日 <span class="badge off">休假日</span></div>
+          </div>
         </div>
       </div>
     </div>
