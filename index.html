@@ -4219,20 +4219,65 @@ function updateQuotaHint() {
       }
     }
 
-    // ==================== 管理員與超級管理員後台資料庫管理系統 ====================
+// ==================== 管理員與超級管理員後台資料庫管理系統 ====================
+    /**
+     * ✅ DOM 結構自癒保護器：
+     * 若 admPanel_funcs 因 HTML 標籤層級誤放進 admPanel_types 內部，或漏貼 HTML，
+     * 自動將其移出並掛載於 #sec_admin 直屬子層，保證點擊「⚡ 系統函數」100% 顯示不空白！
+     */
+    function ensureSysFuncsPanelMounted() {
+      const secAdmin = document.getElementById('sec_admin');
+      if (!secAdmin) return null;
+
+      let panel = document.getElementById('admPanel_funcs');
+      if (!panel) {
+        panel = document.createElement('div');
+        panel.id = 'admPanel_funcs';
+        panel.className = 'card hidden';
+        secAdmin.appendChild(panel);
+      } else if (panel.parentElement !== secAdmin) {
+        secAdmin.appendChild(panel);
+      }
+
+      if (!document.getElementById('sysFuncCategoriesContainer')) {
+        panel.innerHTML = `
+          <div class="section-title">
+            <span>⚡ 全系統可執行函數控制台（共 42 個核心函數）</span>
+          </div>
+          <div class="banner" style="font-size:12.5px;">
+            💡 <strong>系統管理員專屬（免開 GAS 編輯器）：</strong>此頁面彙整全系統 11 個前後端模組中所有可執行的函數方程式。點擊任一按鈕即可直接執行，並在下方「🖥️ 函數執行結果與日誌輸出台」即時查看回傳結果與 <code>Logger.log</code> 紀錄！
+          </div>
+          <div id="sysFuncConsoleBox" class="status-box info" style="font-family:monospace; font-size:12.5px; max-height:260px; overflow-y:auto;">
+            🖥️ 準備就緒：請點擊下方任一函數按鈕執行，執行結果與 Logger.log 將即時顯示於此...
+          </div>
+          <div class="form-group" style="background:#F8FAFC; padding:10px 12px; border-radius:10px; border:1px solid var(--border); margin-bottom:14px;">
+            <label style="font-size:12px; color:var(--blue);">🔧 選填參數（供歸檔年份、指定月結月份 YYYY-MM 或指定推播 ID 使用；一般函數留空即可）</label>
+            <input type="text" id="inpSysFuncParam" placeholder="選填：例如歸檔年份 2025、月結 2026-11 或指定群組/個人 ID">
+          </div>
+          <div id="sysFuncCategoriesContainer"></div>
+        `;
+      }
+      return panel;
+    }
+
     function switchAdminPanel(panel) {
+      ensureSysFuncsPanelMounted();
+      const isSuper = Boolean(STATE.isSuperAdmin || STATE.userRole === 'SUPER_ADMIN');
       let targetPanel = panel;
+
       // 🔒 一般管理員 (ADMIN) 禁止切換至 'standby' 與 'funcs'，強制導回 'admins'
-      if (!STATE.isSuperAdmin && (targetPanel === 'standby' || targetPanel === 'funcs')) {
+      if (!isSuper && (targetPanel === 'standby' || targetPanel === 'funcs')) {
         targetPanel = 'admins';
       }
+
       ['standby', 'admins', 'quota', 'recs', 'sched', 'types', 'funcs'].forEach(p => {
         const btn = document.getElementById('admBtn_' + p);
         const sec = document.getElementById('admPanel_' + p);
         if (btn) btn.classList.toggle('active', p === targetPanel);
         if (sec) sec.classList.toggle('hidden', p !== targetPanel);
       });
-      if (targetPanel === 'funcs' && STATE.isSuperAdmin && !STATE.gid) {
+
+      if (targetPanel === 'funcs' && isSuper && !STATE.gid) {
         renderSystemFunctionsPanel();
       }
     }
@@ -4277,7 +4322,7 @@ function updateQuotaHint() {
           { key: "initializePatternsSheet", fnName: "initializePatternsSheet()", label: "🏷️ 初始化「patterns」假別分頁", color: "secondary", desc: "檢查並建立假別標準名稱與同義詞資料庫分頁。" },
           { key: "initializeFieldAliasesSheet", fnName: "initializeFieldAliasesSheet()", label: "🔤 初始化「fieldAliases」別名分頁", color: "secondary", desc: "檢查並建立請假單 7 大必填欄位同義別名分頁。" },
           { key: "initializeTimeExpressionsSheet", fnName: "initializeTimeExpressionsSheet()", label: "🕘 初始化「timeExpressions」分頁", color: "secondary", desc: "檢查並建立時數表達式（全天/上午/下午/半天）對照分頁。" },
-          { key: "resetScheduleSheet", fnName: "resetScheduleSheet()", label: "⚠️ 強制重置班表為系統預設值", color: "danger", desc: "【超級管理員專屬】清空並將「工時與休假設定」分頁強制重置為預設週一至週六 8h、週日休假。" }
+          { key: "resetScheduleSheet", fnName: "resetScheduleSheet()", label: "⚠️ 強制重置班表為系統預設值", color: "danger", desc: "【系統管理員專屬】清空並將「工時與休假設定」分頁強制重置為預設週一至週六 8h、週日休假。" }
         ]
       },
       {
@@ -4308,10 +4353,12 @@ function updateQuotaHint() {
     ];
 
     function renderSystemFunctionsPanel() {
+      ensureSysFuncsPanelMounted();
       const container = document.getElementById('sysFuncCategoriesContainer');
       if (!container) return;
-      // 🔒 前端渲染防線：非系統管理員 (SUPER_ADMIN) 或在群組內一律拒絕渲染按鈕
-      if (!STATE.isSuperAdmin || STATE.gid) {
+
+      const isSuper = Boolean(STATE.isSuperAdmin || STATE.userRole === 'SUPER_ADMIN');
+      if (!isSuper || STATE.gid) {
         container.innerHTML = `<div class="status-box err">⛔ 權限不足：僅限最高權限之「系統管理員 (SUPER_ADMIN)」可檢視與操作系統函數！</div>`;
         return;
       }
@@ -4345,11 +4392,12 @@ function updateQuotaHint() {
     }
 
     function executeSystemFunctionByKey(fnKey, labelTitle, isClient) {
-      // 🔒 前端執行防線：非系統管理員 (SUPER_ADMIN) 或在群組內一律攔截
-      if (!STATE.isSuperAdmin || STATE.gid) {
+      const isSuper = Boolean(STATE.isSuperAdmin || STATE.userRole === 'SUPER_ADMIN');
+      if (!isSuper || STATE.gid) {
         alert('⛔ 權限不足：僅限最高權限之「系統管理員 (SUPER_ADMIN)」可執行系統函數！');
         return;
       }
+
       const consoleBox = document.getElementById('sysFuncConsoleBox');
       const optParam   = (document.getElementById('inpSysFuncParam')?.value || '').trim();
 
@@ -4366,7 +4414,6 @@ function updateQuotaHint() {
         try { consoleBox.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); } catch (_) {}
       }
 
-      // 前端本地函數處理
       if (isClient) {
         if (fnKey === 'CLIENT_RELOAD_ADMIN') {
           reloadAdminDatabase();
