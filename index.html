@@ -681,6 +681,7 @@
         <button class="admin-subbtn" id="admBtn_recs" onclick="switchAdminPanel('recs')">📋 假單/月結庫</button>
         <button class="admin-subbtn" id="admBtn_sched" onclick="switchAdminPanel('sched')">⚙️ 班表庫</button>
         <button class="admin-subbtn" id="admBtn_types" onclick="switchAdminPanel('types')">🏷️ 假別與擴充</button>
+        <button class="admin-subbtn hidden" id="admBtn_funcs" onclick="switchAdminPanel('funcs')">⚡ 系統函數</button>
       </div>
 
       <!-- ==================== 管理模組 S：群組顯示控制中心 ＋ 3 大熱備援節點 ＋ 零代碼金鑰管理 ==================== -->
@@ -1406,6 +1407,28 @@
           <button class="btn" style="background:#7C3AED;" onclick="rebuildUnsendLogFromAdmin()">♻️ 重新生成「收回記錄」分頁</button>
         </div>
         <button class="btn secondary" onclick="clearSystemCacheFromAdmin()">🧹 清除系統快取並重新載入 Sheet 設定</button>
+
+        <!-- ==================== 管理模組 5：全系統可執行函數控制台 (admPanel_funcs) ==================== -->
+        <div id="admPanel_funcs" class="card hidden">
+          <div class="section-title">
+            <span>⚡ 全系統可執行函數控制台（共 42 個核心函數）</span>
+          </div>
+          <div class="banner" style="font-size:12.5px;">
+            💡 <strong>免開程式碼編輯器！</strong>此頁面彙整全系統 11 個前後端模組中所有可執行的函數方程式。點擊任一按鈕即可直接執行，並在下方「🖥️ 函數執行結果與日誌輸出台」即時查看回傳結果與 <code>Logger.log</code> 紀錄！
+          </div>
+
+          <!-- 即時執行輸出主控台 -->
+          <div id="sysFuncConsoleBox" class="status-box info" style="font-family:monospace; font-size:12.5px; max-height:260px; overflow-y:auto;">
+            🖥️ 準備就緒：請點擊下方任一函數按鈕執行，執行結果與 Logger.log 將即時顯示於此...
+          </div>
+
+          <div class="form-group" style="background:#F8FAFC; padding:10px 12px; border-radius:10px; border:1px solid var(--border); margin-bottom:14px;">
+            <label style="font-size:12px; color:var(--blue);">🔧 選填參數（供歸檔年份、指定月結月份 `YYYY-MM` 或指定推播 ID 使用；一般函數留空即可）</label>
+            <input type="text" id="inpSysFuncParam" placeholder="選填：例如歸檔年份 2025、月結 2026-11 或指定群組/個人 ID">
+          </div>
+
+          <div id="sysFuncCategoriesContainer"></div>
+        </div>
       </div>
     </div>
   </div>
@@ -1562,7 +1585,8 @@
         "adminExportMonthlyPayroll", "adminReviewLeaveRow",
         "adminSaveUserMapping", "adminDeleteUserMapping", "adminCleanDuplicateMappings",
         "adminReconcileBalances", "adminCreateDatabaseBackup",
-        "adminPruneLogsAndAttachments", "adminRebuildUnsendLog", "adminSaveSystemCredentials"
+        "adminPruneLogsAndAttachments", "adminRebuildUnsendLog", "adminSaveSystemCredentials",
+        "adminExecuteSystemFunction"
       ];
 
       apiMethods.forEach(m => {
@@ -1953,6 +1977,7 @@
       }
 
       const admBtnStandby = document.getElementById('admBtn_standby');
+      const admBtnFuncs   = document.getElementById('admBtn_funcs'); // ✅ 系統函數按鈕
       const admBtnAdmins  = document.getElementById('admBtn_admins');
       const superRoleSec  = document.getElementById('superAdminRoleSection');
       const superCredBox  = document.getElementById('superAdminCredentialsBox');
@@ -1960,19 +1985,23 @@
       const lblSub        = document.getElementById('lblAdminRoleSubtitle');
 
       if (isAdminPrivate) {
+        // 🔒 嚴格鎖定：「🌐 備援與群組」與「⚡ 系統函數」僅限系統管理員 (isSuperPrivate) 可見；一般管理員 (ADMIN) 強制隱藏！
         if (admBtnStandby) admBtnStandby.classList.toggle('hidden', !isSuperPrivate);
+        if (admBtnFuncs)   admBtnFuncs.classList.toggle('hidden',   !isSuperPrivate);
         if (admBtnAdmins)  admBtnAdmins.classList.remove('hidden');
         if (superRoleSec)  superRoleSec.classList.toggle('hidden', !isSuperPrivate);
         if (superCredBox)  superCredBox.classList.toggle('hidden', !isSuperPrivate);
 
         if (isSuperPrivate) {
-          if (lblHeader) lblHeader.innerText = '👑 超級管理員系統管理中心 (v26.0.0-LTS)';
-          if (lblSub)    lblSub.innerText    = '具備所有系統管理權限（含備援、零代碼金鑰、同仁綁定、管理員指派、四大資料庫與 20年長效自癒中心）';
+          if (lblHeader) lblHeader.innerText = '👑 系統管理員管理中心 (v26.0.1-LTS)';
+          if (lblSub)    lblSub.innerText    = '具備最高系統管理權限（含系統函數控制台、備援、零代碼金鑰、管理員指派與四大資料庫）';
         } else {
-          if (lblHeader) lblHeader.innerText = '🛡️ 管理員資料庫管理系統 (v26.0.0-LTS)';
-          if (lblSub)    lblSub.innerText    = '具備管理權限（同仁 LINE 綁定與個別功能授權、特休/補休庫、假單/月結庫、班表庫、假別與長效自癒）';
+          if (lblHeader) lblHeader.innerText = '🛡️ 管理員資料庫管理系統 (v26.0.1-LTS)';
+          if (lblSub)    lblSub.innerText    = '具備日常管理權限（同仁 LINE 綁定、特休/補休庫、假單/月結庫、班表庫、假別庫）';
           const curPanelStandby = document.getElementById('admPanel_standby');
-          if (curPanelStandby && !curPanelStandby.classList.contains('hidden')) {
+          const curPanelFuncs   = document.getElementById('admPanel_funcs');
+          if ((curPanelStandby && !curPanelStandby.classList.contains('hidden')) ||
+              (curPanelFuncs   && !curPanelFuncs.classList.contains('hidden'))) {
             switchAdminPanel('admins');
           }
         }
@@ -4212,15 +4241,195 @@ function updateQuotaHint() {
     // ==================== 管理員與超級管理員後台資料庫管理系統 ====================
     function switchAdminPanel(panel) {
       let targetPanel = panel;
-      if (!STATE.isSuperAdmin && targetPanel === 'standby') {
+      // 🔒 一般管理員 (ADMIN) 禁止切換至 'standby' 與 'funcs'，強制導回 'admins'
+      if (!STATE.isSuperAdmin && (targetPanel === 'standby' || targetPanel === 'funcs')) {
         targetPanel = 'admins';
       }
-      ['standby', 'admins', 'quota', 'recs', 'sched', 'types'].forEach(p => {
+      ['standby', 'admins', 'quota', 'recs', 'sched', 'types', 'funcs'].forEach(p => {
         const btn = document.getElementById('admBtn_' + p);
         const sec = document.getElementById('admPanel_' + p);
         if (btn) btn.classList.toggle('active', p === targetPanel);
         if (sec) sec.classList.toggle('hidden', p !== targetPanel);
       });
+      if (targetPanel === 'funcs' && STATE.isSuperAdmin && !STATE.gid) {
+        renderSystemFunctionsPanel();
+      }
+    }
+
+    // ==================== ⚡ 全系統可執行函數定義表（涵蓋 11 個前後端檔案共 42 個函數） ====================
+    const SYSTEM_EXECUTABLE_FUNCTIONS = [
+      {
+        category: "💬 一、LINE 膠囊常駐推播、機器人與無痕綁定函數 (6_LineBot / 7_Init / 8_UX)",
+        items: [
+          { key: "forcePushGroupCapsules", fnName: "forcePushGroupCapsules()", label: "🚀 推送群組與 1對1 膠囊按鈕", color: "teal", desc: "以無痕空白訊息 (\\u2800) 強制將常駐膠囊按鈕推播至請假群組以及管理員/最近互動之 1對1 聊天室底部。" },
+          { key: "forcePushOneOnOneCapsules", fnName: "forcePushOneOnOneCapsules()", label: "👤 僅推送 1對1 個人膠囊按鈕", color: "blue", desc: "僅針對管理員與最近一次互動之 1對1 個人聊天室強制推送無痕空白膠囊按鈕（不影響群組）。" },
+          { key: "autoRestoreGroupCapsulesIfHidden", fnName: "autoRestoreGroupCapsulesIfHidden()", label: "🔄 執行群組膠囊智慧偵測補推", color: "secondary", desc: "檢查群組膠囊是否被一般閒聊刷掉且已安靜滿 10 分鐘，若是則自動以空白訊息補推膠囊回底部。" },
+          { key: "syncUserMappingFromHistoryAndQuota", fnName: "syncUserMappingFromHistoryAndQuota()", label: "🪪 歷史紀錄與特休表無痕匯入綁定", color: "teal", desc: "自動從「請假記錄」歷史資料提取 LINE ID，並結合 annualLeaveQuota 員工名單批次建立 userMapping 綁定表。" },
+          { key: "repairAllLiffNodesAndResetToGithub", fnName: "repairAllLiffNodesAndResetToGithub()", label: "🔧 自動校準並修復三節點 LIFF ID", color: "blue", desc: "一鍵校準 GitHub / Bloon / GAS 三大熱備援節點之專屬 LIFF ID 對照表，並將預設節點切回節點 1 (GitHub)。" },
+          { key: "getBotBasicId", fnName: "getBotBasicId()", label: "🤖 查詢並快取機器人 Basic ID", color: "secondary", desc: "連線至 LINE 官方 API 查詢此請假機器人之官方帳號 Basic ID (@xxx) 並寫入快取。" }
+        ]
+      },
+      {
+        category: "🛡️ 二、20年長效自癒、全庫雲端備份、歸檔與排程觸發器函數 (7_Init / 10_Addons)",
+        items: [
+          { key: "setupAllSystemTriggers", fnName: "setupAllSystemTriggers()", label: "⏰ 一鍵註冊全系統定時觸發器", color: "teal", desc: "自動清除舊排程並重新建立每月1日特休重算、報表生成、全庫備份對帳、每30分鐘膠囊補推與晨間推播觸發器。" },
+          { key: "runMonthlyLongevityMaintenance", fnName: "runMonthlyLongevityMaintenance()", label: "🛡️ 執行每月長效自動維護任務", color: "blue", desc: "一次完整執行：建立 Google Drive 資料庫備份快照 ＋ 總帳與明細帳雙向對帳自癒（1月含自動歸檔與瘦身）。" },
+          { key: "reconcileAnnualLeaveSnapshots", fnName: "LongevityEngine.reconcileAnnualLeaveSnapshots()", label: "🔄 總帳與明細帳雙向對帳自癒", color: "teal", desc: "重播本年度每一筆有效特休與補休假單，自動校正「請假記錄」主表第 8 欄之剩餘額度快照。" },
+          { key: "createMonthlyDatabaseBackup", fnName: "LongevityEngine.createMonthlyDatabaseBackup()", label: "💾 立即建立全庫雲端備份快照", color: "blue", desc: "於 Google Drive「請假系統_資料庫自動備份庫」建立完整試算表災難復原快照（自動保留最新 12 份）。" },
+          { key: "pruneHistoricalLogsAndAttachments", fnName: "LongevityEngine.pruneHistoricalLogsAndAttachments()", label: "🧹 滾動瘦身過期日誌與附件", color: "secondary", desc: "自動裁剪超過保存年限（預設 3 年）之特休異動日誌、加班紀錄與超過 5 年之證明附件資料夾。" },
+          { key: "rebuildUnsendLogSheet", fnName: "rebuildUnsendLogSheet(true)", label: "♻️ 重新生成「收回記錄」分頁", color: "blue", desc: "掃描「請假記錄」主表與所有歷年歸檔分頁中已收回/已取消之假單，完整重建「收回記錄」分頁。" },
+          { key: "archiveOldLeaveRecords", fnName: "archiveOldLeaveRecords(year)", label: "📦 歸檔指定年度歷史假單", color: "secondary", desc: "將上一年度（或上方參數欄輸入之年份）假單搬移至「請假記錄_YYYY」歸檔分頁，保護跨年與週年制假單。" }
+        ]
+      },
+      {
+        category: "🏗️ 三、Google Sheet 11 大資料庫分頁初始化與結構校準函數 (7_Init / 9_WebApp)",
+        items: [
+          { key: "initializeSystemComplete", fnName: "initializeSystemComplete()", label: "🏗️ 一鍵完整初始化全系統 11 張分頁", color: "teal", desc: "無損檢查並初始化全系統所有分頁，自動補齊 22 欄主表、16 欄特休庫與 5 欄 userMapping 最新結構。" },
+          { key: "initializeMainSheet", fnName: "initializeMainSheet()", label: "📄 初始化/校準「請假記錄」主表", color: "blue", desc: "檢查主表並透過 SheetSchema 自動補齊第 21 欄（行事曆事件ID）與第 22 欄（證明附件連結）。" },
+          { key: "initializeAnnualLeaveQuotaSheet", fnName: "initializeAnnualLeaveQuotaSheet()", label: "👥 初始化/擴充「特休額度庫」(16欄)", color: "blue", desc: "檢查 annualLeaveQuota 分頁並自動無損補齊第 12～16 欄（上期遞延、補休池、本期起迄日）。" },
+          { key: "initializeUserMappingSheet", fnName: "initializeUserMappingSheet()", label: "🔗 初始化/擴充「userMapping」(5欄)", color: "blue", desc: "檢查 userMapping 分頁並自動無損補齊第 4～5 欄（個別開放功能 TODAY/SCHEDULE/QUERY_ALL 與備註）。" },
+          { key: "initializeScheduleSheet", fnName: "initializeScheduleSheet(false)", label: "⚙️ 初始化「工時與休假設定」分頁", color: "secondary", desc: "檢查並建立每週工時與特定假日設定分頁（若分頁已有資料則安全保留不覆蓋）。" },
+          { key: "initializeAdminUsersSheet", fnName: "initializeAdminUsersSheet()", label: "👑 初始化「adminUsers」權限分頁", color: "secondary", desc: "檢查並建立管理員與超級管理員角色權限分頁。" },
+          { key: "initOvertimeSheet", fnName: "OvertimeCompService.getOrCreateSheet()", label: "⏱️ 初始化「overtimeLog」加班表", color: "secondary", desc: "檢查並建立員工加班轉補休申請紀錄分頁。" },
+          { key: "initializeUnsendLogSheet", fnName: "initializeUnsendLogSheet()", label: "🔙 初始化「收回記錄」分頁", color: "secondary", desc: "檢查並建立請假訊息收回與取消紀錄分頁。" },
+          { key: "initializeAdjustmentLogSheet", fnName: "initializeAdjustmentLogSheet()", label: "📜 初始化「leaveAdjustmentLog」", color: "secondary", desc: "檢查並建立特休與補休異動稽核日誌分頁。" },
+          { key: "initializePatternsSheet", fnName: "initializePatternsSheet()", label: "🏷️ 初始化「patterns」假別分頁", color: "secondary", desc: "檢查並建立假別標準名稱與同義詞資料庫分頁。" },
+          { key: "initializeFieldAliasesSheet", fnName: "initializeFieldAliasesSheet()", label: "🔤 初始化「fieldAliases」別名分頁", color: "secondary", desc: "檢查並建立請假單 7 大必填欄位同義別名分頁。" },
+          { key: "initializeTimeExpressionsSheet", fnName: "initializeTimeExpressionsSheet()", label: "🕘 初始化「timeExpressions」分頁", color: "secondary", desc: "檢查並建立時數表達式（全天/上午/下午/半天）對照分頁。" },
+          { key: "resetScheduleSheet", fnName: "resetScheduleSheet()", label: "⚠️ 強制重置班表為系統預設值", color: "danger", desc: "【超級管理員專屬】清空並將「工時與休假設定」分頁強制重置為預設週一至週六 8h、週日休假。" }
+        ]
+      },
+      {
+        category: "📊 四、特休自動重算、年底未休結算、月結扣薪與清理函數 (5_Annual / 9_WebApp)",
+        items: [
+          { key: "autoUpdateAnnualLeave", fnName: "autoUpdateAnnualLeave()", label: "🎂 自動重算全體員工年度特休額度", color: "teal", desc: "依到職日與勞基法年資規則（含備註留停月數扣除）自動更新全體特休額度，並結轉跨年補休池淨額。" },
+          { key: "generateAnnualLeaveReport", fnName: "generateAnnualLeaveReport()", label: "📊 產生 annualLeaveReport 特休報表", color: "blue", desc: "結算全體員工可用總額、期初與系統已用、剩餘特休與使用率，重新生成 annualLeaveReport 報表分頁。" },
+          { key: "settleUnusedPreview", fnName: "settleUnusedAnnualLeave('PREVIEW')", label: "🔍 預覽全體員工年底未休特休結算", color: "secondary", desc: "掃描並輸出全體員工本期剩餘未休特休時數與天數結算預覽。" },
+          { key: "settleUnusedDefer", fnName: "settleUnusedAnnualLeave('DEFER')", label: "⏭️ 將未休特休一鍵轉入次年遞延", color: "teal", desc: "將全體員工目前剩餘未休完之特休時數，一鍵寫入 annualLeaveQuota「上期遞延特休(小時)」欄位。" },
+          { key: "settleUnusedCashout", fnName: "settleUnusedAnnualLeave('CASHOUT_CLEAR')", label: "💰 將未休特休標記折現結清歸零", color: "danger", desc: "將全體員工未休特休標記為折發工資結清，並將遞延特休欄位歸零。" },
+          { key: "generateMonthlyPayroll", fnName: "PayrollExportService.generateMonthlyPayroll()", label: "📥 結算當月考勤與薪資扣款統計表", color: "blue", desc: "依上方參數欄月份（留空為本月）結算全體各假別時數與法定應扣薪時數，寫入 monthlyPayrollReport 分頁。" },
+          { key: "cleanDuplicateAndTestMappings", fnName: "UserMappingManager.cleanDuplicateAndTestMappings()", label: "🧹 清理測試資料與重複綁定 ID", color: "secondary", desc: "自動移除 userMapping 中的王小明/系統管理員測試列，並解除誤綁管理員 ID 的員工列。" }
+        ]
+      },
+      {
+        category: "🧪 五、快取清理、晨間推播、名單查詢與自動化測試函數 (1_Core / 4_Leave / 7_Tests / 前端)",
+        items: [
+          { key: "clearAllCaches", fnName: "CacheManager.clearAll() + FormatConfigLoader.reload()", label: "⚡ 清除全系統後端快取並重載設定", color: "teal", desc: "清除 ScriptCache 所有快取鍵值並重載班表、假別、權限、動態開關與金鑰記憶體快取。" },
+          { key: "sendDailyMorningDigest", fnName: "sendDailyMorningDigest(true)", label: "☀️ 強制發送今日晨間出勤摘要推播", color: "blue", desc: "立即彙整今日請假名單與代理人，強制推播至晨間推播目標群組或管理員 LINE。" },
+          { key: "getTodayLeaveRecords", fnName: "getTodayLeaveRecords()", label: "📋 執行並輸出「今日請假名單」文字", color: "secondary", desc: "立即查詢並在上方輸出台顯示今日所有請假同仁、假別、時段與職務代理人文字報告。" },
+          { key: "getWeekLeaveRecords", fnName: "getWeekLeaveRecords()", label: "📅 執行並輸出「本週請假名單」文字", color: "secondary", desc: "立即查詢並在上方輸出台顯示本週（週一至週日）所有請假記錄文字報告。" },
+          { key: "getWorkHoursConfig", fnName: "getWorkHoursConfig()", label: "🕒 檢視目前生效之工時與休假 JSON", color: "secondary", desc: "讀取並在上方輸出台顯示目前生效之每週工時、上下班/午休時間與特定國定假日完整配置物件。" },
+          { key: "runAllTests", fnName: "runAllTests()", label: "🧪 執行系統內建自動化單元測試套件", color: "teal", desc: "執行 7_System_Init_And_Tests.gs 中的 runAllTests()，全面檢驗班表、日期解析、防呆規則與局部修改邏輯。" },
+          { key: "CLIENT_RELOAD_ADMIN", fnName: "reloadAdminDatabase()", label: "🔄 前端：重新同步後台管理資料庫", color: "blue", isClient: true, desc: "從前端立即重新呼叫 adminGetBackendData()，同步最新 Google Sheet 後台資料至當前畫面。" },
+          { key: "CLIENT_CLEAR_LOCAL_CACHE", fnName: "localStorage.clear() + fetchFreshInitData()", label: "🗑️ 前端：清除手機本地快取並重載", color: "secondary", isClient: true, desc: "清除瀏覽器 localStorage 的初始化快取並重新向後端拉取最新權限與表單設定。" }
+        ]
+      }
+    ];
+
+    function renderSystemFunctionsPanel() {
+      const container = document.getElementById('sysFuncCategoriesContainer');
+      if (!container) return;
+      // 🔒 前端渲染防線：非系統管理員 (SUPER_ADMIN) 或在群組內一律拒絕渲染按鈕
+      if (!STATE.isSuperAdmin || STATE.gid) {
+        container.innerHTML = `<div class="status-box err">⛔ 權限不足：僅限最高權限之「系統管理員 (SUPER_ADMIN)」可檢視與操作系統函數！</div>`;
+        return;
+      }
+
+      container.innerHTML = SYSTEM_EXECUTABLE_FUNCTIONS.map(cat => `
+        <div style="margin-bottom:16px;">
+          <h4 style="margin:0 0 8px 0; font-size:14px; color:var(--blue); border-bottom:2px solid #E2E8F0; padding-bottom:5px;">
+            ${escHtml(cat.category)}
+          </h4>
+          <div>
+            ${cat.items.map(item => `
+              <div class="record-item" style="align-items:flex-start; flex-direction:column; gap:6px; background:#F8FAFC; padding:10px 12px; border-radius:10px; border:1px solid var(--border); margin-bottom:8px;">
+                <div style="width:100%; display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap;">
+                  <div>
+                    <strong style="font-size:13.5px; color:#0F172A;">${escHtml(item.label)}</strong>
+                    <div style="font-family:monospace; font-size:11.5px; color:var(--teal); margin-top:2px;">函數：<code>${escHtml(item.fnName)}</code></div>
+                  </div>
+                  <button type="button" class="btn sm ${item.color || 'blue'}" style="white-space:nowrap;"
+                    onclick="executeSystemFunctionByKey('${escAttr(item.key)}', '${escAttr(item.label)}', ${!!item.isClient})">
+                    ▶️ 立即執行
+                  </button>
+                </div>
+                <div style="font-size:12px; color:var(--muted); line-height:1.45;">
+                  💡 說明：${escHtml(item.desc)}
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function executeSystemFunctionByKey(fnKey, labelTitle, isClient) {
+      // 🔒 前端執行防線：非系統管理員 (SUPER_ADMIN) 或在群組內一律攔截
+      if (!STATE.isSuperAdmin || STATE.gid) {
+        alert('⛔ 權限不足：僅限最高權限之「系統管理員 (SUPER_ADMIN)」可執行系統函數！');
+        return;
+      }
+      const consoleBox = document.getElementById('sysFuncConsoleBox');
+      const optParam   = (document.getElementById('inpSysFuncParam')?.value || '').trim();
+
+      const dangerousKeys = ['resetScheduleSheet', 'settleUnusedDefer', 'settleUnusedCashout', 'pruneHistoricalLogsAndAttachments', 'archiveOldLeaveRecords'];
+      if (dangerousKeys.includes(fnKey)) {
+        if (!confirm(`⚠️ 確定要執行「${labelTitle}」嗎？\n此動作將會直接異動後端資料庫分頁內容！`)) {
+          return;
+        }
+      }
+
+      if (consoleBox) {
+        consoleBox.className = 'status-box info';
+        consoleBox.innerText = `⏳ 正在執行函數【${labelTitle}】(${fnKey})，請稍候...`;
+        try { consoleBox.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); } catch (_) {}
+      }
+
+      // 前端本地函數處理
+      if (isClient) {
+        if (fnKey === 'CLIENT_RELOAD_ADMIN') {
+          reloadAdminDatabase();
+          if (consoleBox) {
+            consoleBox.className = 'status-box ok';
+            consoleBox.innerText = `✅ 已觸發前端 reloadAdminDatabase()，正在同步最新後台資料庫！`;
+          }
+        } else if (fnKey === 'CLIENT_CLEAR_LOCAL_CACHE') {
+          try { localStorage.removeItem(CACHE_KEY_INIT); } catch (_) {}
+          fetchFreshInitData(localStorage.getItem('leave_sys_user_name') || '');
+          if (consoleBox) {
+            consoleBox.className = 'status-box ok';
+            consoleBox.innerText = `✅ 已清除手機/瀏覽器本地快取 (${CACHE_KEY_INIT}) 並重新向後端同步最新資料！`;
+          }
+        }
+        return;
+      }
+
+      google.script.run
+        .withSuccessHandler(res => {
+          if (!res || !res.success) {
+            if (consoleBox) {
+              consoleBox.className = 'status-box err';
+              consoleBox.innerText = (res && res.message) || `❌ 執行 [${labelTitle}] 失敗`;
+            }
+            return;
+          }
+          try { localStorage.removeItem(CACHE_KEY_INIT); } catch (_) {}
+          if (res.adminData && res.adminData.success) {
+            STATE.adminData = res.adminData;
+            renderAdminConsole(res.adminData);
+          }
+          if (consoleBox) {
+            consoleBox.className = 'status-box ok';
+            consoleBox.innerText = `🎉 【${res.title || labelTitle}】執行成功！\n━━━━━━━━━━━━━━━━━━━━━━━━━━\n${res.output || '✅ 完成'}`;
+          }
+        })
+        .withFailureHandler(err => {
+          if (consoleBox) {
+            consoleBox.className = 'status-box err';
+            consoleBox.innerText = `❌ 呼叫後端執行 [${labelTitle}] 失敗：${err.message}`;
+          }
+        })
+        .adminExecuteSystemFunction(STATE.uid, fnKey, optParam);
     }
 
     function renderUserMappingList(mapList) {
