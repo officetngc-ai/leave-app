@@ -500,7 +500,6 @@
           點選聊天室下方 <strong>「📅 查特休 / 其他」</strong> 開啟視窗，系統會自動帶入您的姓名與上次核准狀態，選擇日期與時段後<strong>即時試算工時與扣假後特休餘額</strong>：
         </p>
 
-        <!-- 模擬截圖 2 & 7 的手機畫面 -->
         <div class="ui-mockup">
           <div class="ui-mockup-tag">
             <span>📱 畫面示意：📝 填寫請假分頁</span>
@@ -542,14 +541,13 @@
           點擊聊天室下方 <strong>「✍️ 提送假單」</strong> 膠囊按鈕，系統會自動帶入您的<strong>「請假人」</strong>與上次的<strong>「核准」</strong>文字。您只需修改日期與時數，系統會立即幫您檢查是否有誤：
         </p>
 
-        <!-- 正確通過示意圖 (對應截圖 3) -->
         <div class="ui-mockup" style="border-color:#86EFAC; background:#F0FDF4;">
           <div class="ui-mockup-tag" style="color:#166534; border-bottom-color:#86EFAC;">
             <span>🟢 狀態 A：格式正確（綠框解鎖按鈕）</span>
             <span>直接點擊綠鈕送出</span>
           </div>
           <div class="ui-mock-input" style="font-family:monospace; line-height:1.45; margin-bottom:8px;">
-            請假人：江同工<br>請假日期：2026/11/03<br>請假時數：全天<br>假別：特休 ／ 事由：個人事務<br>職務代理：李大華 ／ 核准：經堂會鈺娟牧師核准
+            請假人：江同工<br>請假日期：2026/11/03<br>請假時數：全天<br>假別：特休<br>事由：個人事務<br>職務代理：李大華<br>核准：經堂會鈺娟牧師核准
           </div>
           <div class="ui-mock-ok">
             ✅ 資料庫驗證通過！（江同工｜2026/11/03｜全天 (8h)｜特休｜扣假後特休剩餘 87.5h）<br>請點擊下方綠色按鈕送出。
@@ -558,7 +556,6 @@
           <div class="ui-mock-btn grey">🚀 直接由系統留言並送出假單</div>
         </div>
 
-        <!-- 錯誤攔截示意圖 (對應截圖 1 & 6) -->
         <div class="ui-mockup" style="border-color:#FCA5A5; background:#FEF2F2;">
           <div class="ui-mockup-tag" style="color:#991B1B; border-bottom-color:#FCA5A5;">
             <span>🔴 狀態 B：填到休假日或時數打錯（紅框自動攔截）</span>
@@ -590,7 +587,6 @@
           切換至 <strong>「🔒 查特休/紀錄」</strong> 分頁，輸入您本人的真實姓名點擊 <strong>「🔍 驗證查詢」</strong>（首次查詢即自動完成 LINE 帳號無痕綁定），即可私密檢視特休儀表板與本年度所有請假明細：
         </p>
 
-        <!-- 模擬截圖 8 的特休儀表板畫面 -->
         <div class="ui-mockup">
           <div class="ui-mockup-tag">
             <span>📱 畫面示意：🔒 查特休/紀錄分頁</span>
@@ -640,7 +636,6 @@
           不確定某天是否需要請假？切換至 <strong>「⚙️ 上班與休假」</strong> 分頁，即可清楚查看每週開放請假工時，以及未來已設定的國定休假日與補班日：
         </p>
 
-        <!-- 模擬截圖 4 & 5 的班表與國定假日畫面 -->
         <div class="ui-mockup">
           <div class="ui-mockup-tag">
             <span>📱 畫面示意：⚙️ 上班與休假分頁</span>
@@ -691,7 +686,7 @@
           <span>💬 群組與視窗分頁顯示控制設定</span>
         </div>
         <div class="banner" style="font-size:12.5px;">
-          💡 您可在此自由勾選在 <strong>「LINE 群組」</strong> 中要跳出的底部膠囊按鈕，以及點開視窗時頂部要開放的功能分頁（當取消勾選「📝 填寫請假」時，開啟視窗的首頁會自動切換為「🔒 查特休/紀錄」）：
+          💡 您可在此自由勾選在 <strong>「LINE 群組」</strong> 中要跳出的底部膠囊按鈕，以及點開視窗時頂部要開放的功能分頁（當取消勾選「📝 填寫請假」時，開啟視窗的首頁會自動切換為「🔒 查特休/紀錄」，且說明頁亦會同步隱藏日曆請假介紹）：
         </div>
 
         <label style="color:var(--blue); margin-bottom:6px;">1️⃣ 群組聊天室底部跳出的「膠囊按鈕 (Quick Reply)」：</label>
@@ -714,7 +709,7 @@
           </label>
           <label class="group-ui-item">
             <span>📖 說明</span>
-            <input type="checkbox" id="chkGrpQr_help">
+            <input type="checkbox" id="chkGrpQr_help" checked>
           </label>
         </div>
 
@@ -838,7 +833,7 @@
         <div class="banner" style="font-size:12.5px;">
           💡 <strong>管理說明（對應 Google Sheet「userMapping」分頁）：</strong><br>
           1️⃣ <strong>修改或重設綁定：</strong>可在此修改同仁姓名、修正或清空誤綁的 <code>LINE UserID</code>（清空後，該同仁下次查特休或送出假單時會自動綁回他本人的 LINE 帳號）。<br>
-          2️⃣ <strong>單一同仁個別功能授權：</strong>即使同仁只是「一般成員」，只要為他打勾 <strong>「📋 開放看今日請假」</strong>，他的畫面就會額外顯示「📋 今日請假」分頁與膠囊按鈕來判斷當日工作量，但不會擁有後台管理權限！
+          2️⃣ <strong>職稱與部門班別設定：</strong>在下方「備註」欄填寫職稱（如 <code>傳道</code>、<code>牧師</code>、<code>同工</code>），職務代理人選單會自動顯示為「姓名 職稱」；若為下午 14:00~19:00 班別可加上 <code>[14-19]</code> 或 <code>[10-19]</code>！
         </div>
 
         <input type="hidden" id="inpMapRowNumber" value="">
@@ -887,8 +882,8 @@
         </div>
 
         <div class="form-group" style="margin-top:8px;">
-          <label>綁定備註說明（選填）</label>
-          <input type="text" id="inpMapRemarks" placeholder="例如：排班協調員（開放看今日請假）">
+          <label>職稱與專屬班別備註（💡 填寫如「傳道」、「牧師」、「同工 [14-19]」或「同工 [10-19]」）</label>
+          <input type="text" id="inpMapRemarks" placeholder="例如：傳道、同工 [14-19]（代表下午14:00~19:00班別）">
         </div>
 
         <div id="userMappingStatusBox" class="status-box hidden"></div>
@@ -950,7 +945,7 @@
           </div>
 
           <div class="form-group">
-            <label>職務 / 權限備註說明</label>
+            <label>職務 / 權限備註說明（可填職稱與班別，如：牧師、傳道 [14-19]）</label>
             <input type="text" id="admAdminRemarks" placeholder="例如：同工、傳道、牧師">
           </div>
 
@@ -1094,8 +1089,8 @@
           </div>
         </div>
         <div class="form-group">
-          <label>調整原因 / 備註（💡 如曾留職停薪可填「留停6個月」或「扣年資:6月」，重算年資時自動扣除）</label>
-          <input type="text" id="admRemarks" placeholder="例如：2026年度設定 [扣年資:6月]">
+          <label>調整原因 / 備註（💡 可填職稱「傳道」、班別「[14-19]」或留停「[扣年資:6月]」，系統重算時會自動保留）</label>
+          <input type="text" id="admRemarks" placeholder="例如：傳道 [14-19] [扣年資:6月]">
         </div>
         <button class="btn teal" onclick="saveAdminQuota()">💾 寫入員工特休與補休池資料庫</button>
 
@@ -1375,6 +1370,25 @@
 
         <hr style="border:none; border-top:2px dashed var(--border); margin:18px 0;">
 
+        <!-- ✅ 完整補回：新增 / 修改後端假別資料庫 -->
+        <h3 class="section-title">🏷️ 新增 / 修改後端假別資料庫</h3>
+        <div class="row-2">
+          <div class="form-group">
+            <label>假別標準名稱</label>
+            <input type="text" id="admNewTypeName" placeholder="例如：家庭照顧假">
+          </div>
+          <div class="form-group">
+            <label>同義別名 (逗號分隔)</label>
+            <input type="text" id="admNewTypeAliases" placeholder="例如：家照假,照顧假">
+          </div>
+        </div>
+        <button class="btn blue" onclick="saveAdminLeaveType()" style="margin-bottom:14px; margin-top:0;">➕ 新增 / 更新假別</button>
+
+        <h4 style="margin:0 0 8px 0; font-size:14px;">📌 假別資料庫清單（點擊可切換啟用/停用）</h4>
+        <div id="admLeaveTypeListBox" style="margin-bottom:18px;"></div>
+
+        <hr style="border:none; border-top:2px dashed var(--border); margin:18px 0;">
+
         <!-- ✅ [維度三升級] 20年長效自癒、災難復原備份與收回記錄重建中心 -->
         <h3 class="section-title">🛠️ 20 年長效自癒、災難復原備份與資料庫維護中心</h3>
         <div class="banner" style="font-size:12px;">
@@ -1390,7 +1404,7 @@
           <button class="btn" style="background:#7C3AED;" onclick="rebuildUnsendLogFromAdmin()">♻️ 重新生成「收回記錄」分頁</button>
         </div>
         <button class="btn secondary" onclick="clearSystemCacheFromAdmin()">🧹 清除系統快取並重新載入 Sheet 設定</button>
-      </div><!-- ⬅️ 這裡先結束 admPanel_types -->
+      </div><!-- ⬅️ 結束 admPanel_types -->
 
       <!-- ==================== 管理模組 5：全系統可執行函數控制台 (admPanel_funcs - 獨立於 admPanel_types 之外) ==================== -->
       <div id="admPanel_funcs" class="card hidden">
@@ -1417,10 +1431,10 @@
   <script>
     // ============================================================
     // 🌐 三棲熱備援環境核心連線與 20 年長效穩定度前端引擎
-    // 版本: v26.0.0-LTS (Zero-Maintenance Final Release)
+    // 版本: v26.0.2-LTS (Zero-Maintenance Final Release)
     // ============================================================
     const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyuW_4_sWHWUq0lc4QOe1amHl7ipGXr0wGNoVQFJl7leq6JYGWVR7CUoPOZkPMqprnX/exec";
-    const CACHE_KEY_INIT  = "leave_sys_init_cache_v26_0_longevity";
+    const CACHE_KEY_INIT  = "leave_sys_init_cache_v26_2_longevity";
 
     const GAS_SSR_PAYLOAD = "/*__GAS_SSR_INJECTION__*/";
 
@@ -1442,6 +1456,16 @@
         .replace(/'/g, "\\'")
         .replace(/"/g, '&quot;')
         .replace(/\r?\n/g, ' ');
+    }
+
+    /**
+     * 將帶有職稱的姓名（如「潘劉玉霞 傳道」）還原為純姓名「潘劉玉霞」，供防自我代理比對使用
+     */
+    function stripJobTitleClient(rawName) {
+      if (!rawName) return '';
+      const trimmed = String(rawName).trim();
+      const firstPart = trimmed.split(/\s+/)[0];
+      return firstPart.replace(/(主任牧師|堂會牧師|實習傳道|牧師|傳道|同工|幹事|執事|長老|老師)$/g, '').replace(/\s+/g, '') || trimmed.replace(/\s+/g, '');
     }
 
     function detectCurrentBrowserNodeKey() {
@@ -1493,7 +1517,7 @@
       qr_textform:  true,
       qr_schedule:  false,
       qr_today:     false,
-      qr_help:      false,
+      qr_help:      true,
       tab_form:     true,
       tab_my:       true,
       tab_schedule: true,
@@ -1609,7 +1633,7 @@
       gid: "",
       tab: "form",
       editRow: "",
-      editRecord: null, // ✅ 記錄修改前之原假單物件（含原假別與原請假時數），供即時加回重算特休
+      editRecord: null,
       adminForceForm: false,
       noRedirect: false,
       liffId: DEFAULT_LIFF_ID,
@@ -1669,6 +1693,7 @@
       verifyStatus: "idle",
       verifyErrorMsg: "",
       verifySummary: "",
+      employeeShifts: {},
       verifySeq: 0,
       initFetchSeq: 0
     };
@@ -1870,7 +1895,7 @@
       const uPerms         = STATE.userCustomPerms  || {};
       const isAdminUser    = Boolean(STATE.isAdmin || STATE.isSuperAdmin);
       const isAdminPrivate = (!isGroup && isAdminUser);
-      const isSuperPrivate = (!isGroup && STATE.isSuperAdmin);
+      const isSuperPrivate = (!isGroup && (STATE.isSuperAdmin || STATE.userRole === 'SUPER_ADMIN'));
 
       const attGroup = document.getElementById('attachmentUploadGroup');
       if (attGroup) attGroup.classList.toggle('hidden', !entCfg.ENABLE_ATTACHMENT_UPLOAD);
@@ -1878,13 +1903,11 @@
       const payrollBar = document.getElementById('admPayrollExportBar');
       if (payrollBar) payrollBar.classList.toggle('hidden', entCfg.ENABLE_PAYROLL_EXPORT === false);
 
-      // ✅ 根據後台 ENABLE_SYSTEM_DIRECT_SUBMIT 開關控制文字快填「🚀 直接由系統留言並送出假單」按鈕顯示或隱藏
       const btnSubmitTextEl = document.getElementById('btnSubmitText');
       if (btnSubmitTextEl) {
         btnSubmitTextEl.classList.toggle('hidden', entCfg.ENABLE_SYSTEM_DIRECT_SUBMIT === false);
       }
 
-      // ✅ 超級管理員、管理員在 1對1 與群組皆可選擇全體員工名單代填假單；一般成員僅限填寫本人
       const inpNameEl = document.getElementById('inpName');
       if (inpNameEl) {
         if (isAdminUser) {
@@ -1916,7 +1939,7 @@
       if (btnSchedule) btnSchedule.classList.toggle('hidden', !allowSchedule);
       if (btnHelp)     btnHelp.classList.toggle('hidden',     !allowHelp);
 
-      // ✅ 當管理員關閉「填寫請假 (allowForm === false)」或其他分頁時，同步隱藏「📖 說明」內的對應教學卡片與導覽按鈕！
+      // ✅ 當管理員關閉「填寫請假 (allowForm === false)」或其他分頁時，同步隱藏「📖 說明」內的對應教學卡片與導覽按鈕
       const gCfgForHelp   = STATE.groupUiConfig || DEFAULT_GROUP_UI_CONFIG;
       const allowTextForm = isGroup ? (gCfgForHelp.qr_textform !== false) : true;
       const helpVisibilityMap = [
@@ -1931,6 +1954,7 @@
         if (navEl) navEl.classList.toggle('hidden', !item.show);
         if (secEl) secEl.classList.toggle('hidden', !item.show);
       });
+
       if (btnAdmin)    btnAdmin.classList.toggle('hidden',    !isAdminPrivate);
       if (escAdminBtn) escAdminBtn.classList.toggle('hidden', !isAdminPrivate);
 
@@ -1975,7 +1999,7 @@
       }
 
       const admBtnStandby = document.getElementById('admBtn_standby');
-      const admBtnFuncs   = document.getElementById('admBtn_funcs'); // ✅ 系統函數按鈕
+      const admBtnFuncs   = document.getElementById('admBtn_funcs');
       const admBtnAdmins  = document.getElementById('admBtn_admins');
       const superRoleSec  = document.getElementById('superAdminRoleSection');
       const superCredBox  = document.getElementById('superAdminCredentialsBox');
@@ -1991,10 +2015,10 @@
         if (superCredBox)  superCredBox.classList.toggle('hidden', !isSuperPrivate);
 
         if (isSuperPrivate) {
-          if (lblHeader) lblHeader.innerText = '👑 系統管理員管理中心 (v26.0.1-LTS)';
+          if (lblHeader) lblHeader.innerText = '👑 系統管理員管理中心 (v26.0.2-LTS)';
           if (lblSub)    lblSub.innerText    = '具備最高系統管理權限（含系統函數控制台、備援、零代碼金鑰、管理員指派與四大資料庫）';
         } else {
-          if (lblHeader) lblHeader.innerText = '🛡️ 管理員資料庫管理系統 (v26.0.1-LTS)';
+          if (lblHeader) lblHeader.innerText = '🛡️ 管理員資料庫管理系統 (v26.0.2-LTS)';
           if (lblSub)    lblSub.innerText    = '具備日常管理權限（同仁 LINE 綁定、特休/補休庫、假單/月結庫、班表庫、假別庫）';
           const curPanelStandby = document.getElementById('admPanel_standby');
           const curPanelFuncs   = document.getElementById('admPanel_funcs');
@@ -2095,7 +2119,6 @@
           const prevGid = STATE.gid;
           parseClientUrlParams();
 
-          // 無論 liff.isLoggedIn() 狀態為何，只要在 LINE 內部開啟即可直接從 getContext() 取得 userId 與 groupId
           const ctx = (typeof liff.getContext === 'function') ? liff.getContext() : null;
           if (ctx) {
             if (ctx.userId) STATE.uid = ctx.userId;
@@ -2220,10 +2243,13 @@
         renderLeaveTypeOptions(res.leaveTypes);
       }
 
+      if (res.employeeShifts) {
+        STATE.employeeShifts = res.employeeShifts;
+      }
       if (Array.isArray(res.employees)) {
         const cleanEmpList = res.employees.filter(n => n && n !== '系統管理員' && n !== '王小明');
         document.getElementById('employeeList').innerHTML = cleanEmpList.map(n => `<option value="${escHtml(n)}">`).join('');
-        const depArr = Array.isArray(res.deputies) && res.deputies.length > 0 ? res.deputies : cleanEmpList;
+        const depArr = (Array.isArray(res.deputies) && res.deputies.length > 0) ? res.deputies : cleanEmpList;
         const depEl  = document.getElementById('deputyList');
         if (depEl) depEl.innerHTML = depArr.map(d => `<option value="${escHtml(d)}">`).join('');
       }
@@ -3034,10 +3060,11 @@
         return { valid: false, errorMessage: `⚠️ 請假單填寫不完整（以下欄位未填內容）：\n• ${empty.join('\n• ')}` };
       }
 
-      const entCfg   = STATE.enterpriseConfig || {};
-      const cleanApp = parsed['請假人'].replace(/\s+/g, '');
-      const cleanDep = parsed['職務代理'].replace(/\s+/g, '');
-      if (entCfg.PREVENT_SELF_DEPUTY !== false && cleanApp && cleanDep && cleanApp === cleanDep) {
+      const entCfg       = STATE.enterpriseConfig || {};
+      const cleanApp     = parsed['請假人'].replace(/\s+/g, '');
+      const cleanDepFull = parsed['職務代理'].replace(/\s+/g, '');
+      const cleanDepBase = stripJobTitleClient(parsed['職務代理']);
+      if (entCfg.PREVENT_SELF_DEPUTY !== false && cleanApp && (cleanApp === cleanDepFull || cleanApp === cleanDepBase)) {
         return { valid: false, errorMessage: `⚠️ 職務代理人設定無效：請假人（${cleanApp}）不可將職務代理人填寫為自己！` };
       }
 
@@ -3130,6 +3157,7 @@
       const dayCfg   = (STATE.scheduleOverview && Array.isArray(STATE.scheduleOverview.days) && STATE.scheduleOverview.days[startDow])
         ? STATE.scheduleOverview.days[startDow]
         : { fullDayHours: 8, morningHours: 3, afternoonHours: 5, halfDayHours: 4, lunchStart: '12:00', lunchEnd: '13:00' };
+      const empShift = (cleanApp && STATE.employeeShifts && STATE.employeeShifts[cleanApp]) ? STATE.employeeShifts[cleanApp] : null;
 
       const hRaw = parsed['請假時數'].replace(/\s+/g, '');
       let hoursPerDay = 0;
@@ -3153,8 +3181,8 @@
             const p = String(hhmm).split(':');
             return p.length === 2 ? (parseInt(p[0], 10) * 60 + parseInt(p[1], 10)) : defMin;
           };
-          const lunchStart = parseMin(dayCfg.lunchStart, 12 * 60);
-          const lunchEnd   = parseMin(dayCfg.lunchEnd,   13 * 60);
+          const lunchStart = empShift ? empShift.LUNCH_START_MIN : parseMin(dayCfg.lunchStart, 12 * 60);
+          const lunchEnd   = empShift ? empShift.LUNCH_END_MIN   : parseMin(dayCfg.lunchEnd,   13 * 60);
           let deductMin = 0;
           if (startMin < lunchEnd && endMin > lunchStart) {
             deductMin = Math.max(0, Math.min(endMin, lunchEnd) - Math.max(startMin, lunchStart));
@@ -3294,7 +3322,7 @@
         .adminGetBackendData(STATE.uid);
     }
 
-function enterEditMode(rec) {
+    function enterEditMode(rec) {
       if (!rec) return;
       if (rec.inactive || rec.permissionDenied || rec.expiredLock) {
         alert(rec.errorMessage || `⚠️ 記錄 #${rec.rowNumber} 無法修改！`);
@@ -3302,7 +3330,7 @@ function enterEditMode(rec) {
         return;
       }
       STATE.editRow    = rec.rowNumber;
-      STATE.editRecord = rec; // ✅ 暫存原假單資訊（原時數 rec.hoursCalc、原假別 rec.leaveType、申請人 rec.name）
+      STATE.editRecord = rec;
 
       const banner = document.getElementById('editModeBanner');
       banner.innerHTML = `✏️ 正在修改假單編號 <strong>#${escHtml(rec.rowNumber)}</strong>（原請假：${escHtml(rec.leaveType || '')} <strong>${Number(rec.hoursCalc || 0)}h</strong>｜改變請假時間將即時重算剩餘特休）`;
@@ -3343,7 +3371,6 @@ function enterEditMode(rec) {
         existAttBox.classList.add('hidden');
       }
 
-      // ✅ 若當前尚未載入該請假人之特休儀表板，立即自動載入以確保特休剩餘即時顯示
       if (rec.name && (!STATE.dashboard || !STATE.dashboard.found || STATE.dashboard.name !== rec.name)) {
         loadPersonalDashboard(rec.name);
       }
@@ -3358,7 +3385,7 @@ function enterEditMode(rec) {
       switchTab('form');
     }
 
-function exitEditMode() {
+    function exitEditMode() {
       STATE.editRow        = '';
       STATE.editRecord     = null;
       STATE.adminForceForm = false;
@@ -3377,7 +3404,7 @@ function exitEditMode() {
       triggerPreview();
     }
 
-function onNameChange() {
+    function onNameChange() {
       const name = document.getElementById('inpName').value.replace(/\u3000/g, '').replace(/\s+/g, '').trim();
       const isAdminUser = Boolean(STATE.isAdmin || STATE.isSuperAdmin);
       if (name && name !== '系統管理員' && name !== '王小明') {
@@ -3407,7 +3434,7 @@ function onNameChange() {
       }
     }
 
-function onApprovalChange() {
+    function onApprovalChange() {
       const appVal = document.getElementById('selApproval').value;
       if (appVal) {
         localStorage.setItem('leave_sys_last_approval', appVal);
@@ -3436,7 +3463,7 @@ function onApprovalChange() {
       triggerPreview();
     }
 
-function updateQuotaHint() {
+    function updateQuotaHint() {
       const type = document.getElementById('selLeaveType').value || '';
       const name = document.getElementById('inpName').value.replace(/\u3000/g, '').replace(/\s+/g, '').trim();
       const box  = document.getElementById('quotaHintBox');
@@ -3464,14 +3491,12 @@ function updateQuotaHint() {
       if (type.includes('特休') && STATE.dashboard.hasQuota) {
         const dbRemHrs = Number(STATE.dashboard.remainingHours || 0);
 
-        // ✅ 若正在修改同一人的「特休」假單，先將原假單已扣之時數加回可用額度，避免重複扣除
         const origWasAnnual = Boolean(isEditing && String(STATE.editRecord.leaveType || '').includes('特休'));
         const origAnnualHrs = origWasAnnual ? Number(STATE.editRecord.hoursCalc || 0) : 0;
 
         const availBeforeHrs  = Math.round((dbRemHrs + origAnnualHrs) * 10) / 10;
         const availBeforeDays = Math.round((availBeforeHrs / HPD) * 10) / 10;
 
-        // ✅ 依目前畫面選擇的請假時數 (reqHrs) 即時重算扣假後的剩餘特休
         const afterHrs      = Math.round((availBeforeHrs - reqHrs) * 10) / 10;
         const afterDays     = Math.round((afterHrs / HPD) * 10) / 10;
         const displayRemHrs = Math.max(0, afterHrs);
@@ -3552,10 +3577,6 @@ function updateQuotaHint() {
       }
     }
 
-    /**
-     * ✅ 前端 0 毫秒本地即時工時試算器：
-     * 使用者切換時段或改變起迄時間當下立即算出請假時數，無須等待網路回應即可同步更新特休餘額！
-     */
     function calcClientPreviewHours(sDateIso, eDateIso, periodMode, sTime, eTime) {
       if (!sDateIso) return { valid: false, message: '請選擇開始日期' };
       const sParts = sDateIso.split('-').map(Number);
@@ -3567,6 +3588,9 @@ function updateQuotaHint() {
       if (isNaN(sDate.getTime()) || isNaN(eDate.getTime()) || eDate < sDate) {
         return { valid: false, message: '結束日期不能早於開始日期' };
       }
+
+      const empName  = (document.getElementById('inpName')?.value || '').replace(/\u3000/g, '').replace(/\s+/g, '').trim();
+      const empShift = (empName && STATE.employeeShifts && STATE.employeeShifts[empName]) ? STATE.employeeShifts[empName] : null;
 
       const spDates = (STATE.scheduleOverview && STATE.scheduleOverview.specialDates) || [];
       const spMap   = {};
@@ -3596,6 +3620,7 @@ function updateQuotaHint() {
 
       const mode = periodMode || '全天';
       let totalHours = 0;
+      let shiftHint  = '';
 
       if (mode === 'custom') {
         if (!sTime || !eTime) return { valid: false, message: '請選擇開始與結束時間' };
@@ -3617,8 +3642,8 @@ function updateQuotaHint() {
             const p = String(hhmm).split(':');
             return p.length === 2 ? (parseInt(p[0], 10) * 60 + parseInt(p[1], 10)) : defMin;
           };
-          const lStart = parseMin(dayCfg.lunchStart, 12 * 60);
-          const lEnd   = parseMin(dayCfg.lunchEnd,   13 * 60);
+          const lStart = empShift ? empShift.LUNCH_START_MIN : parseMin(dayCfg.lunchStart, 12 * 60);
+          const lEnd   = empShift ? empShift.LUNCH_END_MIN   : parseMin(dayCfg.lunchEnd,   13 * 60);
           let deduct = 0;
           if (startMin < lEnd && endMin > lStart) {
             deduct = Math.max(0, Math.min(endMin, lEnd) - Math.max(startMin, lStart));
@@ -3629,42 +3654,51 @@ function updateQuotaHint() {
         if (totalHours <= 0) {
           return { valid: false, message: '請假時間不可全為午休時間' };
         }
+        shiftHint = `${sTime}～${eTime}`;
       } else {
         workDates.forEach(d => {
           const dow    = d.getDay();
           const dayCfg = (STATE.scheduleOverview && Array.isArray(STATE.scheduleOverview.days) && STATE.scheduleOverview.days[dow])
             ? STATE.scheduleOverview.days[dow]
-            : { fullDayHours: 8, morningHours: 3, afternoonHours: 5, halfDayHours: 4 };
+            : { fullDayHours: 8, morningHours: 3, afternoonHours: 5, halfDayHours: 4, morningStart: '09:00', morningEnd: '12:00', afternoonStart: '13:00', afternoonEnd: '18:00' };
           if (mode === '上午')      totalHours += Number(dayCfg.morningHours || 3);
           else if (mode === '下午') totalHours += Number(dayCfg.afternoonHours || 5);
           else if (mode === '半天') totalHours += Number(dayCfg.halfDayHours || 4);
           else                      totalHours += Number(dayCfg.fullDayHours || 8);
         });
+
+        if (empShift) {
+          if (mode === '上午')      shiftHint = `${empShift.MORNING_START_STR}～${empShift.MORNING_END_STR}`;
+          else if (mode === '下午') shiftHint = `${empShift.AFTERNOON_START_STR}～${empShift.AFTERNOON_END_STR}`;
+          else if (mode === '全天') shiftHint = `${empShift.MORNING_START_STR}～${empShift.AFTERNOON_END_STR}`;
+        }
       }
 
       return {
         valid:      true,
         workDays:   workDates.length,
-        totalHours: Math.round(totalHours * 10) / 10
+        totalHours: Math.round(totalHours * 10) / 10,
+        shiftHint
       };
     }
 
     let previewRpcTimer = null;
     function triggerPreview() {
-      const sDate = document.getElementById('inpStartDate').value;
-      const eDate = document.getElementById('inpEndDate').value;
-      const sTime = document.getElementById('inpStartTime').value;
-      const eTime = document.getElementById('inpEndTime').value;
-      const box   = document.getElementById('previewBox');
+      const sDate   = document.getElementById('inpStartDate').value;
+      const eDate   = document.getElementById('inpEndDate').value;
+      const sTime   = document.getElementById('inpStartTime').value;
+      const eTime   = document.getElementById('inpEndTime').value;
+      const empName = (document.getElementById('inpName')?.value || '').replace(/\u3000/g, '').replace(/\s+/g, '').trim();
+      const box     = document.getElementById('previewBox');
 
       if (!sDate) return;
 
-      // 1. 先由前端本地引擎 0 毫秒即時計算並刷新特休剩餘時數，讓使用者改變時間時立即看到變化
       const localRes = calcClientPreviewHours(sDate, eDate, STATE.periodMode, sTime, eTime);
       if (localRes.valid) {
         STATE.lastPreviewHours = Number(localRes.totalHours || 0);
+        const timeTag = localRes.shiftHint ? `（時段：${escHtml(localRes.shiftHint)}）` : '';
         box.className = 'preview-box ok';
-        box.innerHTML = `⏰ 試算結果：共 <strong>${localRes.workDays}</strong> 個工作天，合計請假 <strong>${localRes.totalHours} 小時</strong>`;
+        box.innerHTML = `⏰ 試算結果：共 <strong>${localRes.workDays}</strong> 個工作天，合計請假 <strong>${localRes.totalHours} 小時</strong>${timeTag}`;
       } else {
         STATE.lastPreviewHours = 0;
         box.className = 'preview-box err';
@@ -3672,46 +3706,23 @@ function updateQuotaHint() {
       }
       updateQuotaHint();
 
-      // 2. 背景防抖向後端二次確認班表與特殊假日
       if (previewRpcTimer) clearTimeout(previewRpcTimer);
       previewRpcTimer = setTimeout(() => {
         google.script.run.withSuccessHandler(res => {
           if (!res) return;
           if (res.valid) {
             STATE.lastPreviewHours = Number(res.totalHours || 0);
+            const srvTimeTag = (res.startTime && res.endTime) ? `（時段：${escHtml(res.startTime)}～${escHtml(res.endTime)}）` : '';
             box.className = 'preview-box ok';
-            box.innerHTML = `⏰ 試算結果：共 <strong>${res.workDays}</strong> 個工作天，合計請假 <strong>${res.totalHours} 小時</strong>`;
+            box.innerHTML = `⏰ 試算結果：共 <strong>${res.workDays}</strong> 個工作天，合計請假 <strong>${res.totalHours} 小時</strong>${srvTimeTag}`;
           } else {
             STATE.lastPreviewHours = 0;
             box.className = 'preview-box err';
             box.innerHTML = `⚠️ ${escHtml(res.message)}`;
           }
           updateQuotaHint();
-        }).previewLeaveHoursFromWeb(sDate, eDate, STATE.periodMode, sTime, eTime);
+        }).previewLeaveHoursFromWeb(sDate, eDate, STATE.periodMode, sTime, eTime, empName);
       }, 250);
-    }
-
-    function triggerPreview() {
-      const sDate = document.getElementById('inpStartDate').value;
-      const eDate = document.getElementById('inpEndDate').value;
-      const sTime = document.getElementById('inpStartTime').value;
-      const eTime = document.getElementById('inpEndTime').value;
-      const box   = document.getElementById('previewBox');
-
-      if (!sDate) return;
-      google.script.run.withSuccessHandler(res => {
-        if (!res) return;
-        if (res.valid) {
-          STATE.lastPreviewHours = Number(res.totalHours || 0);
-          box.className = 'preview-box ok';
-          box.innerHTML = `⏰ 試算結果：共 <strong>${res.workDays}</strong> 個工作天，合計請假 <strong>${res.totalHours} 小時</strong>`;
-        } else {
-          STATE.lastPreviewHours = 0;
-          box.className = 'preview-box err';
-          box.innerHTML = `⚠️ ${escHtml(res.message)}`;
-        }
-        updateQuotaHint();
-      }).previewLeaveHoursFromWeb(sDate, eDate, STATE.periodMode, sTime, eTime);
     }
 
     function loadPersonalDashboard(name) {
@@ -3973,7 +3984,7 @@ function updateQuotaHint() {
       const startTime = document.getElementById('inpStartTime').value;
       const endTime   = document.getElementById('inpEndTime').value;
       const leaveType = document.getElementById('selLeaveType').value;
-      const deputy    = document.getElementById('inpDeputy').value.replace(/\u3000/g, '').replace(/\s+/g, '').trim();
+      const deputy    = document.getElementById('inpDeputy').value.replace(/\u3000/g, '').trim();
       const reason    = document.getElementById('inpReason').value.trim();
       const approval  = document.getElementById('selApproval').value;
 
@@ -3987,8 +3998,11 @@ function updateQuotaHint() {
         return;
       }
 
-      const entCfg = STATE.enterpriseConfig || {};
-      if (entCfg.PREVENT_SELF_DEPUTY !== false && name.replace(/\s+/g, '') === deputy.replace(/\s+/g, '')) {
+      const entCfg         = STATE.enterpriseConfig || {};
+      const cleanAppForDep = name.replace(/\s+/g, '');
+      const cleanDepFull   = deputy.replace(/\s+/g, '');
+      const cleanDepBase   = stripJobTitleClient(deputy);
+      if (entCfg.PREVENT_SELF_DEPUTY !== false && cleanAppForDep && (cleanAppForDep === cleanDepFull || cleanAppForDep === cleanDepBase)) {
         showStatusBanner('formResultBox', 'err', `⚠️ 職務代理人設定無效：請假人（${name}）不可將職務代理人填寫為自己！`);
         return;
       }
@@ -4046,7 +4060,7 @@ function updateQuotaHint() {
         `請假時數：${hoursStr}`,
         `假別：${leaveType}`,
         `事由：${reason}`,
-        `職務代理：${deputy}`,
+        `職務代理：${deputy.replace(/\s+/g, '')}`,
         `核准：${approval}`
       ].join('\n');
 
@@ -4077,7 +4091,6 @@ function updateQuotaHint() {
             showStatusBanner('formResultBox', 'ok', `🎉 ${res.isUpdated ? '假單修改成功' : '請假申請成功'}！（編號 #${res.rowNumber}）\n${res.summaryText}`);
             exitEditMode();
 
-            // ✅ 雙引擎保底：若後端 Push API 受限未推播 (pushedToLine === false)，自動由 LIFF 發送請假文字，觸發聊天室機器人用免費 replyToken 回覆卡片
             if (res.pushedToLine === false && typeof liff !== 'undefined' && liff.isInClient && liff.isInClient()) {
               const textToSend = (res.formattedText || clientFormattedText)
                 ? (res.formattedText || clientFormattedText)
@@ -4190,7 +4203,6 @@ function updateQuotaHint() {
               `🎉 請假單已成功送出至聊天室！\n🔖 記錄編號：#${res.rowNumber}\n📋 摘要：${res.summaryText}\n\n（正在自動關閉視窗返回聊天室...）`
             );
 
-            // ✅ 雙引擎保底：若後端 Push API 受限未推播 (pushedToLine === false)，自動由 LIFF 發出 7 行請假文字，觸發聊天室機器人用免費 replyToken 回覆申請卡片
             if (res.pushedToLine === false && typeof liff !== 'undefined' && liff.isInClient && liff.isInClient()) {
               const relayMsg = res.formattedText
                 ? [{ type: 'text', text: res.formattedText }]
@@ -4239,12 +4251,7 @@ function updateQuotaHint() {
       }
     }
 
-// ==================== 管理員與超級管理員後台資料庫管理系統 ====================
-    /**
-     * ✅ DOM 結構自癒保護器：
-     * 若 admPanel_funcs 因 HTML 標籤層級誤放進 admPanel_types 內部，或漏貼 HTML，
-     * 自動將其移出並掛載於 #sec_admin 直屬子層，保證點擊「⚡ 系統函數」100% 顯示不空白！
-     */
+    // ==================== 管理員與超級管理員後台資料庫管理系統 ====================
     function ensureSysFuncsPanelMounted() {
       const secAdmin = document.getElementById('sec_admin');
       if (!secAdmin) return null;
@@ -4309,7 +4316,7 @@ function updateQuotaHint() {
         items: [
           { key: "forcePushGroupCapsules", fnName: "forcePushGroupCapsules()", label: "🚀 推送群組與 1對1 膠囊按鈕", color: "teal", desc: "以無痕空白訊息 (\\u2800) 強制將常駐膠囊按鈕推播至請假群組以及管理員/最近互動之 1對1 聊天室底部。" },
           { key: "forcePushOneOnOneCapsules", fnName: "forcePushOneOnOneCapsules()", label: "👤 僅推送 1對1 個人膠囊按鈕", color: "blue", desc: "僅針對管理員與最近一次互動之 1對1 個人聊天室強制推送無痕空白膠囊按鈕（不影響群組）。" },
-          { key: "autoRestoreGroupCapsulesIfHidden", fnName: "autoRestoreGroupCapsulesIfHidden()", label: "🔄 執行群組膠囊智慧偵測補推", color: "secondary", desc: "檢查群組膠囊是否被一般閒聊刷掉且已安靜滿 10 分鐘，若是則自動以空白訊息補推膠囊回底部。" },
+          { key: "autoRestoreGroupCapsulesIfHidden", fnName: "autoRestoreGroupCapsulesIfHidden()", label: "🔄 執行群組膠囊智慧偵測補推", color: "secondary", desc: "檢查群組膠囊是否被一般閒聊刷掉且已安靜滿 2 分鐘，若是則自動以空白訊息補推膠囊回底部。" },
           { key: "syncUserMappingFromHistoryAndQuota", fnName: "syncUserMappingFromHistoryAndQuota()", label: "🪪 歷史紀錄與特休表無痕匯入綁定", color: "teal", desc: "自動從「請假記錄」歷史資料提取 LINE ID，並結合 annualLeaveQuota 員工名單批次建立 userMapping 綁定表。" },
           { key: "repairAllLiffNodesAndResetToGithub", fnName: "repairAllLiffNodesAndResetToGithub()", label: "🔧 自動校準並修復三節點 LIFF ID", color: "blue", desc: "一鍵校準 GitHub / Bloon / GAS 三大熱備援節點之專屬 LIFF ID 對照表，並將預設節點切回節點 1 (GitHub)。" },
           { key: "getBotBasicId", fnName: "getBotBasicId()", label: "🤖 查詢並快取機器人 Basic ID", color: "secondary", desc: "連線至 LINE 官方 API 查詢此請假機器人之官方帳號 Basic ID (@xxx) 並寫入快取。" }
@@ -4318,7 +4325,7 @@ function updateQuotaHint() {
       {
         category: "🛡️ 二、20年長效自癒、全庫雲端備份、歸檔與排程觸發器函數 (7_Init / 10_Addons)",
         items: [
-          { key: "setupAllSystemTriggers", fnName: "setupAllSystemTriggers()", label: "⏰ 一鍵註冊全系統定時觸發器", color: "teal", desc: "自動清除舊排程並重新建立每月1日特休重算、報表生成、全庫備份對帳、每30分鐘膠囊補推與晨間推播觸發器。" },
+          { key: "setupAllSystemTriggers", fnName: "setupAllSystemTriggers()", label: "⏰ 一鍵註冊全系統定時觸發器", color: "teal", desc: "自動清除舊排程並重新建立每月1日特休重算、報表生成、全庫備份對帳、每1分鐘膠囊巡檢補推與晨間推播觸發器。" },
           { key: "runMonthlyLongevityMaintenance", fnName: "runMonthlyLongevityMaintenance()", label: "🛡️ 執行每月長效自動維護任務", color: "blue", desc: "一次完整執行：建立 Google Drive 資料庫備份快照 ＋ 總帳與明細帳雙向對帳自癒（1月含自動歸檔與瘦身）。" },
           { key: "reconcileAnnualLeaveSnapshots", fnName: "LongevityEngine.reconcileAnnualLeaveSnapshots()", label: "🔄 總帳與明細帳雙向對帳自癒", color: "teal", desc: "重播本年度每一筆有效特休與補休假單，自動校正「請假記錄」主表第 8 欄之剩餘額度快照。" },
           { key: "createMonthlyDatabaseBackup", fnName: "LongevityEngine.createMonthlyDatabaseBackup()", label: "💾 立即建立全庫雲端備份快照", color: "blue", desc: "於 Google Drive「請假系統_資料庫自動備份庫」建立完整試算表災難復原快照（自動保留最新 12 份）。" },
@@ -4348,7 +4355,7 @@ function updateQuotaHint() {
       {
         category: "📊 四、特休自動重算、年底未休結算、月結扣薪與清理函數 (5_Annual / 9_WebApp)",
         items: [
-          { key: "autoUpdateAnnualLeave", fnName: "autoUpdateAnnualLeave()", label: "🎂 自動重算全體員工年度特休額度", color: "teal", desc: "依到職日與勞基法年資規則（含備註留停月數扣除）自動更新全體特休額度，並結轉跨年補休池淨額。" },
+          { key: "autoUpdateAnnualLeave", fnName: "autoUpdateAnnualLeave()", label: "🎂 自動重算全體員工年度特休額度", color: "teal", desc: "依到職日與勞基法年資規則（含備註留停月數扣除與職稱/班別保留）自動更新全體特休額度，並結轉跨年補休池淨額。" },
           { key: "generateAnnualLeaveReport", fnName: "generateAnnualLeaveReport()", label: "📊 產生 annualLeaveReport 特休報表", color: "blue", desc: "結算全體員工可用總額、期初與系統已用、剩餘特休與使用率，重新生成 annualLeaveReport 報表分頁。" },
           { key: "settleUnusedPreview", fnName: "settleUnusedAnnualLeave('PREVIEW')", label: "🔍 預覽全體員工年底未休特休結算", color: "secondary", desc: "掃描並輸出全體員工本期剩餘未休特休時數與天數結算預覽。" },
           { key: "settleUnusedDefer", fnName: "settleUnusedAnnualLeave('DEFER')", label: "⏭️ 將未休特休一鍵轉入次年遞延", color: "teal", desc: "將全體員工目前剩餘未休完之特休時數，一鍵寫入 annualLeaveQuota「上期遞延特休(小時)」欄位。" },
@@ -4360,7 +4367,7 @@ function updateQuotaHint() {
       {
         category: "🧪 五、快取清理、晨間推播、名單查詢與自動化測試函數 (1_Core / 4_Leave / 7_Tests / 前端)",
         items: [
-          { key: "clearAllCaches", fnName: "CacheManager.clearAll() + FormatConfigLoader.reload()", label: "⚡ 清除全系統後端快取並重載設定", color: "teal", desc: "清除 ScriptCache 所有快取鍵值並重載班表、假別、權限、動態開關與金鑰記憶體快取。" },
+          { key: "clearAllCaches", fnName: "CacheManager.clearAll() + FormatConfigLoader.reload()", label: "⚡ 清除全系統後端快取並重載設定", color: "teal", desc: "清除 ScriptCache 所有快取鍵值並重載班表、假別、權限、職稱/班別、動態開關與金鑰記憶體快取。" },
           { key: "sendDailyMorningDigest", fnName: "sendDailyMorningDigest(true)", label: "☀️ 強制發送今日晨間出勤摘要推播", color: "blue", desc: "立即彙整今日請假名單與代理人，強制推播至晨間推播目標群組或管理員 LINE。" },
           { key: "getTodayLeaveRecords", fnName: "getTodayLeaveRecords()", label: "📋 執行並輸出「今日請假名單」文字", color: "secondary", desc: "立即查詢並在上方輸出台顯示今日所有請假同仁、假別、時段與職務代理人文字報告。" },
           { key: "getWeekLeaveRecords", fnName: "getWeekLeaveRecords()", label: "📅 執行並輸出「本週請假名單」文字", color: "secondary", desc: "立即查詢並在上方輸出台顯示本週（週一至週日）所有請假記錄文字報告。" },
@@ -4620,6 +4627,7 @@ function updateQuotaHint() {
             STATE.adminData = res.adminData;
             renderAdminConsole(res.adminData);
           }
+          fetchFreshInitData(localStorage.getItem('leave_sys_user_name') || '');
         })
         .withFailureHandler(err => {
           showStatusBanner('userMappingStatusBox', 'err', '❌ 呼叫失敗：' + err.message);
@@ -5374,6 +5382,7 @@ function updateQuotaHint() {
               <div style="font-size:12px; color:var(--muted);">
                 特休：本期${q.hours}h${q.deferredHours > 0 ? `+遞延${q.deferredHours}h` : ''}｜已用:${q.initUsed + q.systemUsedHours}h｜<strong style="color:${q.remainingHours <= 8 ? '#DC2626' : '#059669'};">特休剩：${q.remainingHours}h</strong>
                 ${q.compTotalHours > 0 ? `<br>⚡ 補休池：總額${q.compTotalHours}h｜<strong style="color:var(--teal);">補休剩：${q.compRemHours}h</strong>` : ''}
+                ${q.remarks ? `<br>📝 備註：${escHtml(q.remarks)}` : ''}
               </div>
             </div>
             <div style="display:flex; gap:4px;">
@@ -5497,11 +5506,13 @@ function updateQuotaHint() {
       };
       if (!payload.name) { alert('⚠️ 請輸入或選擇員工姓名'); return; }
       google.script.run.withSuccessHandler(res => {
+        try { localStorage.removeItem(CACHE_KEY_INIT); } catch (_) {}
         alert(res ? res.message : '已儲存帳號權限');
         if (res && res.adminData) {
           STATE.adminData = res.adminData;
           renderAdminConsole(res.adminData);
         }
+        fetchFreshInitData(localStorage.getItem('leave_sys_user_name') || '');
       }).adminSaveAdminUser(STATE.uid, payload);
     }
 
@@ -5608,9 +5619,15 @@ function updateQuotaHint() {
       google.script.run.withSuccessHandler(res => {
         try { localStorage.removeItem(CACHE_KEY_INIT); } catch (_) {}
         alert(res ? res.message : '已處理');
+        if (res && res.employeeShifts) {
+          STATE.employeeShifts = res.employeeShifts;
+        }
         if (res && Array.isArray(res.employees)) {
           const cleanEmpList = res.employees.filter(n => n && n !== '系統管理員' && n !== '王小明');
           document.getElementById('employeeList').innerHTML = cleanEmpList.map(n => `<option value="${escHtml(n)}">`).join('');
+          const depArr = (Array.isArray(res.deputies) && res.deputies.length > 0) ? res.deputies : cleanEmpList;
+          const depEl  = document.getElementById('deputyList');
+          if (depEl) depEl.innerHTML = depArr.map(d => `<option value="${escHtml(d)}">`).join('');
         }
         if (res && res.adminData) {
           STATE.adminData = res.adminData;
@@ -5624,9 +5641,15 @@ function updateQuotaHint() {
       google.script.run.withSuccessHandler(res => {
         try { localStorage.removeItem(CACHE_KEY_INIT); } catch (_) {}
         alert(res ? res.message : '已刪除');
+        if (res && res.employeeShifts) {
+          STATE.employeeShifts = res.employeeShifts;
+        }
         if (res && Array.isArray(res.employees)) {
           const cleanEmpList = res.employees.filter(n => n && n !== '系統管理員' && n !== '王小明');
           document.getElementById('employeeList').innerHTML = cleanEmpList.map(n => `<option value="${escHtml(n)}">`).join('');
+          const depArr = (Array.isArray(res.deputies) && res.deputies.length > 0) ? res.deputies : cleanEmpList;
+          const depEl  = document.getElementById('deputyList');
+          if (depEl) depEl.innerHTML = depArr.map(d => `<option value="${escHtml(d)}">`).join('');
         }
         if (res && res.adminData) {
           STATE.adminData = res.adminData;
