@@ -279,7 +279,8 @@
           </div>
           <div class="form-group">
             <label>職務代理人 <span class="req">*</span></label>
-            <input type="text" id="inpDeputy" list="employeeList" placeholder="選擇或輸入代理人">
+            <input type="text" id="inpDeputy" list="deputyList" placeholder="選擇或輸入代理人">
+            <datalist id="deputyList"></datalist>
           </div>
         </div>
 
@@ -480,11 +481,11 @@
       <div class="help-hero">
         <div class="help-hero-title">📖 全職請假系統・圖文快速上手指南</div>
         <p class="help-hero-sub">免背指令！點擊聊天室下方膠囊按鈕或上方分頁即可輕鬆完成請假、查特休與修改假單：</p>
-        <div class="help-quick-nav">
-          <a href="#help_sec_1" class="help-nav-pill">1️⃣ 日曆選單請假</a>
-          <a href="#help_sec_2" class="help-nav-pill">2️⃣ 文字快填與防呆</a>
-          <a href="#help_sec_3" class="help-nav-pill">3️⃣ 查特休与修改假單</a>
-          <a href="#help_sec_4" class="help-nav-pill">4️⃣ 查看上班與休假日</a>
+        <div class="help-quick-nav" id="helpQuickNavGrid">
+          <a href="#help_sec_1" id="helpNav_1" class="help-nav-pill">1️⃣ 日曆選單請假</a>
+          <a href="#help_sec_2" id="helpNav_2" class="help-nav-pill">2️⃣ 文字快填與防呆</a>
+          <a href="#help_sec_3" id="helpNav_3" class="help-nav-pill">3️⃣ 查特休與修改假單</a>
+          <a href="#help_sec_4" id="helpNav_4" class="help-nav-pill">4️⃣ 查看上班與休假日</a>
         </div>
       </div>
 
@@ -1914,6 +1915,22 @@
       if (btnToday)    btnToday.classList.toggle('hidden',    !allowToday);
       if (btnSchedule) btnSchedule.classList.toggle('hidden', !allowSchedule);
       if (btnHelp)     btnHelp.classList.toggle('hidden',     !allowHelp);
+
+      // ✅ 當管理員關閉「填寫請假 (allowForm === false)」或其他分頁時，同步隱藏「📖 說明」內的對應教學卡片與導覽按鈕！
+      const gCfgForHelp   = STATE.groupUiConfig || DEFAULT_GROUP_UI_CONFIG;
+      const allowTextForm = isGroup ? (gCfgForHelp.qr_textform !== false) : true;
+      const helpVisibilityMap = [
+        { navId: 'helpNav_1', secId: 'help_sec_1', show: allowForm },
+        { navId: 'helpNav_2', secId: 'help_sec_2', show: allowTextForm },
+        { navId: 'helpNav_3', secId: 'help_sec_3', show: allowMy },
+        { navId: 'helpNav_4', secId: 'help_sec_4', show: allowSchedule }
+      ];
+      helpVisibilityMap.forEach(item => {
+        const navEl = document.getElementById(item.navId);
+        const secEl = document.getElementById(item.secId);
+        if (navEl) navEl.classList.toggle('hidden', !item.show);
+        if (secEl) secEl.classList.toggle('hidden', !item.show);
+      });
       if (btnAdmin)    btnAdmin.classList.toggle('hidden',    !isAdminPrivate);
       if (escAdminBtn) escAdminBtn.classList.toggle('hidden', !isAdminPrivate);
 
@@ -2206,6 +2223,9 @@
       if (Array.isArray(res.employees)) {
         const cleanEmpList = res.employees.filter(n => n && n !== '系統管理員' && n !== '王小明');
         document.getElementById('employeeList').innerHTML = cleanEmpList.map(n => `<option value="${escHtml(n)}">`).join('');
+        const depArr = Array.isArray(res.deputies) && res.deputies.length > 0 ? res.deputies : cleanEmpList;
+        const depEl  = document.getElementById('deputyList');
+        if (depEl) depEl.innerHTML = depArr.map(d => `<option value="${escHtml(d)}">`).join('');
       }
 
       if (res.todayStr && !STATE.editRow) {
