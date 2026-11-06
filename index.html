@@ -549,7 +549,7 @@
             <span>直接點擊綠鈕送出</span>
           </div>
           <div class="ui-mock-input" style="font-family:monospace; line-height:1.45; margin-bottom:8px;">
-            請假人：江同工<br>請假日期：2026/11/03<br>請假時數：全天<br>假別：特休<br>事由：個人事務<br>職務代理：李大華<br>核准：經堂會鈺娟牧師核准
+            請假人：江同工<br>請假日期：2026/11/03<br>請假時數：全天<br>假別：特休 ／ 事由：個人事務<br>職務代理：李大華 ／ 核准：經堂會鈺娟牧師核准
           </div>
           <div class="ui-mock-ok">
             ✅ 資料庫驗證通過！（江同工｜2026/11/03｜全天 (8h)｜特休｜扣假後特休剩餘 87.5h）<br>請點擊下方綠色按鈕送出。
@@ -887,8 +887,8 @@
         </div>
 
         <div class="form-group" style="margin-top:8px;">
-          <label>職稱與專屬班別備註（💡 填寫如「傳道」、「牧師」、「同工 [14-19]」或「同工 [10-19]」）</label>
-          <input type="text" id="inpMapRemarks" placeholder="例如：傳道、同工 [14-19]（代表下午14:00~19:00班別）">
+          <label>綁定備註說明（選填）</label>
+          <input type="text" id="inpMapRemarks" placeholder="例如：排班協調員（開放看今日請假）">
         </div>
 
         <div id="userMappingStatusBox" class="status-box hidden"></div>
@@ -1669,7 +1669,6 @@
       verifyStatus: "idle",
       verifyErrorMsg: "",
       verifySummary: "",
-      employeeShifts: {},
       verifySeq: 0,
       initFetchSeq: 0
     };
@@ -2221,13 +2220,10 @@
         renderLeaveTypeOptions(res.leaveTypes);
       }
 
-      if (res.employeeShifts) {
-        STATE.employeeShifts = res.employeeShifts;
-      }
       if (Array.isArray(res.employees)) {
         const cleanEmpList = res.employees.filter(n => n && n !== '系統管理員' && n !== '王小明');
         document.getElementById('employeeList').innerHTML = cleanEmpList.map(n => `<option value="${escHtml(n)}">`).join('');
-        const depArr = (Array.isArray(res.deputies) && res.deputies.length > 0) ? res.deputies : cleanEmpList;
+        const depArr = Array.isArray(res.deputies) && res.deputies.length > 0 ? res.deputies : cleanEmpList;
         const depEl  = document.getElementById('deputyList');
         if (depEl) depEl.innerHTML = depArr.map(d => `<option value="${escHtml(d)}">`).join('');
       }
@@ -3560,7 +3556,7 @@ function updateQuotaHint() {
      * ✅ 前端 0 毫秒本地即時工時試算器：
      * 使用者切換時段或改變起迄時間當下立即算出請假時數，無須等待網路回應即可同步更新特休餘額！
      */
-function calcClientPreviewHours(sDateIso, eDateIso, periodMode, sTime, eTime) {
+    function calcClientPreviewHours(sDateIso, eDateIso, periodMode, sTime, eTime) {
       if (!sDateIso) return { valid: false, message: '請選擇開始日期' };
       const sParts = sDateIso.split('-').map(Number);
       const eParts = (eDateIso || sDateIso).split('-').map(Number);
@@ -3571,9 +3567,6 @@ function calcClientPreviewHours(sDateIso, eDateIso, periodMode, sTime, eTime) {
       if (isNaN(sDate.getTime()) || isNaN(eDate.getTime()) || eDate < sDate) {
         return { valid: false, message: '結束日期不能早於開始日期' };
       }
-
-      const empName  = (document.getElementById('inpName')?.value || '').replace(/\u3000/g, '').replace(/\s+/g, '').trim();
-      const empShift = (empName && STATE.employeeShifts && STATE.employeeShifts[empName]) ? STATE.employeeShifts[empName] : null;
 
       const spDates = (STATE.scheduleOverview && STATE.scheduleOverview.specialDates) || [];
       const spMap   = {};
@@ -3603,7 +3596,6 @@ function calcClientPreviewHours(sDateIso, eDateIso, periodMode, sTime, eTime) {
 
       const mode = periodMode || '全天';
       let totalHours = 0;
-      let shiftHint  = '';
 
       if (mode === 'custom') {
         if (!sTime || !eTime) return { valid: false, message: '請選擇開始與結束時間' };
@@ -3625,8 +3617,8 @@ function calcClientPreviewHours(sDateIso, eDateIso, periodMode, sTime, eTime) {
             const p = String(hhmm).split(':');
             return p.length === 2 ? (parseInt(p[0], 10) * 60 + parseInt(p[1], 10)) : defMin;
           };
-          const lStart = empShift ? empShift.LUNCH_START_MIN : parseMin(dayCfg.lunchStart, 12 * 60);
-          const lEnd   = empShift ? empShift.LUNCH_END_MIN   : parseMin(dayCfg.lunchEnd,   13 * 60);
+          const lStart = parseMin(dayCfg.lunchStart, 12 * 60);
+          const lEnd   = parseMin(dayCfg.lunchEnd,   13 * 60);
           let deduct = 0;
           if (startMin < lEnd && endMin > lStart) {
             deduct = Math.max(0, Math.min(endMin, lEnd) - Math.max(startMin, lStart));
@@ -3637,52 +3629,42 @@ function calcClientPreviewHours(sDateIso, eDateIso, periodMode, sTime, eTime) {
         if (totalHours <= 0) {
           return { valid: false, message: '請假時間不可全為午休時間' };
         }
-        shiftHint = `${sTime}～${eTime}`;
       } else {
         workDates.forEach(d => {
           const dow    = d.getDay();
           const dayCfg = (STATE.scheduleOverview && Array.isArray(STATE.scheduleOverview.days) && STATE.scheduleOverview.days[dow])
             ? STATE.scheduleOverview.days[dow]
-            : { fullDayHours: 8, morningHours: 3, afternoonHours: 5, halfDayHours: 4, morningStart: '09:00', morningEnd: '12:00', afternoonStart: '13:00', afternoonEnd: '18:00' };
+            : { fullDayHours: 8, morningHours: 3, afternoonHours: 5, halfDayHours: 4 };
           if (mode === '上午')      totalHours += Number(dayCfg.morningHours || 3);
           else if (mode === '下午') totalHours += Number(dayCfg.afternoonHours || 5);
           else if (mode === '半天') totalHours += Number(dayCfg.halfDayHours || 4);
           else                      totalHours += Number(dayCfg.fullDayHours || 8);
         });
-
-        if (empShift) {
-          if (mode === '上午')      shiftHint = `${empShift.MORNING_START_STR}～${empShift.MORNING_END_STR}`;
-          else if (mode === '下午') shiftHint = `${empShift.AFTERNOON_START_STR}～${empShift.AFTERNOON_END_STR}`;
-          else if (mode === '全天') shiftHint = `${empShift.MORNING_START_STR}～${empShift.AFTERNOON_END_STR}`;
-        }
       }
 
       return {
         valid:      true,
         workDays:   workDates.length,
-        totalHours: Math.round(totalHours * 10) / 10,
-        shiftHint
+        totalHours: Math.round(totalHours * 10) / 10
       };
     }
 
     let previewRpcTimer = null;
-
-function triggerPreview() {
-      const sDate   = document.getElementById('inpStartDate').value;
-      const eDate   = document.getElementById('inpEndDate').value;
-      const sTime   = document.getElementById('inpStartTime').value;
-      const eTime   = document.getElementById('inpEndTime').value;
-      const empName = (document.getElementById('inpName')?.value || '').replace(/\u3000/g, '').replace(/\s+/g, '').trim();
-      const box     = document.getElementById('previewBox');
+    function triggerPreview() {
+      const sDate = document.getElementById('inpStartDate').value;
+      const eDate = document.getElementById('inpEndDate').value;
+      const sTime = document.getElementById('inpStartTime').value;
+      const eTime = document.getElementById('inpEndTime').value;
+      const box   = document.getElementById('previewBox');
 
       if (!sDate) return;
 
+      // 1. 先由前端本地引擎 0 毫秒即時計算並刷新特休剩餘時數，讓使用者改變時間時立即看到變化
       const localRes = calcClientPreviewHours(sDate, eDate, STATE.periodMode, sTime, eTime);
       if (localRes.valid) {
         STATE.lastPreviewHours = Number(localRes.totalHours || 0);
-        const timeTag = localRes.shiftHint ? `（時段：${escHtml(localRes.shiftHint)}）` : '';
         box.className = 'preview-box ok';
-        box.innerHTML = `⏰ 試算結果：共 <strong>${localRes.workDays}</strong> 個工作天，合計請假 <strong>${localRes.totalHours} 小時</strong>${timeTag}`;
+        box.innerHTML = `⏰ 試算結果：共 <strong>${localRes.workDays}</strong> 個工作天，合計請假 <strong>${localRes.totalHours} 小時</strong>`;
       } else {
         STATE.lastPreviewHours = 0;
         box.className = 'preview-box err';
@@ -3690,23 +3672,46 @@ function triggerPreview() {
       }
       updateQuotaHint();
 
+      // 2. 背景防抖向後端二次確認班表與特殊假日
       if (previewRpcTimer) clearTimeout(previewRpcTimer);
       previewRpcTimer = setTimeout(() => {
         google.script.run.withSuccessHandler(res => {
           if (!res) return;
           if (res.valid) {
             STATE.lastPreviewHours = Number(res.totalHours || 0);
-            const srvTimeTag = (res.startTime && res.endTime) ? `（時段：${escHtml(res.startTime)}～${escHtml(res.endTime)}）` : '';
             box.className = 'preview-box ok';
-            box.innerHTML = `⏰ 試算結果：共 <strong>${res.workDays}</strong> 個工作天，合計請假 <strong>${res.totalHours} 小時</strong>${srvTimeTag}`;
+            box.innerHTML = `⏰ 試算結果：共 <strong>${res.workDays}</strong> 個工作天，合計請假 <strong>${res.totalHours} 小時</strong>`;
           } else {
             STATE.lastPreviewHours = 0;
             box.className = 'preview-box err';
             box.innerHTML = `⚠️ ${escHtml(res.message)}`;
           }
           updateQuotaHint();
-        }).previewLeaveHoursFromWeb(sDate, eDate, STATE.periodMode, sTime, eTime, empName);
+        }).previewLeaveHoursFromWeb(sDate, eDate, STATE.periodMode, sTime, eTime);
       }, 250);
+    }
+
+    function triggerPreview() {
+      const sDate = document.getElementById('inpStartDate').value;
+      const eDate = document.getElementById('inpEndDate').value;
+      const sTime = document.getElementById('inpStartTime').value;
+      const eTime = document.getElementById('inpEndTime').value;
+      const box   = document.getElementById('previewBox');
+
+      if (!sDate) return;
+      google.script.run.withSuccessHandler(res => {
+        if (!res) return;
+        if (res.valid) {
+          STATE.lastPreviewHours = Number(res.totalHours || 0);
+          box.className = 'preview-box ok';
+          box.innerHTML = `⏰ 試算結果：共 <strong>${res.workDays}</strong> 個工作天，合計請假 <strong>${res.totalHours} 小時</strong>`;
+        } else {
+          STATE.lastPreviewHours = 0;
+          box.className = 'preview-box err';
+          box.innerHTML = `⚠️ ${escHtml(res.message)}`;
+        }
+        updateQuotaHint();
+      }).previewLeaveHoursFromWeb(sDate, eDate, STATE.periodMode, sTime, eTime);
     }
 
     function loadPersonalDashboard(name) {
@@ -3983,10 +3988,7 @@ function triggerPreview() {
       }
 
       const entCfg = STATE.enterpriseConfig || {};
-      if (entCfg.PREVENT_SELF_DEPUTY !== false && const cleanAppForDep = name.replace(/\s+/g, '');
-      const cleanAppForDep = name.replace(/\s+/g, '');
-      const cleanDepBase   = deputy.trim().split(/\s+/)[0].replace(/(主任牧師|堂會牧師|實習傳道|牧師|傳道|同工|幹事|執事|長老|老師)$/g, '') || deputy.replace(/\s+/g, '');
-      if (entCfg.PREVENT_SELF_DEPUTY !== false && cleanAppForDep && (cleanAppForDep === deputy.replace(/\s+/g, '') || cleanAppForDep === cleanDepBase)) {
+      if (entCfg.PREVENT_SELF_DEPUTY !== false && name.replace(/\s+/g, '') === deputy.replace(/\s+/g, '')) {
         showStatusBanner('formResultBox', 'err', `⚠️ 職務代理人設定無效：請假人（${name}）不可將職務代理人填寫為自己！`);
         return;
       }
