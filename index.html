@@ -647,7 +647,7 @@
           </div>
           <div style="background:#FFF; padding:7px 10px; border-radius:8px; border:1px solid #E2E8F0; margin-bottom:6px; display:flex; justify-content:space-between; align-items:center;">
             <div><strong>週二 ～ 週六</strong> <span class="badge on" style="margin-left:4px;">開放請假</span></div>
-            <span style="font-size:11px; color:#64748B;">全天 8h (早3h / 午5h) 09:00~18:00</span>
+            <span style="font-size:11px; color:#64748B; text-align:right;">全天 8h (早3h / 午5h)<br>09:00~18:00 / 09:00～19:00</span>
           </div>
           <div style="background:#FFF; padding:7px 10px; border-radius:8px; border:1px solid #E2E8F0; display:flex; justify-content:space-between; align-items:center;">
             <div style="font-size:11.5px;"><strong>2026/10/09</strong>｜國慶日補假 <span class="badge on">補班日</span></div>
@@ -3957,7 +3957,7 @@
               <span class="badge ${d.isWorkDay ? 'on' : 'off'}" style="margin-left:6px;">${d.isWorkDay ? '開放請假' : '固定休假'}</span>
             </div>
             <div style="font-size:12.5px; color:var(--muted); text-align:right;">
-              ${d.isWorkDay ? `全天 ${d.fullDayHours}h (早${d.morningHours}h / 午${d.afternoonHours}h)<br>${escHtml(d.morningStart)}~${escHtml(d.afternoonEnd)}` : '拒絕單日請假 / 區間自動略過'}
+              ${d.isWorkDay ? `全天 ${d.fullDayHours}h (早${d.morningHours}h / 午${d.afternoonHours}h)<br>${escHtml(d.morningStart)}~${escHtml(d.afternoonEnd)} / 09:00～19:00` : '拒絕單日請假 / 區間自動略過'}
             </div>
           </div>
         `).join('');
