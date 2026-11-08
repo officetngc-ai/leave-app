@@ -798,7 +798,7 @@
 
         <button class="btn teal" onclick="saveLiffSyncConfiguration()">💾 儲存並校準三組專屬 LIFF ID 設定</button>
 
-        <!-- ✅ [維度二升級] 零代碼金鑰與試算表 ID 管理中心（超級管理員專屬） -->
+        <!-- 零代碼金鑰與試算表 ID 管理中心（超級管理員專屬） -->
         <div id="superAdminCredentialsBox">
           <hr style="border:none; border-top:2px dashed var(--border); margin:20px 0;">
           <h4 style="margin:0 0 6px 0; font-size:14.5px; color:#0F172A;">🔑 核心金鑰與試算表 ID 零代碼管理中心（20年免改代碼移轉）</h4>
@@ -1370,7 +1370,7 @@
 
         <hr style="border:none; border-top:2px dashed var(--border); margin:18px 0;">
 
-        <!-- ✅ 完整補回：新增 / 修改後端假別資料庫 -->
+        <!-- 新增 / 修改後端假別資料庫 -->
         <h3 class="section-title">🏷️ 新增 / 修改後端假別資料庫</h3>
         <div class="row-2">
           <div class="form-group">
@@ -1389,7 +1389,7 @@
 
         <hr style="border:none; border-top:2px dashed var(--border); margin:18px 0;">
 
-        <!-- ✅ [維度三升級] 20年長效自癒、災難復原備份與收回記錄重建中心 -->
+        <!-- 20年長效自癒、災難復原備份與收回記錄重建中心 -->
         <h3 class="section-title">🛠️ 20 年長效自癒、災難復原備份與資料庫維護中心</h3>
         <div class="banner" style="font-size:12px;">
           💡 提供總帳與明細帳雙向對帳自癒、全庫災難復原快照備份、過期日誌滾動瘦身與收回記錄分頁重建工具：
@@ -1431,10 +1431,10 @@
   <script>
     // ============================================================
     // 🌐 三棲熱備援環境核心連線與 20 年長效穩定度前端引擎
-    // 版本: v26.0.2-LTS (Zero-Maintenance Final Release)
+    // 版本: v26.0.3-LTS (Zero-Redundancy Ultra-Fast Edition)
     // ============================================================
     const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyuW_4_sWHWUq0lc4QOe1amHl7ipGXr0wGNoVQFJl7leq6JYGWVR7CUoPOZkPMqprnX/exec";
-    const CACHE_KEY_INIT  = "leave_sys_init_cache_v26_2_longevity";
+    const CACHE_KEY_INIT  = "leave_sys_init_cache_v26_3_longevity";
 
     const GAS_SSR_PAYLOAD = "/*__GAS_SSR_INJECTION__*/";
 
@@ -2007,7 +2007,6 @@
       const lblSub        = document.getElementById('lblAdminRoleSubtitle');
 
       if (isAdminPrivate) {
-        // 🔒 嚴格鎖定：「🌐 備援與群組」與「⚡ 系統函數」僅限系統管理員 (isSuperPrivate) 可見；一般管理員 (ADMIN) 強制隱藏！
         if (admBtnStandby) admBtnStandby.classList.toggle('hidden', !isSuperPrivate);
         if (admBtnFuncs)   admBtnFuncs.classList.toggle('hidden',   !isSuperPrivate);
         if (admBtnAdmins)  admBtnAdmins.classList.remove('hidden');
@@ -2015,10 +2014,10 @@
         if (superCredBox)  superCredBox.classList.toggle('hidden', !isSuperPrivate);
 
         if (isSuperPrivate) {
-          if (lblHeader) lblHeader.innerText = '👑 系統管理員管理中心 (v26.0.2-LTS)';
+          if (lblHeader) lblHeader.innerText = '👑 系統管理員管理中心 (v26.0.3-LTS)';
           if (lblSub)    lblSub.innerText    = '具備最高系統管理權限（含系統函數控制台、備援、零代碼金鑰、管理員指派與四大資料庫）';
         } else {
-          if (lblHeader) lblHeader.innerText = '🛡️ 管理員資料庫管理系統 (v26.0.2-LTS)';
+          if (lblHeader) lblHeader.innerText = '🛡️ 管理員資料庫管理系統 (v26.0.3-LTS)';
           if (lblSub)    lblSub.innerText    = '具備日常管理權限（同仁 LINE 綁定、特休/補休庫、假單/月結庫、班表庫、假別庫）';
           const curPanelStandby = document.getElementById('admPanel_standby');
           const curPanelFuncs   = document.getElementById('admPanel_funcs');
@@ -2304,7 +2303,7 @@
         enterEditMode(res.editRecord);
       } else if (!isFromLocalCache && STATE.editRow && parseInt(STATE.editRow, 10) >= 2 && STATE.uid) {
         loadRecordForEdit(parseInt(STATE.editRow, 10));
-      } else if (!isFromLocalCache && isTabAllowed('form')) {
+      } else if (isTabAllowed('form')) {
         triggerPreview();
       }
 
@@ -3706,6 +3705,11 @@
       }
       updateQuotaHint();
 
+      // 🚀 消除重工：若前端已載入完整班表與假日設定 (STATE.scheduleOverview)，本地 0 毫秒試算已 100% 精準，無須再發送後端 RPC！
+      if (STATE.scheduleOverview && Array.isArray(STATE.scheduleOverview.days) && STATE.scheduleOverview.days.length > 0) {
+        return;
+      }
+
       if (previewRpcTimer) clearTimeout(previewRpcTimer);
       previewRpcTimer = setTimeout(() => {
         google.script.run.withSuccessHandler(res => {
@@ -3947,6 +3951,7 @@
       }
     }
 
+    // ✅ 每日工時顯示升級：加上 09:00～19:00，同時保持全天 8h、早上 3h、下午 5h 計算邏輯不變
     function renderScheduleOverview(sc) {
       const dBox = document.getElementById('scheduleDaysBox');
       if (sc && Array.isArray(sc.days)) {
@@ -3975,7 +3980,6 @@
         `).join('');
       }
     }
-
     function submitForm() {
       if (isSubmitting) return;
       const name      = document.getElementById('inpName').value.replace(/\u3000/g, '').replace(/\s+/g, '').trim();
@@ -4091,6 +4095,7 @@
             showStatusBanner('formResultBox', 'ok', `🎉 ${res.isUpdated ? '假單修改成功' : '請假申請成功'}！（編號 #${res.rowNumber}）\n${res.summaryText}`);
             exitEditMode();
 
+            // 雙引擎保底：若後端 Push API 受限未推播 (pushedToLine === false)，自動由 LIFF 發送請假文字，觸發聊天室機器人用免費 replyToken 回覆卡片
             if (res.pushedToLine === false && typeof liff !== 'undefined' && liff.isInClient && liff.isInClient()) {
               const textToSend = (res.formattedText || clientFormattedText)
                 ? (res.formattedText || clientFormattedText)
