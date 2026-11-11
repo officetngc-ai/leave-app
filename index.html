@@ -1243,6 +1243,15 @@
           <input type="checkbox" id="chkEnt_sysDirectSubmit" checked>
         </div>
 
+        <!-- ✅ 新增：假單卡片底部「📅 開啟請假 / 查特休系統」常駐按鈕控制開關 -->
+        <div class="ent-toggle-row">
+          <div>
+            <div style="font-weight:800; font-size:13.5px; color:var(--teal);">📅 啟用假單卡片底部「開啟請假 / 查特休系統」常駐按鈕</div>
+            <div style="font-size:12px; color:var(--muted);">開啟時：每張請假申請單卡片底部額外顯示系統入口按鈕（方便電腦版點擊）；關閉時：僅顯示修改與取消兩顆按鈕</div>
+          </div>
+          <input type="checkbox" id="chkEnt_cardSysBtn">
+        </div>
+
         <hr style="border:none; border-top:1px dashed var(--border); margin:12px 0;">
         <h4 style="margin:0 0 8px 0; font-size:14px; color:var(--teal);">🛡️ 【維度一：20 年長效防呆與邊界保護彈性開關】</h4>
 
@@ -1431,7 +1440,7 @@
   <script>
     // ============================================================
     // 🌐 三棲熱備援環境核心連線與 20 年長效穩定度前端引擎
-    // 版本: v26.0.3-LTS (Zero-Redundancy Ultra-Fast Edition)
+    // 版本: v26.0.3-LTS (Zero-Redundancy & Zero-Push-Quota Edition)
     // ============================================================
     const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyuW_4_sWHWUq0lc4QOe1amHl7ipGXr0wGNoVQFJl7leq6JYGWVR7CUoPOZkPMqprnX/exec";
     const CACHE_KEY_INIT  = "leave_sys_init_cache_v26_3_longevity";
@@ -1442,11 +1451,11 @@
     function escHtml(str) {
       if (str === null || str === undefined) return '';
       return String(str)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#39;');
+        .replace(/&/g, '&')
+        .replace(/</g, '<')
+        .replace(/>/g, '>')
+        .replace(/"/g, '"')
+        .replace(/'/g, ''');
     }
 
     function escAttr(str) {
@@ -1454,7 +1463,7 @@
       return String(str)
         .replace(/\\/g, '\\\\')
         .replace(/'/g, "\\'")
-        .replace(/"/g, '&quot;')
+        .replace(/"/g, '"')
         .replace(/\r?\n/g, ' ');
     }
 
@@ -1664,6 +1673,7 @@
         ENABLE_ONLINE_APPROVAL:      false,
         ENABLE_PAYROLL_EXPORT:       true,
         ENABLE_SYSTEM_DIRECT_SUBMIT: true,
+        ENABLE_CARD_SYS_BTN:         false, // ✅ 假單卡片底部常駐系統入口按鈕開關（預設關閉）
         ENABLE_BACKDATE_LIMIT:       false,
         MAX_BACKDATE_DAYS:           7,
         PROTECT_ANNIVERSARY_ARCHIVE: true,
@@ -1939,7 +1949,7 @@
       if (btnSchedule) btnSchedule.classList.toggle('hidden', !allowSchedule);
       if (btnHelp)     btnHelp.classList.toggle('hidden',     !allowHelp);
 
-      // ✅ 當管理員關閉「填寫請假 (allowForm === false)」或其他分頁時，同步隱藏「📖 說明」內的對應教學卡片與導覽按鈕
+      // 當管理員關閉「填寫請假 (allowForm === false)」或其他分頁時，同步隱藏「📖 說明」內的對應教學卡片與導覽按鈕
       const gCfgForHelp   = STATE.groupUiConfig || DEFAULT_GROUP_UI_CONFIG;
       const allowTextForm = isGroup ? (gCfgForHelp.qr_textform !== false) : true;
       const helpVisibilityMap = [
@@ -2341,7 +2351,7 @@
           let h = img.height;
           if (w > maxDim || h > maxDim) {
             if (w > h) { h = Math.round((h * maxDim) / w); w = maxDim; }
-            else       { w = Math.round((w * maxDim) / h); h = maxDim; }
+            else       { h = Math.round((w * maxDim) / h); h = maxDim; }
           }
           const canvas = document.createElement('canvas');
           canvas.width  = w;
@@ -2476,7 +2486,7 @@
       const escGit = document.getElementById('escapeLinkGithub');
       const escBln = document.getElementById('escapeLinkBloon');
       if (escGit) escGit.href = buildStandbyJumpHref(DEFAULT_STANDBY_NODES[0].url, false, liffMap.GITHUB);
-      if (escBln) escBln.href = buildStandbyJumpHref(DEFAULT_STANDBY_NODES[1].url, false, liffMap.BLOON);
+      if (escBln) escBln = buildStandbyJumpHref(DEFAULT_STANDBY_NODES[1].url, false, liffMap.BLOON);
 
       const selView = document.getElementById('selLiffViewType');
       if (selView && st.viewType) selView.value = st.viewType;
@@ -3980,6 +3990,7 @@
         `).join('');
       }
     }
+
     function submitForm() {
       if (isSubmitting) return;
       const name      = document.getElementById('inpName').value.replace(/\u3000/g, '').replace(/\s+/g, '').trim();
@@ -4095,7 +4106,7 @@
             showStatusBanner('formResultBox', 'ok', `🎉 ${res.isUpdated ? '假單修改成功' : '請假申請成功'}！（編號 #${res.rowNumber}）\n${res.summaryText}`);
             exitEditMode();
 
-            // 雙引擎保底：若後端 Push API 受限未推播 (pushedToLine === false)，自動由 LIFF 發送請假文字，觸發聊天室機器人用免費 replyToken 回覆卡片
+            // 雙引擎保底：若後端於群組走免費接力模式或 Push API 受限未推播 (pushedToLine === false)，自動由 LIFF 發送請假文字，觸發聊天室機器人用免費 replyToken 回覆卡片
             if (res.pushedToLine === false && typeof liff !== 'undefined' && liff.isInClient && liff.isInClient()) {
               const textToSend = (res.formattedText || clientFormattedText)
                 ? (res.formattedText || clientFormattedText)
@@ -4321,7 +4332,7 @@
         items: [
           { key: "forcePushGroupCapsules", fnName: "forcePushGroupCapsules()", label: "🚀 推送群組與 1對1 膠囊按鈕", color: "teal", desc: "以無痕空白訊息 (\\u2800) 強制將常駐膠囊按鈕推播至請假群組以及管理員/最近互動之 1對1 聊天室底部。" },
           { key: "forcePushOneOnOneCapsules", fnName: "forcePushOneOnOneCapsules()", label: "👤 僅推送 1對1 個人膠囊按鈕", color: "blue", desc: "僅針對管理員與最近一次互動之 1對1 個人聊天室強制推送無痕空白膠囊按鈕（不影響群組）。" },
-          { key: "autoRestoreGroupCapsulesIfHidden", fnName: "autoRestoreGroupCapsulesIfHidden()", label: "🔄 執行群組膠囊智慧偵測補推", color: "secondary", desc: "檢查群組膠囊是否被一般閒聊刷掉且已安靜滿 2 分鐘，若是則自動以空白訊息補推膠囊回底部。" },
+          { key: "autoRestoreGroupCapsulesIfHidden", fnName: "autoRestoreGroupCapsulesIfHidden()", label: "🔄 執行群組膠囊智慧偵測補推", color: "secondary", desc: "目前已升級為對話停止 30 秒自動以免費 replyToken 恢復膠囊（此背景排程函式已預設停用以保護每月免費 Push 額度）。" },
           { key: "syncUserMappingFromHistoryAndQuota", fnName: "syncUserMappingFromHistoryAndQuota()", label: "🪪 歷史紀錄與特休表無痕匯入綁定", color: "teal", desc: "自動從「請假記錄」歷史資料提取 LINE ID，並結合 annualLeaveQuota 員工名單批次建立 userMapping 綁定表。" },
           { key: "repairAllLiffNodesAndResetToGithub", fnName: "repairAllLiffNodesAndResetToGithub()", label: "🔧 自動校準並修復三節點 LIFF ID", color: "blue", desc: "一鍵校準 GitHub / Bloon / GAS 三大熱備援節點之專屬 LIFF ID 對照表，並將預設節點切回節點 1 (GitHub)。" },
           { key: "getBotBasicId", fnName: "getBotBasicId()", label: "🤖 查詢並快取機器人 Basic ID", color: "secondary", desc: "連線至 LINE 官方 API 查詢此請假機器人之官方帳號 Basic ID (@xxx) 並寫入快取。" }
@@ -4330,7 +4341,7 @@
       {
         category: "🛡️ 二、20年長效自癒、全庫雲端備份、歸檔與排程觸發器函數 (7_Init / 10_Addons)",
         items: [
-          { key: "setupAllSystemTriggers", fnName: "setupAllSystemTriggers()", label: "⏰ 一鍵註冊全系統定時觸發器", color: "teal", desc: "自動清除舊排程並重新建立每月1日特休重算、報表生成、全庫備份對帳、每1分鐘膠囊巡檢補推與晨間推播觸發器。" },
+          { key: "setupAllSystemTriggers", fnName: "setupAllSystemTriggers()", label: "⏰ 一鍵註冊全系統定時觸發器", color: "teal", desc: "自動清除舊有每分鐘排程並重新建立每月1日特休重算、報表生成、全庫備份對帳與晨間推播觸發器。" },
           { key: "runMonthlyLongevityMaintenance", fnName: "runMonthlyLongevityMaintenance()", label: "🛡️ 執行每月長效自動維護任務", color: "blue", desc: "一次完整執行：建立 Google Drive 資料庫備份快照 ＋ 總帳與明細帳雙向對帳自癒（1月含自動歸檔與瘦身）。" },
           { key: "reconcileAnnualLeaveSnapshots", fnName: "LongevityEngine.reconcileAnnualLeaveSnapshots()", label: "🔄 總帳與明細帳雙向對帳自癒", color: "teal", desc: "重播本年度每一筆有效特休與補休假單，自動校正「請假記錄」主表第 8 欄之剩餘額度快照。" },
           { key: "createMonthlyDatabaseBackup", fnName: "LongevityEngine.createMonthlyDatabaseBackup()", label: "💾 立即建立全庫雲端備份快照", color: "blue", desc: "於 Google Drive「請假系統_資料庫自動備份庫」建立完整試算表災難復原快照（自動保留最新 12 份）。" },
@@ -4731,13 +4742,14 @@
       const selMode = document.getElementById('selEnt_annualMode');
       if (selMode) selMode.value = cfg.ANNUAL_LEAVE_MODE === 'ANNIVERSARY' ? 'ANNIVERSARY' : 'CALENDAR';
 
-      setChk('chkEnt_deferredLeave',  cfg.ENABLE_DEFERRED_LEAVE !== undefined ? cfg.ENABLE_DEFERRED_LEAVE : true);
-      setChk('chkEnt_compPool',       cfg.ENABLE_COMP_LEAVE_POOL);
-      setChk('chkEnt_attachment',     cfg.ENABLE_ATTACHMENT_UPLOAD);
-      setChk('chkEnt_deputyApproval', cfg.ENABLE_DEPUTY_APPROVAL);
-      setChk('chkEnt_onlineApproval', cfg.ENABLE_ONLINE_APPROVAL);
+      setChk('chkEnt_deferredLeave',   cfg.ENABLE_DEFERRED_LEAVE !== undefined ? cfg.ENABLE_DEFERRED_LEAVE : true);
+      setChk('chkEnt_compPool',        cfg.ENABLE_COMP_LEAVE_POOL);
+      setChk('chkEnt_attachment',      cfg.ENABLE_ATTACHMENT_UPLOAD);
+      setChk('chkEnt_deputyApproval',  cfg.ENABLE_DEPUTY_APPROVAL);
+      setChk('chkEnt_onlineApproval',  cfg.ENABLE_ONLINE_APPROVAL);
       setChk('chkEnt_payrollExport',   cfg.ENABLE_PAYROLL_EXPORT !== undefined ? cfg.ENABLE_PAYROLL_EXPORT : true);
       setChk('chkEnt_sysDirectSubmit', cfg.ENABLE_SYSTEM_DIRECT_SUBMIT !== undefined ? cfg.ENABLE_SYSTEM_DIRECT_SUBMIT : true);
+      setChk('chkEnt_cardSysBtn',      cfg.ENABLE_CARD_SYS_BTN); // ✅ 讀取假單卡片常駐按鈕開關狀態
 
       setChk('chkEnt_backdateLimit',       cfg.ENABLE_BACKDATE_LIMIT);
       setChk('chkEnt_preventSelfDeputy',   cfg.PREVENT_SELF_DEPUTY !== undefined ? cfg.PREVENT_SELF_DEPUTY : true);
@@ -4784,6 +4796,7 @@
         ENABLE_ONLINE_APPROVAL:      getChk('chkEnt_onlineApproval'),
         ENABLE_PAYROLL_EXPORT:       getChk('chkEnt_payrollExport'),
         ENABLE_SYSTEM_DIRECT_SUBMIT: getChk('chkEnt_sysDirectSubmit'),
+        ENABLE_CARD_SYS_BTN:         getChk('chkEnt_cardSysBtn'), // ✅ 儲存假單卡片常駐按鈕開關狀態
 
         ENABLE_BACKDATE_LIMIT:       getChk('chkEnt_backdateLimit'),
         MAX_BACKDATE_DAYS:           parseInt(document.getElementById('inpEnt_maxBackdateDays').value, 10) || 0,
