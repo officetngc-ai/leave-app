@@ -1243,7 +1243,7 @@
           <input type="checkbox" id="chkEnt_sysDirectSubmit" checked>
         </div>
 
-        <!-- ✅ 新增：假單卡片底部「📅 開啟請假 / 查特休系統」常駐按鈕控制開關 -->
+        <!-- ✅ 假單卡片底部「📅 開啟請假 / 查特休系統」常駐按鈕控制開關 -->
         <div class="ent-toggle-row">
           <div>
             <div style="font-weight:800; font-size:13.5px; color:var(--teal);">📅 啟用假單卡片底部「開啟請假 / 查特休系統」常駐按鈕</div>
@@ -1447,15 +1447,15 @@
 
     const GAS_SSR_PAYLOAD = "/*__GAS_SSR_INJECTION__*/";
 
-    // ✅ DOM XSS 與引號跳脫安全輔助函式
+    // ✅ DOM XSS 與引號跳脫安全輔助函式（使用 \x26 十六進位保護，防止剪貼簿自動解碼造成語法錯誤）
     function escHtml(str) {
       if (str === null || str === undefined) return '';
       return String(str)
-        .replace(/&/g, '&')
-        .replace(/</g, '<')
-        .replace(/>/g, '>')
-        .replace(/"/g, '"')
-        .replace(/'/g, ''');
+        .replace(/&/g, '\x26amp;')
+        .replace(/</g, '\x26lt;')
+        .replace(/>/g, '\x26gt;')
+        .replace(/"/g, '\x26quot;')
+        .replace(/'/g, '\x26#39;');
     }
 
     function escAttr(str) {
@@ -1463,7 +1463,7 @@
       return String(str)
         .replace(/\\/g, '\\\\')
         .replace(/'/g, "\\'")
-        .replace(/"/g, '"')
+        .replace(/"/g, '\x26quot;')
         .replace(/\r?\n/g, ' ');
     }
 
@@ -2486,7 +2486,7 @@
       const escGit = document.getElementById('escapeLinkGithub');
       const escBln = document.getElementById('escapeLinkBloon');
       if (escGit) escGit.href = buildStandbyJumpHref(DEFAULT_STANDBY_NODES[0].url, false, liffMap.GITHUB);
-      if (escBln) escBln = buildStandbyJumpHref(DEFAULT_STANDBY_NODES[1].url, false, liffMap.BLOON);
+      if (escBln) escBln.href = buildStandbyJumpHref(DEFAULT_STANDBY_NODES[1].url, false, liffMap.BLOON);
 
       const selView = document.getElementById('selLiffViewType');
       if (selView && st.viewType) selView.value = st.viewType;
@@ -3990,7 +3990,6 @@
         `).join('');
       }
     }
-
     function submitForm() {
       if (isSubmitting) return;
       const name      = document.getElementById('inpName').value.replace(/\u3000/g, '').replace(/\s+/g, '').trim();
