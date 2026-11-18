@@ -221,8 +221,17 @@
         <div id="editModeBanner" class="banner edit-mode hidden"></div>
         <div id="backdateLimitBanner" class="banner hidden" style="font-size:12.5px;"></div>
 
+        <!-- ✅ 請假人員（內建管理員與超級管理員跨裝置代填快速切換下拉選單） -->
         <div class="form-group">
-          <label>請假人員 <span class="req">*</span></label>
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px; flex-wrap:wrap; gap:4px;">
+            <label style="margin:0;">請假人員 <span class="req">*</span></label>
+            <div id="adminProxySelectBox" class="hidden" style="display:flex; align-items:center; gap:6px;">
+              <span class="badge admin-role" style="font-size:11.5px;">🛡️ 管理員代填</span>
+              <select id="selAdminProxyEmp" onchange="onSelectAdminProxyEmp(this.value)" style="height:32px; min-height:32px; padding:2px 26px 2px 8px; font-size:12.5px; width:auto; border-color:#F59E0B; background-color:#FFFBEB; color:#92400E; font-weight:700;">
+                <option value="">-- 點此切換代填其他同仁 --</option>
+              </select>
+            </div>
+          </div>
           <input type="text" id="inpName" list="employeeList" placeholder="請點選或輸入您的姓名" onchange="onNameChange()">
           <datalist id="employeeList"></datalist>
         </div>
@@ -280,7 +289,9 @@
           <div class="form-group">
             <label>職務代理人 <span class="req">*</span></label>
             <input type="text" id="inpDeputy" list="deputyList" placeholder="選擇或輸入代理人">
-            <datalist id="deputyList"></datalist>
+            <datalist id="deputyList">
+              <option value="諸牧師">
+            </datalist>
           </div>
         </div>
 
@@ -291,11 +302,15 @@
           <input type="text" id="inpReason" placeholder="例如：家因、看診、年假">
         </div>
 
+        <!-- ✅ 核准狀態下拉選單（已新增「諸牧師」相關選項） -->
         <div class="form-group">
           <label>核准狀態 <span class="req">*</span></label>
           <select id="selApproval" onchange="onApprovalChange()">
             <option value="已報請主任牧師核准" selected>已報請主任牧師核准</option>
             <option value="已報請堂會牧師核准">已報請堂會牧師核准</option>
+            <option value="經堂會鈺娟牧師核准">經堂會鈺娟牧師核准</option>
+            <option value="已報請諸牧師核准">已報請諸牧師核准</option>
+            <option value="諸牧師">諸牧師</option>
           </select>
         </div>
 
@@ -1440,10 +1455,10 @@
   <script>
     // ============================================================
     // 🌐 三棲熱備援環境核心連線與 20 年長效穩定度前端引擎
-    // 版本: v26.0.3-LTS (Zero-Redundancy & Zero-Push-Quota Edition)
+    // 版本: v26.0.4-LTS (Zero-Redundancy & PC/Mobile Dual-Mode Edition)
     // ============================================================
     const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyuW_4_sWHWUq0lc4QOe1amHl7ipGXr0wGNoVQFJl7leq6JYGWVR7CUoPOZkPMqprnX/exec";
-    const CACHE_KEY_INIT  = "leave_sys_init_cache_v26_3_longevity";
+    const CACHE_KEY_INIT  = "leave_sys_init_cache_v26_4_longevity";
 
     const GAS_SSR_PAYLOAD = "/*__GAS_SSR_INJECTION__*/";
 
@@ -1918,7 +1933,12 @@
         btnSubmitTextEl.classList.toggle('hidden', entCfg.ENABLE_SYSTEM_DIRECT_SUBMIT === false);
       }
 
-      const inpNameEl = document.getElementById('inpName');
+      // ✅ 當具備管理員或超級管理員權限時，顯示「🛡️ 管理員代填」快速切換下拉選單
+      const inpNameEl  = document.getElementById('inpName');
+      const proxyBoxEl = document.getElementById('adminProxySelectBox');
+      if (proxyBoxEl) {
+        proxyBoxEl.classList.toggle('hidden', !isAdminUser);
+      }
       if (inpNameEl) {
         if (isAdminUser) {
           inpNameEl.setAttribute('list', 'employeeList');
@@ -2024,10 +2044,10 @@
         if (superCredBox)  superCredBox.classList.toggle('hidden', !isSuperPrivate);
 
         if (isSuperPrivate) {
-          if (lblHeader) lblHeader.innerText = '👑 系統管理員管理中心 (v26.0.3-LTS)';
+          if (lblHeader) lblHeader.innerText = '👑 系統管理員管理中心 (v26.0.4-LTS)';
           if (lblSub)    lblSub.innerText    = '具備最高系統管理權限（含系統函數控制台、備援、零代碼金鑰、管理員指派與四大資料庫）';
         } else {
-          if (lblHeader) lblHeader.innerText = '🛡️ 管理員資料庫管理系統 (v26.0.3-LTS)';
+          if (lblHeader) lblHeader.innerText = '🛡️ 管理員資料庫管理系統 (v26.0.4-LTS)';
           if (lblSub)    lblSub.innerText    = '具備日常管理權限（同仁 LINE 綁定、特休/補休庫、假單/月結庫、班表庫、假別庫）';
           const curPanelStandby = document.getElementById('admPanel_standby');
           const curPanelFuncs   = document.getElementById('admPanel_funcs');
@@ -2173,7 +2193,7 @@
         if (seq !== STATE.initFetchSeq) return;
         if (res && res.success) {
           try {
-            if (!STATE.editRow && reqUid) {
+            if (!STATE.editRow && (reqUid || res.boundUid)) {
               localStorage.setItem(CACHE_KEY_INIT, JSON.stringify(res));
             }
           } catch (_) {}
@@ -2206,6 +2226,10 @@
       STATE.isAdmin      = !!res.isAdmin;
       STATE.isSuperAdmin = !!res.isSuperAdmin;
       if (res.boundName !== undefined) STATE.boundName = res.boundName || '';
+      if (res.boundUid && res.boundUid.startsWith('U') && !STATE.uid) {
+        STATE.uid = res.boundUid;
+        try { localStorage.setItem('leave_sys_user_uid', res.boundUid); } catch (_) {}
+      }
 
       if (res.userCustomPerms) {
         STATE.userCustomPerms = {
@@ -2258,9 +2282,16 @@
       if (Array.isArray(res.employees)) {
         const cleanEmpList = res.employees.filter(n => n && n !== '系統管理員' && n !== '王小明');
         document.getElementById('employeeList').innerHTML = cleanEmpList.map(n => `<option value="${escHtml(n)}">`).join('');
-        const depArr = (Array.isArray(res.deputies) && res.deputies.length > 0) ? res.deputies : cleanEmpList;
+        const depArr = (Array.isArray(res.deputies) && res.deputies.length > 0) ? res.deputies.slice() : cleanEmpList.slice();
+        if (!depArr.includes('諸牧師')) depArr.push('諸牧師');
         const depEl  = document.getElementById('deputyList');
         if (depEl) depEl.innerHTML = depArr.map(d => `<option value="${escHtml(d)}">`).join('');
+
+        const selProxy = document.getElementById('selAdminProxyEmp');
+        if (selProxy) {
+          selProxy.innerHTML = `<option value="">-- 點此切換代填其他同仁 (${cleanEmpList.length}人) --</option>` +
+            cleanEmpList.map(n => `<option value="${escHtml(n)}">${escHtml(n)}</option>`).join('');
+        }
       }
 
       if (res.todayStr && !STATE.editRow) {
@@ -2273,8 +2304,15 @@
         : ((res.currentName && res.currentName !== '系統管理員' && res.currentName !== '王小明') ? res.currentName : '');
       const resolvedName = serverName || savedName || '';
       if (resolvedName) {
-        document.getElementById('inpName').value = resolvedName;
-        try { localStorage.setItem('leave_sys_user_name', resolvedName); } catch (_) {}
+        const currentInputVal = document.getElementById('inpName').value.trim();
+        if (!currentInputVal || currentInputVal === '王小明' || !STATE.isAdmin) {
+          document.getElementById('inpName').value = resolvedName;
+        }
+        if (STATE.boundName) {
+          try { localStorage.setItem('leave_sys_user_name', STATE.boundName); } catch (_) {}
+        } else {
+          try { localStorage.setItem('leave_sys_user_name', resolvedName); } catch (_) {}
+        }
       }
 
       const savedApproval    = localStorage.getItem('leave_sys_last_approval') || '';
@@ -2311,7 +2349,7 @@
 
       if (!isFromLocalCache && res.editRecord) {
         enterEditMode(res.editRecord);
-      } else if (!isFromLocalCache && STATE.editRow && parseInt(STATE.editRow, 10) >= 2 && STATE.uid) {
+      } else if (!isFromLocalCache && STATE.editRow && parseInt(STATE.editRow, 10) >= 2 && (STATE.uid || STATE.isAdmin)) {
         loadRecordForEdit(parseInt(STATE.editRow, 10));
       } else if (isTabAllowed('form')) {
         triggerPreview();
@@ -2666,12 +2704,17 @@
     function saveLastUsedFieldsFromText(rawText) {
       try {
         if (!rawText) return;
-        const nameMatch = rawText.match(/^請假人\s*[：:]\s*(.+)$/m);
-        const appMatch  = rawText.match(/^核准\s*[：:]\s*(.+)$/m);
+        const nameMatch  = rawText.match(/^請假人\s*[：:]\s*(.+)$/m);
+        const appMatch   = rawText.match(/^核准\s*[：:]\s*(.+)$/m);
+        const isAdminUsr = Boolean(STATE.isAdmin || STATE.isSuperAdmin);
         if (nameMatch && nameMatch[1]) {
           const n = nameMatch[1].trim();
           if (n && n !== '王小明' && n !== '系統管理員') {
-            localStorage.setItem('leave_sys_user_name', n);
+            if (!STATE.boundName && !isAdminUsr) {
+              localStorage.setItem('leave_sys_user_name', n);
+            } else if (STATE.boundName && n === STATE.boundName) {
+              localStorage.setItem('leave_sys_user_name', n);
+            }
             const inpN = document.getElementById('inpName');
             if (inpN && !STATE.editRow) inpN.value = n;
           }
@@ -2840,6 +2883,7 @@
       }
 
       const currentSeq   = ++STATE.verifySeq;
+      const operatorName = STATE.boundName || localStorage.getItem('leave_sys_user_name') || '';
       STATE.verifyStatus = 'verifying';
       lockPasteButtonForVerification('⏳ 正在連線至後端資料庫比對假單...');
       showStatusBanner('textFormResultBox', 'info', '⏳ 正在與 Google Sheet 資料庫核對（檢查是否重複請假、休假日與特休/補休餘額）...');
@@ -2907,9 +2951,10 @@
           );
         })
         .validateLeaveTextFromWeb({
-          text:    rawText,
-          userId:  STATE.uid,
-          groupId: STATE.gid
+          text:         rawText,
+          userId:       STATE.uid,
+          operatorName: operatorName,
+          groupId:      STATE.gid
         });
     }
 
@@ -3328,7 +3373,7 @@
           if (banner) banner.classList.add('hidden');
           alert('❌ 連線後端資料庫失敗：' + err.message);
         })
-        .adminGetBackendData(STATE.uid);
+        .adminGetBackendData(STATE.uid || STATE.boundName);
     }
 
     function enterEditMode(rec) {
@@ -3413,12 +3458,32 @@
       triggerPreview();
     }
 
+    /**
+     * ✅ 管理員與超級管理員跨裝置代填：快速切換請假同仁
+     */
+    function onSelectAdminProxyEmp(selectedName) {
+      if (!selectedName) return;
+      const inpNameEl = document.getElementById('inpName');
+      if (inpNameEl) {
+        inpNameEl.value = selectedName;
+        onNameChange();
+      }
+    }
+
     function onNameChange() {
       const name = document.getElementById('inpName').value.replace(/\u3000/g, '').replace(/\s+/g, '').trim();
       const isAdminUser = Boolean(STATE.isAdmin || STATE.isSuperAdmin);
       if (name && name !== '系統管理員' && name !== '王小明') {
-        if (!STATE.boundName || name === STATE.boundName) {
+        // ✅ 僅在尚未綁定身分或輸入本人姓名時才寫入 localStorage，防止管理員代填他人時把自己的管理員姓名洗掉
+        if (!STATE.boundName && !isAdminUser) {
           localStorage.setItem('leave_sys_user_name', name);
+        } else if (STATE.boundName && name === STATE.boundName) {
+          localStorage.setItem('leave_sys_user_name', name);
+        }
+
+        // 若電腦版首次輸入管理員姓名，立即向後端同步管理員權限與 UID
+        if (!STATE.uid && !STATE.isAdmin) {
+          fetchFreshInitData(name);
         }
 
         const txt = document.getElementById('txtRawLeave');
@@ -3747,9 +3812,10 @@
         return;
       }
 
-      container.innerHTML = `<p style="text-align:center; color:var(--muted);">🔐 正在向後端資料庫驗證 LINE 帳號與「${escHtml(cleanInput)}」是否為本人...</p>`;
+      const callerIdOrName = STATE.uid || STATE.boundName || localStorage.getItem('leave_sys_user_name') || '';
+      container.innerHTML = `<p style="text-align:center; color:var(--muted);">🔐 正在向後端資料庫載入「${escHtml(cleanInput)}」的特休與請假紀錄...</p>`;
       google.script.run.withSuccessHandler(d => {
-        if (d && d.boundName) {
+        if (d && d.boundName && (!STATE.boundName || !(STATE.isAdmin || STATE.isSuperAdmin))) {
           const wasUnbound = !STATE.boundName;
           STATE.boundName  = d.boundName;
           try { localStorage.setItem('leave_sys_user_name', d.boundName); } catch (_) {}
@@ -3762,7 +3828,7 @@
         STATE.dashboard = (d && d.found) ? d : null;
         renderDashboard(d);
         updateQuotaHint();
-      }).getPrivateUserDashboardData(cleanInput, STATE.uid, STATE.gid);
+      }).getPrivateUserDashboardData(cleanInput, callerIdOrName, STATE.gid);
     }
 
     function sendDmReport() {
@@ -3917,13 +3983,14 @@
     }
 
     function loadRecordForEdit(rowNumber) {
+      const callerIdOrName = STATE.uid || STATE.boundName || localStorage.getItem('leave_sys_user_name') || '';
       google.script.run.withSuccessHandler(rec => {
         if (!rec) {
-          alert('⛔ 無法載入該筆假單，請確認您為申請人本人且假單為今日或未來日期！');
+          alert('⛔ 無法載入該筆假單，請確認您為申請人本人或管理員，且假單為今日或未來日期！');
           return;
         }
         enterEditMode(rec);
-      }).getLeaveRecordByRowForWeb(rowNumber, STATE.uid, STATE.gid);
+      }).getLeaveRecordByRowForWeb(rowNumber, callerIdOrName, STATE.gid);
     }
 
     function renderTodayOverview(ov) {
@@ -4045,14 +4112,21 @@
         } catch (_) {}
       }
 
+      const canClientRelay = Boolean(typeof liff !== 'undefined' && liff.isInClient && liff.isInClient());
+      const operatorName   = STATE.boundName || localStorage.getItem('leave_sys_user_name') || '';
+
       isSubmitting = true;
       const btn = document.getElementById('btnSubmit');
       btn.disabled = true;
       btn.innerText = '🔒 安全寫入資料庫並發送假單中...';
       showStatusBanner('formResultBox', 'info', '⏳ 正在驗證並發送假單至聊天視窗，請稍候...');
 
-      if (!STATE.editRow && name !== '系統管理員' && name !== '王小明' && (!STATE.boundName || name === STATE.boundName)) {
-        localStorage.setItem('leave_sys_user_name', name);
+      if (!STATE.editRow && name !== '系統管理員' && name !== '王小明') {
+        if (!STATE.boundName && !isAdminUser) {
+          localStorage.setItem('leave_sys_user_name', name);
+        } else if (STATE.boundName && name === STATE.boundName) {
+          localStorage.setItem('leave_sys_user_name', name);
+        }
       }
       if (approval) {
         localStorage.setItem('leave_sys_last_approval', approval);
@@ -4089,7 +4163,7 @@
               return;
             }
             try { localStorage.removeItem(CACHE_KEY_INIT); } catch (_) {}
-            if (res.boundName) {
+            if (res.boundName && (!STATE.boundName || !isAdminUser)) {
               STATE.boundName = res.boundName;
               document.getElementById('inpQueryName').value = res.boundName;
               localStorage.setItem('leave_sys_user_name', res.boundName);
@@ -4102,22 +4176,51 @@
               STATE.dashboard = res.dashboard;
               renderDashboard(res.dashboard);
             }
-            showStatusBanner('formResultBox', 'ok', `🎉 ${res.isUpdated ? '假單修改成功' : '請假申請成功'}！（編號 #${res.rowNumber}）\n${res.summaryText}`);
+
+            const textToSend = (res.formattedText || clientFormattedText)
+              ? (res.formattedText || clientFormattedText)
+              : `${res.echoText || ''}\n\n${res.confirmText || ''}`.trim();
+
             exitEditMode();
 
-            // 雙引擎保底：若後端於群組走免費接力模式或 Push API 受限未推播 (pushedToLine === false)，自動由 LIFF 發送請假文字，觸發聊天室機器人用免費 replyToken 回覆卡片
-            if (res.pushedToLine === false && typeof liff !== 'undefined' && liff.isInClient && liff.isInClient()) {
-              const textToSend = (res.formattedText || clientFormattedText)
-                ? (res.formattedText || clientFormattedText)
-                : `${res.echoText || ''}\n\n${res.confirmText || ''}`.trim();
-
-              liff.sendMessages([{ type: 'text', text: textToSend }]).finally(() => {
-                setTimeout(() => { safeCloseLiffWindow(); }, 350);
-              });
+            // 情況 A：後端已成功透過 Push API 推播卡片至群組/私訊 (pushedToLine === true)
+            if (res.pushedToLine === true) {
+              showStatusBanner('formResultBox', 'ok', `🎉 ${res.isUpdated ? '假單修改成功' : '請假申請成功'}！（編號 #${res.rowNumber}）\n假單卡片已自動發送至 LINE 聊天視窗！\n${res.summaryText}`);
+              setTimeout(() => { safeCloseLiffWindow(); }, 800);
               return;
             }
 
-            setTimeout(() => { safeCloseLiffWindow(); }, 800);
+            // 情況 B：手機版 LINE 內部視窗 (canClientRelay === true)，自動由本人帳號發出文字觸發免費 replyToken 秒回卡片
+            if (canClientRelay) {
+              showStatusBanner('formResultBox', 'ok', `🎉 ${res.isUpdated ? '假單修改成功' : '請假申請成功'}！（編號 #${res.rowNumber}）\n正在將假單發送至 LINE 群組聊天室...`);
+              liff.sendMessages([{ type: 'text', text: textToSend }])
+                .then(() => {
+                  setTimeout(() => { safeCloseLiffWindow(); }, 350);
+                })
+                .catch(() => {
+                  copyToClipboardSafe(textToSend);
+                  showStatusBanner(
+                    'formResultBox',
+                    'ok',
+                    `✅ 假單 #${res.rowNumber} 已存入資料庫，且 7 行請假文字已自動複製！\n👉 請直接返回 LINE 群組輸入框「貼上」送出，機器人即會立即彈出假單卡片！`
+                  );
+                });
+              return;
+            }
+
+            // ✅ 情況 C：電腦版瀏覽器且當月 200 則免費 Push 額度已滿 (pushedToLine === false)
+            // 自動將 7 行假單複製到電腦剪貼簿，不關閉視窗，引導使用者回電腦版 LINE 群組按 Ctrl+V 貼上觸發免費卡片！
+            copyToClipboardSafe(textToSend);
+            showStatusBanner(
+              'formResultBox',
+              'ok',
+              `🎉 假單 #${res.rowNumber} 已寫入後台資料庫！（${res.summaryText}）\n` +
+              `━━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
+              `📋 【電腦版群組發送卡片步驟（7行假單已自動複製到剪貼簿！）】：\n` +
+              `因電腦版瀏覽器無 LINE 手機內部發話權限（且本月免費主動推播額度已滿），\n` +
+              `👉 請直接切回【電腦版 LINE 請假群組輸入框】，按鍵盤【Ctrl + V】貼上並按【Enter】送出，\n` +
+              `機器人收到後就會立即在群組秒回您的「✅ 請假申請單卡片」（不會重複建檔）！`
+            );
           })
           .withFailureHandler(err => {
             isSubmitting = false;
@@ -4133,7 +4236,9 @@
             leaveType, deputy, reason, approval,
             attachmentBase64: STATE.attachmentBase64 || '',
             userId:           STATE.uid,
+            operatorName:     operatorName,
             groupId:          STATE.gid,
+            canClientRelay:   canClientRelay,
             reqToken
           });
       } catch (syncErr) {
@@ -4166,6 +4271,9 @@
         } catch (_) {}
       }
 
+      const canClientRelay = Boolean(typeof liff !== 'undefined' && liff.isInClient && liff.isInClient());
+      const operatorName   = STATE.boundName || localStorage.getItem('leave_sys_user_name') || '';
+
       isSubmitting = true;
       const btnSubmit = document.getElementById('btnSubmitText');
       if (btnSubmit) {
@@ -4189,7 +4297,7 @@
             }
 
             try { localStorage.removeItem(CACHE_KEY_INIT); } catch (_) {}
-            if (res.boundName) {
+            if (res.boundName && (!STATE.boundName || !(STATE.isAdmin || STATE.isSuperAdmin))) {
               STATE.boundName = res.boundName;
               document.getElementById('inpQueryName').value = res.boundName;
               localStorage.setItem('leave_sys_user_name', res.boundName);
@@ -4212,13 +4320,17 @@
               btnSubmit.innerText = '🎉 假單已成功送出！';
             }
 
-            showStatusBanner(
-              'textFormResultBox',
-              'ok',
-              `🎉 請假單已成功送出至聊天室！\n🔖 記錄編號：#${res.rowNumber}\n📋 摘要：${res.summaryText}\n\n（正在自動關閉視窗返回聊天室...）`
-            );
+            if (res.pushedToLine === true) {
+              showStatusBanner(
+                'textFormResultBox',
+                'ok',
+                `🎉 請假單已成功送出至聊天室！\n🔖 記錄編號：#${res.rowNumber}\n📋 摘要：${res.summaryText}\n\n（正在自動關閉視窗返回聊天室...）`
+              );
+              setTimeout(() => { safeCloseLiffWindow(); }, 500);
+              return;
+            }
 
-            if (res.pushedToLine === false && typeof liff !== 'undefined' && liff.isInClient && liff.isInClient()) {
+            if (canClientRelay) {
               const relayMsg = res.formattedText
                 ? [{ type: 'text', text: res.formattedText }]
                 : [{ type: 'text', text: `${res.echoText || ''}\n\n${res.confirmText || ''}`.trim() }];
@@ -4228,7 +4340,14 @@
               return;
             }
 
-            setTimeout(() => { safeCloseLiffWindow(); }, 500);
+            const textToCopy = res.formattedText || rawText;
+            copyToClipboardSafe(textToCopy);
+            showStatusBanner(
+              'textFormResultBox',
+              'ok',
+              `🎉 假單 #${res.rowNumber} 已寫入資料庫，且 7 行假單文字已自動複製到電腦剪貼簿！\n` +
+              `👉 請直接切回【電腦版 LINE 群組輸入框】按【Ctrl + V】貼上並按【Enter】送出，機器人就會立即在群組秒回您的假單卡片！`
+            );
           })
           .withFailureHandler(err => {
             isSubmitting = false;
@@ -4251,9 +4370,11 @@
             );
           })
           .submitRawTextLeaveFromWeb({
-            text:    rawText,
-            userId:  STATE.uid,
-            groupId: STATE.gid
+            text:           rawText,
+            userId:         STATE.uid,
+            operatorName:   operatorName,
+            groupId:        STATE.gid,
+            canClientRelay: canClientRelay
           });
       } catch (syncErr) {
         isSubmitting = false;
@@ -5642,9 +5763,16 @@
         if (res && Array.isArray(res.employees)) {
           const cleanEmpList = res.employees.filter(n => n && n !== '系統管理員' && n !== '王小明');
           document.getElementById('employeeList').innerHTML = cleanEmpList.map(n => `<option value="${escHtml(n)}">`).join('');
-          const depArr = (Array.isArray(res.deputies) && res.deputies.length > 0) ? res.deputies : cleanEmpList;
+          const depArr = (Array.isArray(res.deputies) && res.deputies.length > 0) ? res.deputies.slice() : cleanEmpList.slice();
+          if (!depArr.includes('諸牧師')) depArr.push('諸牧師');
           const depEl  = document.getElementById('deputyList');
           if (depEl) depEl.innerHTML = depArr.map(d => `<option value="${escHtml(d)}">`).join('');
+
+          const selProxy = document.getElementById('selAdminProxyEmp');
+          if (selProxy) {
+            selProxy.innerHTML = `<option value="">-- 點此切換代填其他同仁 (${cleanEmpList.length}人) --</option>` +
+              cleanEmpList.map(n => `<option value="${escHtml(n)}">${escHtml(n)}</option>`).join('');
+          }
         }
         if (res && res.adminData) {
           STATE.adminData = res.adminData;
@@ -5664,9 +5792,16 @@
         if (res && Array.isArray(res.employees)) {
           const cleanEmpList = res.employees.filter(n => n && n !== '系統管理員' && n !== '王小明');
           document.getElementById('employeeList').innerHTML = cleanEmpList.map(n => `<option value="${escHtml(n)}">`).join('');
-          const depArr = (Array.isArray(res.deputies) && res.deputies.length > 0) ? res.deputies : cleanEmpList;
+          const depArr = (Array.isArray(res.deputies) && res.deputies.length > 0) ? res.deputies.slice() : cleanEmpList.slice();
+          if (!depArr.includes('諸牧師')) depArr.push('諸牧師');
           const depEl  = document.getElementById('deputyList');
           if (depEl) depEl.innerHTML = depArr.map(d => `<option value="${escHtml(d)}">`).join('');
+
+          const selProxy = document.getElementById('selAdminProxyEmp');
+          if (selProxy) {
+            selProxy.innerHTML = `<option value="">-- 點此切換代填其他同仁 (${cleanEmpList.length}人) --</option>` +
+              cleanEmpList.map(n => `<option value="${escHtml(n)}">${escHtml(n)}</option>`).join('');
+          }
         }
         if (res && res.adminData) {
           STATE.adminData = res.adminData;
