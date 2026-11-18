@@ -309,7 +309,6 @@
             <option value="已報請主任牧師核准" selected>已報請主任牧師核准</option>
             <option value="已報請堂會牧師核准">已報請堂會牧師核准</option>
             <option value="經堂會鈺娟牧師核准">經堂會鈺娟牧師核准</option>
-            <option value="已報請諸牧師核准">已報請諸牧師核准</option>
             <option value="諸牧師">諸牧師</option>
           </select>
         </div>
@@ -2061,6 +2060,11 @@
 
     function syncApprovalSelectOption(approvalVal) {
       if (!approvalVal) return;
+      // ✅ 若快取或舊紀錄為「已報請諸牧師核准」，自動轉為「諸牧師」，防止已刪除的選項復活
+      if (approvalVal === '已報請諸牧師核准') {
+        approvalVal = '諸牧師';
+        try { localStorage.setItem('leave_sys_last_approval', '諸牧師'); } catch (_) {}
+      }
       const sel = document.getElementById('selApproval');
       if (!sel) return;
       const exists = Array.from(sel.options).some(o => o.value === approvalVal);
